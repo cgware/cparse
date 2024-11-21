@@ -191,7 +191,7 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 	case STX_TERM_LITERAL: {
 		const str_t literal = term->val.literal;
 
-		for (size_t i = 0; i < literal.len; i++) {
+		for (uint i = 0; i < (uint)literal.len; i++) {
 			token_t token = lex_get_token(prs->lex, *off + i);
 
 			if (token.type & (1 << TOKEN_EOF)) {
@@ -219,9 +219,9 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 			}
 		}
 
-		prs_add_node(prs, node, PRS_NODE_LITERAL(prs, *off, literal.len));
+		prs_add_node(prs, node, PRS_NODE_LITERAL(prs, *off, (uint)literal.len));
 		log_trace("cutils", "parser", NULL, "\'%*s\': success +%d", literal.len, literal.data, literal.len);
-		*off += literal.len;
+		*off += (uint)literal.len;
 		return 0;
 	}
 	case STX_TERM_OR: {

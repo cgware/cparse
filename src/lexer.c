@@ -92,7 +92,7 @@ token_loc_t lex_get_token_loc(const lex_t *lex, uint index)
 
 	token_loc_t loc = {0};
 
-	for (size_t i = 0; i < index && i < lex->src.len; i++) {
+	for (uint i = 0; i < index && i < (uint)lex->src.len; i++) {
 		if (lex->src.data[i] == '\n') {
 			loc.line_off = i + 1;
 			loc.line_nr++;
