@@ -110,11 +110,10 @@ const stx_t *bnf_get_stx(bnf_t *bnf, alloc_t alloc)
 
 	stx_rule_add_or(stx,
 			character,
-			5,
+			4,
 			STX_TERM_TOKEN(stx, TOKEN_ALPHA),
 			STX_TERM_TOKEN(stx, TOKEN_DIGIT),
 			STX_TERM_TOKEN(stx, TOKEN_SYMBOL),
-			STX_TERM_TOKEN(stx, TOKEN_COMMA),
 			STX_TERM_RULE(stx, space));
 
 	stx_rule_add_arr(stx, spaces, STX_TERM_RULE(stx, space), STX_TERM_NONE(stx));

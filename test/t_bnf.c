@@ -33,7 +33,7 @@ TEST(bnf_get_stx)
 	EXPECT_NE(bnf_get_stx(&bnf, ALLOC_STD), NULL);
 
 	char buf[1024] = {0};
-	EXPECT_EQ(stx_print(&bnf.stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 756);
+	EXPECT_EQ(stx_print(&bnf.stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 748);
 	EXPECT_STR(buf,
 		   "<file>    ::= <bnf> EOF\n"
 		   "<bnf>     ::= <rules>\n"
@@ -51,7 +51,7 @@ TEST(bnf_get_stx)
 		   "<tsingle> ::= <csingle> <tsingle> | <csingle>\n"
 		   "<cdouble> ::= <char> | '\"'\n"
 		   "<csingle> ::= <char> | \"'\"\n"
-		   "<char>    ::= ALPHA | DIGIT | SYMBOL | COMMA | <space>\n"
+		   "<char>    ::= ALPHA | DIGIT | SYMBOL | <space>\n"
 		   "<spaces>  ::= <space> <spaces> | <space>\n"
 		   "<space>   ::= ' '\n");
 
@@ -89,11 +89,11 @@ TEST(stx_from_bnf)
 			 "<space>       ::= ' '\n");
 
 	lex_t lex = {0};
-	lex_init(&lex, STR(__FILE__), sbnf, line);
+	lex_init(&lex, STR(__FILE__), &sbnf, line, 1, 1, ALLOC_STD);
+	lex_tokenize(&lex);
 
 	prs_t prs = {0};
 	prs_init(&prs, &lex, &bnf.stx, 100, ALLOC_STD);
-
 	prs_node_t prs_root = prs_parse(&prs, bnf.file, PRINT_DST_STD());
 
 	stx_t new_stx = {0};

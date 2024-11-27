@@ -119,7 +119,8 @@ TEST(prs_get_str)
 	START;
 
 	lex_t lex = {0};
-	lex_init(&lex, STR(__FILE__), STR("b"), __LINE__);
+	str_t src = STR("b");
+	lex_init(&lex, STR(__FILE__), &src, __LINE__, 1, 1, ALLOC_STD);
 
 	prs_t prs = {0};
 	prs_init(&prs, &lex, NULL, 1, ALLOC_STD);
@@ -141,13 +142,8 @@ TEST(prs_get_str)
 
 	EXPECT_EQ(prs_get_str(NULL, PRS_NODE_END, NULL), 1);
 	EXPECT_EQ(prs_get_str(&prs, PRS_NODE_END, NULL), 1);
-	prs.lex = NULL;
-	log_set_quiet(0, 1);
-	EXPECT_EQ(prs_get_str(&prs, root, &str), 0);
-	log_set_quiet(0, 0);
-	EXPECT_STR(str.data, "");
+
 	str.len = 0;
-	prs.lex = &lex;
 	log_set_quiet(0, 1);
 	EXPECT_EQ(prs_get_str(&prs, root, &str), 0);
 	log_set_quiet(0, 0);
@@ -170,7 +166,8 @@ TEST(prs_parse_gen)
 
 	{
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), STR("<"), __LINE__);
+		str_t src = STR("<");
+		lex_init(&lex, STR(__FILE__), &src, __LINE__, 1, 1, ALLOC_STD);
 
 		stx_t stx = {0};
 		stx_init(&stx, 1, 1, ALLOC_STD);
@@ -199,7 +196,8 @@ TEST(prs_parse_rule)
 
 	{
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), STR(""), __LINE__);
+		str_t src = STR("");
+		lex_init(&lex, STR(__FILE__), &src, __LINE__, 1, 1, ALLOC_STD);
 
 		stx_t stx = {0};
 		stx_init(&stx, 1, 1, ALLOC_STD);
@@ -221,7 +219,9 @@ TEST(prs_parse_rule)
 
 	{
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), STR(" "), __LINE__);
+		str_t src = STR(" ");
+		lex_init(&lex, STR(__FILE__), &src, __LINE__, 1, 1, ALLOC_STD);
+		lex_tokenize(&lex);
 
 		stx_t stx = {0};
 		stx_init(&stx, 1, 1, ALLOC_STD);
@@ -230,7 +230,7 @@ TEST(prs_parse_rule)
 		prs_init(&prs, &lex, &stx, 256, ALLOC_STD);
 
 		stx_rule_t line = stx_add_rule(&stx, STR("line"));
-		stx_rule_add_term(&stx, line, STX_TERM_TOKEN(&stx, TOKEN_SPACE));
+		stx_rule_add_term(&stx, line, STX_TERM_LITERAL(&stx, STR(" ")));
 
 		stx_rule_t rule = stx_add_rule(&stx, STRH("rule"));
 		stx_rule_add_term(&stx, rule, STX_TERM_RULE(&stx, line));
@@ -251,7 +251,9 @@ TEST(prs_parse_token)
 
 	{
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), STR("1"), 0);
+		str_t src = STR("1");
+		lex_init(&lex, STR(__FILE__), &src, 0, 1, 1, ALLOC_STD);
+		lex_tokenize(&lex);
 
 		stx_t stx = {0};
 		stx_init(&stx, 1, 1, ALLOC_STD);
@@ -277,7 +279,9 @@ TEST(prs_parse_token)
 
 	{
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), STR("A"), __LINE__);
+		str_t src = STR("A");
+		lex_init(&lex, STR(__FILE__), &src, __LINE__, 1, 1, ALLOC_STD);
+		lex_tokenize(&lex);
 
 		stx_t stx = {0};
 		stx_init(&stx, 1, 1, ALLOC_STD);
@@ -304,7 +308,9 @@ TEST(prs_parse_literal)
 
 	{
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), STR("1"), 0);
+		str_t src = STR("1");
+		lex_init(&lex, STR(__FILE__), &src, 0, 1, 1, ALLOC_STD);
+		lex_tokenize(&lex);
 
 		stx_t stx = {0};
 		stx_init(&stx, 1, 1, ALLOC_STD);
@@ -330,7 +336,9 @@ TEST(prs_parse_literal)
 
 	{
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), STR("13"), 0);
+		str_t src = STR("13");
+		lex_init(&lex, STR(__FILE__), &src, 0, 1, 1, ALLOC_STD);
+		lex_tokenize(&lex);
 
 		stx_t stx = {0};
 		stx_init(&stx, 1, 1, ALLOC_STD);
@@ -356,7 +364,9 @@ TEST(prs_parse_literal)
 
 	{
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), STR("1"), __LINE__);
+		str_t src = STR("1");
+		lex_init(&lex, STR(__FILE__), &src, __LINE__, 1, 1, ALLOC_STD);
+		lex_tokenize(&lex);
 
 		stx_t stx = {0};
 		stx_init(&stx, 1, 1, ALLOC_STD);
@@ -383,7 +393,9 @@ TEST(prs_parse_or)
 
 	{
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), STR("a"), 0);
+		str_t src = STR("a");
+		lex_init(&lex, STR(__FILE__), &src, __LINE__, 1, 1, ALLOC_STD);
+		lex_tokenize(&lex);
 
 		stx_t stx = {0};
 		stx_init(&stx, 1, 1, ALLOC_STD);
@@ -406,7 +418,9 @@ TEST(prs_parse_or)
 
 	{
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), STR("b"), 0);
+		str_t src = STR("b");
+		lex_init(&lex, STR(__FILE__), &src, __LINE__, 1, 1, ALLOC_STD);
+		lex_tokenize(&lex);
 
 		stx_t stx = {0};
 		stx_init(&stx, 1, 1, ALLOC_STD);
@@ -429,7 +443,9 @@ TEST(prs_parse_or)
 
 	{
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), STR("c"), 0);
+		str_t src = STR("c");
+		lex_init(&lex, STR(__FILE__), &src, 0, 1, 1, ALLOC_STD);
+		lex_tokenize(&lex);
 
 		stx_t stx = {0};
 		stx_init(&stx, 1, 1, ALLOC_STD);
@@ -464,7 +480,9 @@ TEST(prs_parse_cache)
 	START;
 
 	lex_t lex = {0};
-	lex_init(&lex, STR(__FILE__), STR("a"), __LINE__);
+	str_t src = STR("a");
+	lex_init(&lex, STR(__FILE__), &src, __LINE__, 1, 1, ALLOC_STD);
+	lex_tokenize(&lex);
 
 	stx_t stx = {0};
 	stx_init(&stx, 10, 10, ALLOC_STD);
@@ -511,7 +529,9 @@ TEST(prs_parse_bnf)
 
 	{
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), STR("<file> ::= <"), 0);
+		str_t src = STR("<file> ::= <");
+		lex_init(&lex, STR(__FILE__), &src, 0, 1, 1, ALLOC_STD);
+		lex_tokenize(&lex);
 		prs_t prs = {0};
 		prs_init(&prs, &lex, &bnf.stx, 256, ALLOC_STD);
 
@@ -529,7 +549,9 @@ TEST(prs_parse_bnf)
 
 	{
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), STR("<file> ::= "), 0);
+		str_t src = STR("<file> ::= ");
+		lex_init(&lex, STR(__FILE__), &src, 0, 1, 1, ALLOC_STD);
+		lex_tokenize(&lex);
 
 		prs_t prs = {0};
 		prs_init(&prs, &lex, &bnf.stx, 256, ALLOC_STD);
@@ -564,20 +586,21 @@ TEST(prs_parse_bnf)
 				    "<tsingle> ::= <csingle> <tsingle> | <csingle>\n"
 				    "<cdouble> ::= <char> | '\"'\n"
 				    "<csingle> ::= <char> | \"'\"\n"
-				    "<char>    ::= ALPHA | DIGIT | SYMBOL | COMMA | <space>\n"
+				    "<char>    ::= ALPHA | DIGIT | SYMBOL | <space>\n"
 				    "<spaces>  ::= <space> <spaces> | <space>\n"
 				    "<space>   ::= ' '\n");
 
 		lex_t lex = {0};
-		lex_init(&lex, STR(__FILE__), sbnf, line_off);
+		lex_init(&lex, STR(__FILE__), &sbnf, line_off, 1, 1, ALLOC_STD);
+		lex_tokenize(&lex);
 
 		prs_t prs = {0};
 		prs_init(&prs, &lex, &bnf.stx, 20000, ALLOC_STD);
 
-		prs_node_t root = prs_parse(&prs, bnf.file, PRINT_DST_NONE());
+		prs_node_t root = prs_parse(&prs, bnf.file, PRINT_DST_STD());
 		EXPECT_EQ(root, 0);
 		char *buf = malloc(160000);
-		EXPECT_EQ(prs_print(&prs, root, PRINT_DST_BUF(buf, 160000, 0)), 95280);
+		EXPECT_EQ(prs_print(&prs, root, PRINT_DST_BUF(buf, 160000, 0)), 93963);
 		free(buf);
 
 		lex_free(&lex);
@@ -613,7 +636,9 @@ TEST(prs_print)
 	stx_rule_t rule = stx_add_rule(&stx, STR("rule"));
 
 	lex_t lex = {0};
-	lex_init(&lex, STR(__FILE__), STR("T"), __LINE__);
+	str_t src = STR("T");
+	lex_init(&lex, STR(__FILE__), &src, __LINE__, 1, 1, ALLOC_STD);
+	lex_tokenize(&lex);
 
 	prs_t prs = {0};
 	prs_init(&prs, &lex, &stx, 1, ALLOC_STD);

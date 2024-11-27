@@ -76,4 +76,5 @@ int stx_print_tree(const stx_t *stx, print_dst_t dst);
 
 #define stx_rule_foreach arr_foreach
 #define stx_term_foreach list_foreach
+
 #endif

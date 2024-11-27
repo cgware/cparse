@@ -1,13 +1,16 @@
 #include "token.h"
 
-#include "cstr.h"
 #include "test.h"
 
-TEST(token_type_str)
+TEST(token_type_print)
 {
 	START;
 
-	token_type_str(TOKEN_ALPHA);
+	char buf[32] = {0};
+
+	EXPECT_EQ(token_type_print((1 << TOKEN_ALPHA) | (1 << TOKEN_UPPER), PRINT_DST_BUF(buf, sizeof(buf), 0)), 11);
+
+	EXPECT_STR(buf, "ALPHA|UPPER");
 
 	END;
 }
@@ -26,7 +29,7 @@ STEST(token)
 {
 	SSTART;
 
-	RUN(token_type_str);
+	RUN(token_type_print);
 	RUN(token_type_enum);
 
 	SEND;

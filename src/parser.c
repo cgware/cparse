@@ -122,8 +122,8 @@ int prs_get_str(const prs_t *prs, prs_node_t parent, str_t *out)
 		prs_node_data_t *data = tree_get_data(&prs->nodes, child);
 		switch (data->type) {
 		case PRS_NODE_RULE: prs_get_str(prs, child, out); break;
-		case PRS_NODE_TOKEN: str_cat(out, lex_get_token_val(prs->lex, data->val.token)); break;
-		case PRS_NODE_LITERAL: str_cat(out, lex_get_token_val(prs->lex, data->val.literal)); break;
+		case PRS_NODE_TOKEN: str_cat(out, lex_get_token_val(prs->lex, &data->val.token)); break;
+		case PRS_NODE_LITERAL: str_cat(out, lex_get_token_val(prs->lex, &data->val.literal)); break;
 		case PRS_NODE_UNKNOWN:
 		default: log_error("cutils", "parser", NULL, "unexpected node: %d", data->type); break;
 		}
@@ -162,14 +162,16 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 	case STX_TERM_TOKEN: {
 		const token_type_t token_type = term->val.token;
 
-		const str_t token_str = token_type_str(token_type);
+		char buf[32] = {0};
+
+		int len = token_type_print(1 << token_type, PRINT_DST_BUF(buf, sizeof(buf), 0));
 
 		token_t token = lex_get_token(prs->lex, *off);
 
 		if (token.type & (1 << token_type)) {
 			prs_add_node(
 				prs, node, PRS_NODE_TOKEN(prs, ((token_t){.type = token_type, .start = token.start, .len = token.len})));
-			log_trace("cutils", "parser", NULL, "%.*s: success +%d", token_str.len, token_str.data, token.len);
+			log_trace("cutils", "parser", NULL, "%.*s: success +%d", len, buf, token.len);
 			*off += token.len;
 			return 0;
 		}
@@ -179,13 +181,9 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 			err->tok  = *off;
 			err->exp  = term_id;
 		}
-		log_trace("cutils",
-			  "parser",
-			  NULL,
-			  "%.*s: failed: got: " BYTE_TO_BIN_PATTERN,
-			  token_str.len,
-			  token_str.data,
-			  BYTE_TO_BIN(token.type));
+		char act[32] = {0};
+		int act_len  = lex_print_token(prs->lex, token, PRINT_DST_BUF(act, sizeof(act), 0));
+		log_trace("cutils", "parser", NULL, "failed: expected %.*s, but got %.*s", len, buf, act_len, act);
 		return 1;
 	}
 	case STX_TERM_LITERAL: {
@@ -203,7 +201,7 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 			}
 
 			str_t c		= strc(&literal.data[i], 1);
-			str_t token_val = strc(&prs->lex->src.data[token.start], token.len);
+			str_t token_val = lex_get_token_val(prs->lex, &token);
 			if (!str_eq(token_val, c)) {
 				if (err->tok == LEX_TOKEN_END || *off + i >= err->tok) {
 					err->rule = rule;
@@ -214,7 +212,7 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 				char buf[256] = {0};
 				const int len = str_print(token_val, PRINT_DST_BUF(buf, sizeof(buf), 0));
 
-				log_trace("cutils", "parser", NULL, "\'%*s\': failed: got: \'%.*s\'", literal.len, literal.data, len, buf);
+				log_trace("cutils", "parser", NULL, "failed: expected \'%*s\', but got \'%.*s\'", literal.len, literal.data, len, buf);
 				return 1;
 			}
 		}
@@ -301,7 +299,7 @@ prs_node_t prs_parse(prs_t *prs, stx_rule_t rule, print_dst_t dst)
 
 	prs_node_t root = prs_add_node(prs, PRS_NODE_END, PRS_NODE_RULE(prs, rule));
 	uint parsed	= 0;
-	if (prs_parse_rule(prs, rule, &parsed, root, &err) || parsed != prs->lex->src.len) {
+	if (prs_parse_rule(prs, rule, &parsed, root, &err) || parsed != prs->lex->src->len) {
 		if (err.exp == STX_TERM_END) {
 			log_error("cutils", "parser", NULL, "wrong syntax");
 			return PRS_NODE_END;
@@ -315,13 +313,10 @@ prs_node_t prs_parse(prs_t *prs, stx_rule_t rule, print_dst_t dst)
 
 		if (term->type == STX_TERM_TOKEN) {
 			const stx_rule_data_t *rule = stx_get_rule_data(prs->stx, err.rule);
-			const str_t exp_token	    = token_type_str(term->val.token);
-			dst.off += c_dprintf(dst,
-					     "failed to parse <%.*s>: expected: %.*s\n",
-					     rule->name.len,
-					     rule->name.data,
-					     exp_token.len,
-					     exp_token.data);
+
+			char buf[32] = {0};
+			int len	     = token_type_print(1 << term->val.token, PRINT_DST_BUF(buf, sizeof(buf), 0));
+			dst.off += c_dprintf(dst, "failed to parse <%.*s>: expected: %.*s\n", rule->name.len, rule->name.data, len, buf);
 
 		} else {
 			const stx_rule_data_t *rule = stx_get_rule_data(prs->stx, err.rule);
@@ -358,14 +353,15 @@ static int print_nodes(void *data, print_dst_t dst, const void *priv)
 		break;
 	}
 	case PRS_NODE_TOKEN: {
-		str_t type    = token_type_str(node->val.token.type);
-		char buf[32]  = {0};
-		const int len = str_print(lex_get_token_val(prs->lex, node->val.token), PRINT_DST_BUF(buf, sizeof(buf), 0));
-		dst.off += c_dprintf(dst, "%.*s(%.*s)\n", type.len, type.data, len, buf);
+		char type[32]	  = {0};
+		int type_len	  = token_type_print(1 << node->val.token.type, PRINT_DST_BUF(type, sizeof(type), 0));
+		char val[32]	  = {0};
+		const int val_len = str_print(lex_get_token_val(prs->lex, &node->val.token), PRINT_DST_BUF(val, sizeof(val), 0));
+		dst.off += c_dprintf(dst, "%.*s(%.*s)\n", type_len, type, val_len, val);
 		break;
 	}
 	case PRS_NODE_LITERAL: {
-		dst.off += c_dprintf(dst, "\'%.*s\'\n", node->val.literal.len, &prs->lex->src.data[node->val.literal.start]);
+		dst.off += c_dprintf(dst, "\'%.*s\'\n", node->val.literal.len, &prs->lex->src->data[node->val.literal.start]);
 		break;
 	}
 	default: break;

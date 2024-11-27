@@ -7,37 +7,27 @@
 
 typedef enum token_type_e {
 	TOKEN_UNKNOWN,
-
+	TOKEN_NULL,
+	TOKEN_TAB,
+	TOKEN_NL,
+	TOKEN_CR,
+	TOKEN_WS,
+	TOKEN_SYMBOL,
+	TOKEN_QUOTE,
+	TOKEN_PARENT,
+	TOKEN_DIGIT,
 	TOKEN_ALPHA,
 	TOKEN_UPPER,
 	TOKEN_LOWER,
-
-	TOKEN_DIGIT,
-
-	TOKEN_SQUOTE,
-	TOKEN_DQUOTE,
-
-	TOKEN_COMMA,
-
-	TOKEN_WS,
-	TOKEN_SPACE,
-	TOKEN_TAB,
-	TOKEN_CR,
-	TOKEN_NL,
-
-	TOKEN_NULL,
-
-	TOKEN_SYMBOL,
-
+	TOKEN_WORD,
 	TOKEN_EOF,
-
 	__TOKEN_MAX,
 } token_type_t;
 
 typedef struct token_s {
+	uint type;
 	uint start;
 	uint len;
-	uint type;
 } token_t;
 
 typedef struct token_loc_s {
@@ -47,7 +37,7 @@ typedef struct token_loc_s {
 	uint col;
 } token_loc_t;
 
-str_t token_type_str(token_type_t type);
+int token_type_print(uint type, print_dst_t dst);
 token_type_t token_type_enum(str_t str);
 
 #endif

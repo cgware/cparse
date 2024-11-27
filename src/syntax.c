@@ -251,8 +251,8 @@ static int stx_terms_print(const stx_t *stx, const stx_term_t terms, print_dst_t
 			break;
 		}
 		case STX_TERM_TOKEN: {
-			const str_t token = token_type_str(term->val.token);
-			dst.off += c_dprintf(dst, " %.*s", token.len, token.data);
+			dst.off += c_dprintf(dst, " ");
+			dst.off += token_type_print(1 << term->val.token, dst);
 			break;
 		}
 		case STX_TERM_LITERAL:
@@ -372,7 +372,7 @@ static int stx_rule_print_tree(const stx_t *stx, stx_rule_data_t *rule, print_ds
 		}
 		case STX_TERM_TOKEN: {
 			dst.off += print_header(stx, stack, state, top, dst);
-			dst.off += str_print(token_type_str(term->val.token), dst);
+			dst.off += token_type_print(1 << term->val.token, dst);
 			dst.off += c_dprintf(dst, "\n");
 			stack[top - 1] = list_get_next(&stx->terms, stack[top - 1]);
 			break;
