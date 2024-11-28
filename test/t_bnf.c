@@ -32,28 +32,28 @@ TEST(bnf_get_stx)
 	mem_oom(0);
 	EXPECT_NE(bnf_get_stx(&bnf, ALLOC_STD), NULL);
 
-	char buf[1024] = {0};
-	EXPECT_EQ(stx_print(&bnf.stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 748);
+	char buf[512] = {0};
+	EXPECT_EQ(stx_print(&bnf.stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 493);
 	EXPECT_STR(buf,
-		   "<file>    ::= <bnf> EOF\n"
-		   "<bnf>     ::= <rules>\n"
-		   "<rules>   ::= <rule> <rules> | <rule>\n"
-		   "<rule>    ::= '<' <rname> '>' <spaces> '::=' <space> <expr> NL\n"
-		   "<rname>   ::= LOWER <rchars> | LOWER\n"
-		   "<rchars>  ::= <rchar> <rchars> | <rchar>\n"
-		   "<rchar>   ::= LOWER | '-'\n"
-		   "<expr>    ::= <terms> <space> '|' <space> <expr> | <terms>\n"
-		   "<terms>   ::= <term> <space> <terms> | <term>\n"
-		   "<term>    ::= <literal> | <token> | '<' <rname> '>'\n"
-		   "<literal> ::= \"'\" <tdouble> \"'\" | '\"' <tsingle> '\"'\n"
-		   "<token>   ::= UPPER <token> | UPPER\n"
-		   "<tdouble> ::= <cdouble> <tdouble> | <cdouble>\n"
-		   "<tsingle> ::= <csingle> <tsingle> | <csingle>\n"
-		   "<cdouble> ::= <char> | '\"'\n"
-		   "<csingle> ::= <char> | \"'\"\n"
-		   "<char>    ::= ALPHA | DIGIT | SYMBOL | <space>\n"
-		   "<spaces>  ::= <space> <spaces> | <space>\n"
-		   "<space>   ::= ' '\n");
+		   "<0> ::= <1> EOF\n"
+		   "<1> ::= <2>\n"
+		   "<2> ::= <3> <2> | <3>\n"
+		   "<3> ::= '<' <4> '>' <17> '::=' <18> <7> NL\n"
+		   "<4> ::= LOWER <5> | LOWER\n"
+		   "<5> ::= <6> <5> | <6>\n"
+		   "<6> ::= LOWER | '-'\n"
+		   "<7> ::= <8> <18> '|' <18> <7> | <8>\n"
+		   "<8> ::= <9> <18> <8> | <9>\n"
+		   "<9> ::= <10> | <11> | '<' <4> '>'\n"
+		   "<10> ::= \"'\" <12> \"'\" | '\"' <13> '\"'\n"
+		   "<11> ::= UPPER <11> | UPPER\n"
+		   "<12> ::= <14> <12> | <14>\n"
+		   "<13> ::= <15> <13> | <15>\n"
+		   "<14> ::= <16> | '\"'\n"
+		   "<15> ::= <16> | \"'\"\n"
+		   "<16> ::= ALPHA | DIGIT | SYMBOL | <18>\n"
+		   "<17> ::= <18> <17> | <18>\n"
+		   "<18> ::= ' '\n");
 
 	bnf_free(&bnf);
 

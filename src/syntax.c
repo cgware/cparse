@@ -29,12 +29,6 @@ void stx_free(stx_t *stx)
 		return;
 	}
 
-	stx_rule_data_t *rule;
-	arr_foreach(&stx->rules, rule)
-	{
-		str_free(&rule->name);
-	}
-
 	arr_free(&stx->rules);
 
 	stx_term_data_t *term;
@@ -48,7 +42,7 @@ void stx_free(stx_t *stx)
 	list_free(&stx->terms);
 }
 
-stx_rule_t stx_add_rule(stx_t *stx, str_t name)
+stx_rule_t stx_add_rule(stx_t *stx)
 {
 	if (stx == NULL) {
 		return STX_RULE_END;
@@ -62,28 +56,10 @@ stx_rule_t stx_add_rule(stx_t *stx, str_t name)
 	}
 
 	*data = (stx_rule_data_t){
-		.name  = name,
 		.terms = STX_TERM_END,
 	};
 
 	return rule;
-}
-
-stx_rule_t stx_get_rule(const stx_t *stx, str_t name)
-{
-	if (stx == NULL) {
-		return STX_RULE_END;
-	}
-
-	const stx_rule_data_t *rule;
-	arr_foreach(&stx->rules, rule)
-	{
-		if (str_eq(rule->name, name)) {
-			return _i;
-		}
-	}
-
-	return STX_RULE_END;
 }
 
 stx_rule_data_t *stx_get_rule_data(const stx_t *stx, stx_rule_t rule)
@@ -212,27 +188,6 @@ stx_term_t stx_rule_add_arr(stx_t *stx, stx_rule_t rule, stx_term_t term, stx_te
 	return stx_rule_add_term(stx, rule, STX_TERM_OR(stx, l, term));
 }
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-
-int stx_compile(stx_t *stx)
-{
-	if (stx == NULL) {
-		return 1;
-	}
-
-	int ret = 0;
-
-	stx->max_rule_len = 0;
-
-	stx_rule_data_t *rule;
-	arr_foreach(&stx->rules, rule)
-	{
-		stx->max_rule_len = MAX(stx->max_rule_len, rule->name.len);
-	}
-
-	return ret;
-}
-
 static int stx_terms_print(const stx_t *stx, const stx_term_t terms, print_dst_t dst)
 {
 	int off = dst.off;
@@ -242,12 +197,7 @@ static int stx_terms_print(const stx_t *stx, const stx_term_t terms, print_dst_t
 	{
 		switch (term->type) {
 		case STX_TERM_RULE: {
-			const stx_rule_data_t *data = stx_get_rule_data(stx, term->val.rule);
-			if (data == NULL) {
-				log_error("cutils", "syntax", NULL, "failed to get rule: %d", term->val.rule);
-				break;
-			}
-			dst.off += c_dprintf(dst, " <%.*s>", data->name.len, data->name.data);
+			dst.off += c_dprintf(dst, " <%d>", term->val.rule);
 			break;
 		}
 		case STX_TERM_TOKEN: {
@@ -285,7 +235,7 @@ int stx_print(const stx_t *stx, print_dst_t dst)
 	const stx_rule_data_t *rule;
 	arr_foreach(&stx->rules, rule)
 	{
-		dst.off += c_dprintf(dst, "<%.*s>%*s ::=", rule->name.len, rule->name.data, MAX(stx->max_rule_len - rule->name.len, 0), "");
+		dst.off += c_dprintf(dst, "<%d> ::=", _i);
 		dst.off += stx_terms_print(stx, rule->terms, dst);
 		dst.off += c_dprintf(dst, "\n");
 	}
@@ -339,11 +289,11 @@ static int print_header(const stx_t *stx, stx_term_t *stack, int *state, int top
 	return dst.off + c_dprintf(dst, list_get_next(&stx->terms, stack[top - 1]) < stx->terms.cnt ? "├─" : "└─") - off;
 }
 
-static int stx_rule_print_tree(const stx_t *stx, stx_rule_data_t *rule, print_dst_t dst)
+static int stx_rule_print_tree(const stx_t *stx, stx_rule_data_t *rule, uint rule_index, print_dst_t dst)
 {
 	int off = dst.off;
 
-	dst.off += c_dprintf(dst, "<%.*s>\n", rule->name.len, rule->name.data);
+	dst.off += c_dprintf(dst, "<%d>\n", rule_index);
 
 	stx_term_t stack[64] = {0};
 	int state[64]	     = {0};
@@ -362,11 +312,8 @@ static int stx_rule_print_tree(const stx_t *stx, stx_rule_data_t *rule, print_ds
 
 		switch (term->type) {
 		case STX_TERM_RULE: {
-			stx_rule_data_t *rule = stx_get_rule_data(stx, term->val.rule);
 			dst.off += print_header(stx, stack, state, top, dst);
-			dst.off += c_dprintf(dst, "<");
-			dst.off += str_print(rule->name, dst);
-			dst.off += c_dprintf(dst, ">\n");
+			dst.off += c_dprintf(dst, "<%d>\n", term->val.rule);
 			stack[top - 1] = list_get_next(&stx->terms, stack[top - 1]);
 			break;
 		}
@@ -424,7 +371,7 @@ int stx_print_tree(const stx_t *stx, print_dst_t dst)
 		if (!first) {
 			dst.off += c_dprintf(dst, "\n");
 		}
-		dst.off += stx_rule_print_tree(stx, data, dst);
+		dst.off += stx_rule_print_tree(stx, data, _i, dst);
 		first = 0;
 	}
 

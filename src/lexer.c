@@ -126,11 +126,11 @@ lex_t *lex_init(lex_t *lex, str_t file, str_t *src, uint line_off, size_t words_
 
 	if (strbuf_init(&lex->words, words_size, alloc) == NULL) {
 		return NULL;
-	};
+	}
 
 	if (arr_init(&lex->tokens, tokens_cap, sizeof(token_t), alloc) == NULL) {
 		return NULL;
-	};
+	}
 
 	return lex;
 }
@@ -217,7 +217,7 @@ void lex_tokenize(lex_t *lex)
 				continue;
 			}
 
-			if (memcmp(&lex->src->data[i], &lex->words.data[start], len) != 0) {
+			if (memcmp(&lex->src->data[i], &lex->words.buf.data[start], len) != 0) {
 				continue;
 			}
 

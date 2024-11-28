@@ -24,12 +24,8 @@ void lex_free(lex_t *lex);
 #define lex_add_word(_lex, _str, _len, _index) strbuf_add(&(_lex)->words, _str, _len, _index)
 
 int lex_add_token(lex_t *lex, token_type_t type, str_t val, uint *index);
-static inline token_t lex_get_token(const lex_t *lex, uint index)
-{
-	token_t *token = index < lex->src->len ? arr_get(&lex->tokens, index) : NULL;
-	return token == NULL ? (token_t){.type = (1 << TOKEN_EOF)} : *token;
-}
-
+#define lex_get_token(_lex, _index)                                                                                                        \
+	_index < (_lex)->src->len ? *(token_t *)arr_get(&(_lex)->tokens, _index) : ((token_t){.type = (1 << TOKEN_EOF)})
 #define lex_get_token_val(_lex, _token) strc(&(_lex)->src->data[(_token)->start], (_token)->len)
 token_loc_t lex_get_token_loc(const lex_t *lex, uint index);
 

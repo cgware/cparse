@@ -35,7 +35,6 @@ typedef struct stx_term_data_s {
 } stx_term_data_t;
 
 typedef struct stx_rule_data_s {
-	str_t name;
 	stx_term_t terms;
 } stx_rule_data_t;
 
@@ -43,14 +42,12 @@ typedef struct stx_rule_data_s {
 typedef struct stx_s {
 	arr_t rules;
 	list_t terms;
-	size_t max_rule_len;
 } stx_t;
 
 stx_t *stx_init(stx_t *stx, uint rules_cap, uint terms_cap, alloc_t alloc);
 void stx_free(stx_t *stx);
 
-stx_rule_t stx_add_rule(stx_t *stx, str_t name);
-stx_rule_t stx_get_rule(const stx_t *stx, str_t name);
+stx_rule_t stx_add_rule(stx_t *stx);
 stx_rule_data_t *stx_get_rule_data(const stx_t *stx, stx_rule_t rule);
 
 stx_term_t stx_create_term(stx_t *stx, stx_term_data_t term);
@@ -62,8 +59,6 @@ stx_term_t stx_term_add_term(stx_t *stx, stx_term_t term, stx_term_t next);
 
 stx_term_t stx_rule_add_or(stx_t *stx, stx_rule_t rule, size_t n, ...);
 stx_term_t stx_rule_add_arr(stx_t *stx, stx_rule_t rule, stx_term_t term, stx_term_t sep);
-
-int stx_compile(stx_t *stx);
 
 int stx_print(const stx_t *stx, print_dst_t dst);
 int stx_print_tree(const stx_t *stx, print_dst_t dst);

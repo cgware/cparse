@@ -41,30 +41,11 @@ TEST(stx_add_rule)
 	stx_init(&stx, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(stx_add_rule(NULL, str_null()), STX_RULE_END);
+	EXPECT_EQ(stx_add_rule(NULL), STX_RULE_END);
 	mem_oom(1);
-	EXPECT_EQ(stx_add_rule(&stx, str_null()), STX_RULE_END);
+	EXPECT_EQ(stx_add_rule(&stx), STX_RULE_END);
 	mem_oom(0);
-	EXPECT_EQ(stx_add_rule(&stx, STRH("")), 0);
-
-	stx_free(&stx);
-
-	END;
-}
-
-TEST(stx_get_rule)
-{
-	START;
-
-	stx_t stx = {0};
-	stx_init(&stx, 1, 1, ALLOC_STD);
-
-	stx_add_rule(&stx, STR("rule0"));
-	stx_rule_t rule1 = stx_add_rule(&stx, STR("rule1"));
-
-	EXPECT_EQ(stx_get_rule(NULL, str_null()), STX_RULE_END);
-	EXPECT_EQ(stx_get_rule(&stx, STR("none")), STX_RULE_END);
-	EXPECT_EQ(stx_get_rule(&stx, STR("rule1")), rule1);
+	EXPECT_EQ(stx_add_rule(&stx), 0);
 
 	stx_free(&stx);
 
@@ -98,7 +79,7 @@ TEST(stx_rule_set_term)
 	stx_t stx = {0};
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
-	stx_rule_t rule = stx_add_rule(&stx, STRH(""));
+	stx_rule_t rule = stx_add_rule(&stx);
 
 	log_set_quiet(0, 1);
 	EXPECT_EQ(stx_rule_set_term(NULL, STX_RULE_END, -1), STX_TERM_END);
@@ -120,7 +101,7 @@ TEST(stx_rule_add_term)
 	stx_init(&stx, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	stx_rule_t rule = stx_add_rule(&stx, STRH(""));
+	stx_rule_t rule = stx_add_rule(&stx);
 
 	log_set_quiet(0, 1);
 	EXPECT_EQ(stx_rule_add_term(NULL, STX_RULE_END, STX_TERM_RULE(&stx, -1)), STX_TERM_END);
@@ -142,7 +123,7 @@ TEST(stx_rule_add_or)
 	stx_init(&stx, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	stx_add_rule(&stx, STRH(""));
+	stx_add_rule(&stx);
 
 	EXPECT_EQ(stx_rule_add_or(NULL, STX_RULE_END, 0), STX_TERM_END);
 	stx_term_t term = STX_TERM_LITERAL(&stx, STR("T"));
@@ -165,7 +146,7 @@ TEST(stx_rule_add_arr)
 	stx_init(&stx, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	stx_rule_t rule = stx_add_rule(&stx, STRH(""));
+	stx_rule_t rule = stx_add_rule(&stx);
 
 	STX_TERM_LITERAL(&stx, STR("T"));
 
@@ -201,17 +182,16 @@ TEST(stx_term_add_term)
 	END;
 }
 
-TEST(stx_compile_print)
+TEST(stx_print)
 {
 	START;
 
 	stx_t stx = {0};
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
-	stx_rule_t file = stx_add_rule(&stx, STRH("file"));
-	stx_rule_t line = stx_add_rule(&stx, STRH("line"));
+	stx_rule_t file = stx_add_rule(&stx);
+	stx_rule_t line = stx_add_rule(&stx);
 
-	stx_rule_add_term(&stx, file, STX_TERM_RULE(&stx, -1));
 	stx_rule_add_term(&stx, file, STX_TERM_RULE(&stx, line));
 
 	stx_rule_add_term(&stx, line, STX_TERM_TOKEN(&stx, -1));
@@ -223,30 +203,25 @@ TEST(stx_compile_print)
 	const stx_term_t b = STX_TERM_LITERAL(&stx, STRH("B"));
 	stx_rule_add_term(&stx, line, STX_TERM_OR(&stx, a, b));
 
-	EXPECT_EQ(stx_compile(NULL), 1);
-	EXPECT_EQ(stx_compile(&stx), 0);
-
 	char buf[64] = {0};
 	EXPECT_EQ(stx_print(NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(stx_print(&stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 61);
+	EXPECT_EQ(stx_print(&stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 52);
 	log_set_quiet(0, 0);
 	EXPECT_STR(buf,
-		   "<file> ::= <line>\n"
-		   "<line> ::= UNKNOWN ALPHA ';' \"'\" 'A' | 'B'\n");
+		   "<0> ::= <1>\n"
+		   "<1> ::= UNKNOWN ALPHA ';' \"'\" 'A' | 'B'\n");
 
 	stx_rule_add_term(&stx, line, stx_create_term(&stx, (stx_term_data_t){.type = -1}));
 	// stx_rule_add_term(&stx, line, STX_TERM_OR(-1, -1)); //TODO
 
-	EXPECT_EQ(stx_compile(&stx), 0);
-
 	log_set_quiet(0, 1);
-	EXPECT_EQ(stx_print(&stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 61);
+	EXPECT_EQ(stx_print(&stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 52);
 	log_set_quiet(0, 0);
 	EXPECT_STR(buf,
-		   "<file> ::= <line>\n"
-		   "<line> ::= UNKNOWN ALPHA ';' \"'\" 'A' | 'B'\n");
+		   "<0> ::= <1>\n"
+		   "<1> ::= UNKNOWN ALPHA ';' \"'\" 'A' | 'B'\n");
 
 	stx_free(&stx);
 
@@ -261,11 +236,11 @@ TEST(stx_print_tree)
 
 	stx_init(&stx, 10, 10, ALLOC_STD);
 
-	const stx_rule_t file	    = stx_add_rule(&stx, STR("file"));
-	const stx_rule_t functions  = stx_add_rule(&stx, STR("functions"));
-	const stx_rule_t function   = stx_add_rule(&stx, STR("function"));
-	const stx_rule_t identifier = stx_add_rule(&stx, STR("identifier"));
-	const stx_rule_t chars	    = stx_add_rule(&stx, STR("chars"));
+	const stx_rule_t file	    = stx_add_rule(&stx);
+	const stx_rule_t functions  = stx_add_rule(&stx);
+	const stx_rule_t function   = stx_add_rule(&stx);
+	const stx_rule_t identifier = stx_add_rule(&stx);
+	const stx_rule_t chars	    = stx_add_rule(&stx);
 
 	stx_rule_add_term(&stx, file, STX_TERM_RULE(&stx, functions));
 	stx_rule_add_term(&stx, file, STX_TERM_TOKEN(&stx, TOKEN_EOF));
@@ -284,32 +259,30 @@ TEST(stx_print_tree)
 			STX_TERM_LITERAL(&stx, STR("_")),
 			STX_TERM_LITERAL(&stx, STR("'")));
 
-	stx_compile(&stx);
-
-	char buf[512] = {0};
+	char buf[256] = {0};
 
 	EXPECT_EQ(stx_print_tree(NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
 
-	EXPECT_EQ(stx_print_tree(&stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 299);
+	EXPECT_EQ(stx_print_tree(&stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 212);
 	EXPECT_STR(buf,
-		   "<file>\n"
-		   "├─<functions>\n"
+		   "<0>\n"
+		   "├─<1>\n"
 		   "└─EOF\n"
 		   "\n"
-		   "<functions>\n"
-		   "or┬─<function>\n"
-		   "│ └─<functions>\n"
-		   "└───<function>\n"
+		   "<1>\n"
+		   "or┬─<2>\n"
+		   "│ └─<1>\n"
+		   "└───<2>\n"
 		   "\n"
-		   "<function>\n"
-		   "└─<identifier>\n"
+		   "<2>\n"
+		   "└─<3>\n"
 		   "\n"
-		   "<identifier>\n"
-		   "or┬─<chars>\n"
-		   "│ └─<identifier>\n"
-		   "└───<chars>\n"
+		   "<3>\n"
+		   "or┬─<4>\n"
+		   "│ └─<3>\n"
+		   "└───<4>\n"
 		   "\n"
-		   "<chars>\n"
+		   "<4>\n"
 		   "or──ALPHA\n"
 		   "└─or──DIGIT\n"
 		   "  └─or──'_'\n"
@@ -317,7 +290,7 @@ TEST(stx_print_tree)
 
 	stx_rule_add_term(&stx, file, stx_create_term(&stx, (stx_term_data_t){.type = -1}));
 	log_set_quiet(0, 1);
-	EXPECT_EQ(stx_print_tree(&stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 299);
+	EXPECT_EQ(stx_print_tree(&stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 212);
 	log_set_quiet(0, 0);
 
 	stx_free(&stx);
@@ -331,14 +304,13 @@ STEST(syntax)
 
 	RUN(stx_init_free);
 	RUN(stx_add_rule);
-	RUN(stx_get_rule);
 	RUN(stx_create_term);
 	RUN(stx_rule_set_term);
 	RUN(stx_rule_add_term);
 	RUN(stx_rule_add_or);
 	RUN(stx_rule_add_arr);
 	RUN(stx_term_add_term);
-	RUN(stx_compile_print);
+	RUN(stx_print);
 	RUN(stx_print_tree);
 
 	SEND;

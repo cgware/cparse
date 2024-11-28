@@ -212,7 +212,14 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 				char buf[256] = {0};
 				const int len = str_print(token_val, PRINT_DST_BUF(buf, sizeof(buf), 0));
 
-				log_trace("cutils", "parser", NULL, "failed: expected \'%*s\', but got \'%.*s\'", literal.len, literal.data, len, buf);
+				log_trace("cutils",
+					  "parser",
+					  NULL,
+					  "failed: expected \'%*s\', but got \'%.*s\'",
+					  literal.len,
+					  literal.data,
+					  len,
+					  buf);
 				return 1;
 			}
 		}
@@ -272,16 +279,16 @@ static int prs_parse_rule(prs_t *prs, const stx_rule_t rule_id, uint *off, prs_n
 		return 1;
 	}
 
-	log_trace("cutils", "parser", NULL, "<%*s>", rule->name.len, rule->name.data);
+	log_trace("cutils", "parser", NULL, "<%d>", rule_id);
 
 	uint cur = *off;
 	if (prs_parse_terms(prs, rule_id, rule->terms, off, node, err)) {
-		log_trace("cutils", "parser", NULL, "<%*s>: failed", rule->name.len, rule->name.data);
+		log_trace("cutils", "parser", NULL, "<%d>: failed", rule_id);
 		*off = cur;
 		return 1;
 	}
 
-	log_trace("cutils", "parser", NULL, "<%*s>: success +%d", rule->name.len, rule->name.data, *off - cur);
+	log_trace("cutils", "parser", NULL, "<%d>: success +%d", rule_id, *off - cur);
 	return 0;
 }
 
@@ -312,21 +319,13 @@ prs_node_t prs_parse(prs_t *prs, stx_rule_t rule, print_dst_t dst)
 		dst.off += lex_token_loc_print_loc(prs->lex, loc, dst);
 
 		if (term->type == STX_TERM_TOKEN) {
-			const stx_rule_data_t *rule = stx_get_rule_data(prs->stx, err.rule);
-
 			char buf[32] = {0};
 			int len	     = token_type_print(1 << term->val.token, PRINT_DST_BUF(buf, sizeof(buf), 0));
-			dst.off += c_dprintf(dst, "failed to parse <%.*s>: expected: %.*s\n", rule->name.len, rule->name.data, len, buf);
+			dst.off += c_dprintf(dst, "error: expected %.*s\n", len, buf);
 
 		} else {
-			const stx_rule_data_t *rule = stx_get_rule_data(prs->stx, err.rule);
-			const str_t exp_str	    = term->val.literal;
-			dst.off += c_dprintf(dst,
-					     "failed to parse <%.*s>: expected: \'%.*s\'\n",
-					     rule->name.len,
-					     rule->name.data,
-					     exp_str.len,
-					     exp_str.data);
+			const str_t exp_str = term->val.literal;
+			dst.off += c_dprintf(dst, "error: expected \'%.*s\'\n", exp_str.len, exp_str.data);
 		}
 
 		dst.off += lex_token_loc_print_src(prs->lex, loc, dst);
@@ -346,10 +345,7 @@ static int print_nodes(void *data, print_dst_t dst, const void *priv)
 	const prs_node_data_t *node = data;
 	switch (node->type) {
 	case PRS_NODE_RULE: {
-		const stx_rule_data_t *rule = stx_get_rule_data(prs->stx, node->val.rule);
-		if (rule) {
-			dst.off += c_dprintf(dst, "%.*s\n", rule->name.len, rule->name.data);
-		}
+		dst.off += c_dprintf(dst, "%d\n", node->val.rule);
 		break;
 	}
 	case PRS_NODE_TOKEN: {
