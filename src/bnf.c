@@ -4,9 +4,14 @@
 #include "strbuf.h"
 #include "token.h"
 
-bnf_t *bnf_init(bnf_t *bnf)
+bnf_t *bnf_init(bnf_t *bnf, alloc_t alloc)
 {
 	if (bnf == NULL) {
+		return NULL;
+	}
+
+	if (stx_init(&bnf->stx, 20, 90, alloc) == NULL) {
+		log_error("cutils", "bnf", NULL, "failed to intialize syntax");
 		return NULL;
 	}
 
@@ -22,18 +27,13 @@ void bnf_free(bnf_t *bnf)
 	stx_free(&bnf->stx);
 }
 
-const stx_t *bnf_get_stx(bnf_t *bnf, alloc_t alloc)
+const stx_t *bnf_get_stx(bnf_t *bnf)
 {
 	if (bnf == NULL) {
 		return NULL;
 	}
 
 	stx_t *stx = &bnf->stx;
-
-	if (stx_init(stx, 20, 90, alloc) == NULL) {
-		log_error("cutils", "bnf", NULL, "failed to intialize syntax");
-		return NULL;
-	}
 
 	bnf->file		   = stx_add_rule(stx);
 	bnf->bnf		   = stx_add_rule(stx);
@@ -228,21 +228,16 @@ static stx_rule_t rules_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t 
 	return rule;
 }
 
-stx_rule_t stx_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t root, stx_t *stx)
+stx_rule_t stx_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t root, stx_t *stx, strbuf_t *names)
 {
 	prs_node_t fbnf	 = prs_get_rule(prs, root, bnf->bnf);
 	prs_node_t rules = prs_get_rule(prs, fbnf, bnf->rules);
 
-	strbuf_t names = {0};
-	strbuf_init(&names, 16 * sizeof(char), ALLOC_STD);
-
 	str_t buf = strz(16);
 
-	stx_rule_t stx_root = rules_from_bnf(bnf, prs, rules, &names, &buf, stx);
+	stx_rule_t stx_root = rules_from_bnf(bnf, prs, rules, names, &buf, stx);
 
 	str_free(&buf);
-
-	strbuf_free(&names);
 
 	return stx_root;
 }

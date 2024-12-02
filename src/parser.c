@@ -2,28 +2,6 @@
 
 #include "log.h"
 
-#define BYTE_TO_BIN_PATTERN "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c"
-
-// clang-format off
-#define BYTE_TO_BIN(byte)  \
-  (byte & 0x8000 ? '1' : '0'), \
-  (byte & 0x4000 ? '1' : '0'), \
-  (byte & 0x2000 ? '1' : '0'), \
-  (byte & 0x1000 ? '1' : '0'), \
-  (byte & 0x0800 ? '1' : '0'), \
-  (byte & 0x0400 ? '1' : '0'), \
-  (byte & 0x0200 ? '1' : '0'), \
-  (byte & 0x0100 ? '1' : '0'), \
-  (byte & 0x0080 ? '1' : '0'), \
-  (byte & 0x0040 ? '1' : '0'), \
-  (byte & 0x0020 ? '1' : '0'), \
-  (byte & 0x0010 ? '1' : '0'), \
-  (byte & 0x0008 ? '1' : '0'), \
-  (byte & 0x0004 ? '1' : '0'), \
-  (byte & 0x0002 ? '1' : '0'), \
-  (byte & 0x0001 ? '1' : '0')
-// clang-format on
-
 prs_t *prs_init(prs_t *prs, const lex_t *lex, const stx_t *stx, uint nodes_cap, alloc_t alloc)
 {
 	if (prs == NULL) {

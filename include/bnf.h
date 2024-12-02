@@ -20,11 +20,11 @@ typedef struct bnf_s {
 	stx_rule_t tsingle;
 } bnf_t;
 
-bnf_t *bnf_init(bnf_t *bnf);
+bnf_t *bnf_init(bnf_t *bnf, alloc_t alloc);
 void bnf_free(bnf_t *bnf);
 
-const stx_t *bnf_get_stx(bnf_t *bnf, alloc_t alloc);
+const stx_t *bnf_get_stx(bnf_t *bnf);
 
-stx_rule_t stx_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t root, stx_t *stx);
+stx_rule_t stx_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t root, stx_t *stx, strbuf_t *names);
 
 #endif

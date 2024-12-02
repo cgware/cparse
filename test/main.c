@@ -4,15 +4,21 @@
 #include "test.h"
 
 STEST(bnf);
+STEST(ebnf);
+STEST(eparser);
+STEST(esyntax);
 STEST(lexer);
 STEST(parser);
 STEST(syntax);
 STEST(token);
 
-TEST(cutils)
+TEST(cparse)
 {
 	SSTART;
 	RUN(bnf);
+	RUN(ebnf);
+	RUN(eparser);
+	RUN(esyntax);
 	RUN(lexer);
 	RUN(parser);
 	RUN(syntax);
@@ -30,7 +36,7 @@ int main()
 
 	t_init();
 
-	t_run(test_cutils, 1);
+	t_run(test_cparse, 1);
 
 	int ret = t_finish();
 

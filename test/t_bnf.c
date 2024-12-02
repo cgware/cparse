@@ -11,11 +11,14 @@ TEST(bnf_init_free)
 
 	bnf_t bnf = {0};
 
-	EXPECT_EQ(bnf_init(NULL), NULL);
-	EXPECT_EQ(bnf_init(&bnf), &bnf);
+	EXPECT_EQ(bnf_init(NULL, ALLOC_STD), NULL);
+	mem_oom(1);
+	EXPECT_EQ(bnf_init(&bnf, ALLOC_STD), NULL);
+	mem_oom(0);
+	EXPECT_EQ(bnf_init(&bnf, ALLOC_STD), &bnf);
 
-	// bnf_free(&bnf);
 	bnf_free(NULL);
+	bnf_free(&bnf);
 
 	END;
 }
@@ -25,12 +28,10 @@ TEST(bnf_get_stx)
 	START;
 
 	bnf_t bnf = {0};
+	bnf_init(&bnf, ALLOC_STD);
 
-	EXPECT_EQ(bnf_get_stx(NULL, ALLOC_STD), NULL);
-	mem_oom(1);
-	EXPECT_EQ(bnf_get_stx(&bnf, ALLOC_STD), NULL);
-	mem_oom(0);
-	EXPECT_NE(bnf_get_stx(&bnf, ALLOC_STD), NULL);
+	EXPECT_EQ(bnf_get_stx(NULL), NULL);
+	EXPECT_NE(bnf_get_stx(&bnf), NULL);
 
 	char buf[512] = {0};
 	EXPECT_EQ(stx_print(&bnf.stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 493);
@@ -65,7 +66,8 @@ TEST(stx_from_bnf)
 	START;
 
 	bnf_t bnf = {0};
-	bnf_get_stx(&bnf, ALLOC_STD);
+	bnf_init(&bnf, ALLOC_STD);
+	bnf_get_stx(&bnf);
 
 	uint line  = __LINE__ + 1;
 	str_t sbnf = STR("<file>        ::= <bnf> EOF\n"
@@ -84,7 +86,7 @@ TEST(stx_from_bnf)
 			 "<text-single> ::= <char-single> <text-single> | <char-single>\n"
 			 "<char-double> ::= <character> | '\"'\n"
 			 "<char-single> ::= <character> | \"'\"\n"
-			 "<character>   ::= ALPHA | DIGIT | SYMBOL | COMMA\n"
+			 "<character>   ::= ALPHA | DIGIT | SYMBOL | ' '\n"
 			 "<spaces>      ::= <space> <spaces> | <space>\n"
 			 "<space>       ::= ' '\n");
 
@@ -96,9 +98,25 @@ TEST(stx_from_bnf)
 	prs_init(&prs, &lex, &bnf.stx, 100, ALLOC_STD);
 	prs_node_t prs_root = prs_parse(&prs, bnf.file, PRINT_DST_STD());
 
+	strbuf_t names = {0};
+	strbuf_init(&names, 16 * sizeof(char), ALLOC_STD);
+
 	stx_t new_stx = {0};
 	stx_init(&new_stx, 10, 10, ALLOC_STD);
-	EXPECT_EQ(stx_from_bnf(&bnf, &prs, prs_root, &new_stx), 0);
+	EXPECT_EQ(stx_from_bnf(&bnf, &prs, prs_root, &new_stx, &names), 0);
+
+#define STRV(_str) _str, sizeof(_str) - 1
+
+	uint file, bnfr, rules;
+	strbuf_get_index(&names, STRV("file"), &file);
+	strbuf_get_index(&names, STRV("bnf"), &bnfr);
+	strbuf_get_index(&names, STRV("rules"), &rules);
+
+	EXPECT_EQ(file, 0);
+	EXPECT_EQ(bnfr, 1);
+	EXPECT_EQ(rules, 2);
+
+	strbuf_free(&names);
 
 	lex_free(&lex);
 	prs_free(&prs);
@@ -113,7 +131,8 @@ TEST(stx_from_bnf_custom)
 	START;
 
 	bnf_t bnf = {0};
-	bnf_get_stx(&bnf, ALLOC_STD);
+	bnf_init(&bnf, ALLOC_STD);
+	bnf_get_stx(&bnf);
 
 	stx_t new_stx = {0};
 	stx_init(&new_stx, 10, 10, ALLOC_STD);
@@ -132,9 +151,14 @@ TEST(stx_from_bnf_custom)
 	prs_node_t terms1 = prs_add_node(&prs, terms0, PRS_NODE_RULE(&prs, bnf.terms));
 	prs_add_node(&prs, terms1, PRS_NODE_RULE(&prs, bnf.term));
 
+	strbuf_t names = {0};
+	strbuf_init(&names, 16 * sizeof(char), ALLOC_STD);
+
 	log_set_quiet(0, 1);
-	EXPECT_EQ(stx_from_bnf(&bnf, &prs, file, &new_stx), 0);
+	EXPECT_EQ(stx_from_bnf(&bnf, &prs, file, &new_stx, &names), 0);
 	log_set_quiet(0, 0);
+
+	strbuf_free(&names);
 
 	prs_free(&prs);
 	stx_free(&new_stx);
