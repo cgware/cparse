@@ -1,7 +1,6 @@
 #include "eparser.h"
 
 #include "ebnf.h"
-#include "file.h"
 #include "log.h"
 #include "mem.h"
 #include "test.h"

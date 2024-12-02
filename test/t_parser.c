@@ -1,7 +1,6 @@
 #include "parser.h"
 
 #include "bnf.h"
-#include "file.h"
 #include "log.h"
 #include "mem.h"
 #include "test.h"
