@@ -105,12 +105,10 @@ TEST(stx_from_bnf)
 	stx_init(&new_stx, 10, 10, ALLOC_STD);
 	EXPECT_EQ(stx_from_bnf(&bnf, &prs, prs_root, &new_stx, &names), 0);
 
-#define STRV(_str) _str, sizeof(_str) - 1
-
 	uint file, bnfr, rules;
-	strbuf_get_index(&names, STRV("file"), &file);
-	strbuf_get_index(&names, STRV("bnf"), &bnfr);
-	strbuf_get_index(&names, STRV("rules"), &rules);
+	strbuf_get_index(&names, STRBUFL("file"), &file);
+	strbuf_get_index(&names, STRBUFL("bnf"), &bnfr);
+	strbuf_get_index(&names, STRBUFL("rules"), &rules);
 
 	EXPECT_EQ(file, 0);
 	EXPECT_EQ(bnfr, 1);
