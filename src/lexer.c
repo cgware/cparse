@@ -111,7 +111,7 @@ static const uint s_chars[128] = {
 	['~']  = (1 << TOKEN_SYMBOL),
 };
 
-lex_t *lex_init(lex_t *lex, str_t file, str_t *src, uint line_off, size_t words_size, uint tokens_cap, alloc_t alloc)
+lex_t *lex_init(lex_t *lex, size_t words_size, uint tokens_cap, alloc_t alloc)
 {
 	if (lex == NULL) {
 		return NULL;
@@ -120,12 +120,12 @@ lex_t *lex_init(lex_t *lex, str_t file, str_t *src, uint line_off, size_t words_
 	lex->chars     = s_chars;
 	lex->chars_len = sizeof(s_chars) / sizeof(uint);
 
-	lex->file     = file;
-	lex->src      = src;
-	lex->line_off = line_off;
-
-	if (strbuf_init(&lex->words, words_size, alloc) == NULL) {
-		return NULL;
+	if (words_size > 0) {
+		if (strbuf_init(&lex->words, words_size, alloc) == NULL) {
+			return NULL;
+		}
+	} else {
+		memset(&lex->words, 0, sizeof(strbuf_t));
 	}
 
 	if (arr_init(&lex->tokens, tokens_cap, sizeof(token_t), alloc) == NULL) {
@@ -147,7 +147,7 @@ void lex_free(lex_t *lex)
 
 int lex_add_token(lex_t *lex, token_type_t type, str_t val, uint *index)
 {
-	if (lex == NULL) {
+	if (lex == NULL || lex->src == NULL) {
 		return 1;
 	}
 
@@ -163,7 +163,11 @@ int lex_add_token(lex_t *lex, token_type_t type, str_t val, uint *index)
 		return 1;
 	}
 
-	token_t *ptr = arr_add(&lex->tokens, index);
+	if (index) {
+		*index = lex->tokens.cnt;
+	}
+
+	token_t *ptr = arr_add(&lex->tokens);
 	if (ptr == NULL) {
 		lex->src->len = len;
 		return 1;
@@ -175,7 +179,7 @@ int lex_add_token(lex_t *lex, token_type_t type, str_t val, uint *index)
 
 token_loc_t lex_get_token_loc(const lex_t *lex, uint index)
 {
-	if (lex == NULL) {
+	if (lex == NULL || lex->src == NULL) {
 		return (token_loc_t){0};
 	}
 
@@ -198,19 +202,37 @@ token_loc_t lex_get_token_loc(const lex_t *lex, uint index)
 	return loc;
 }
 
-void lex_tokenize(lex_t *lex)
+void lex_set_src(lex_t *lex, str_t *src, str_t file, uint line_off)
 {
 	if (lex == NULL) {
 		return;
 	}
 
+	lex->src	= src;
+	lex->file	= file;
+	lex->line_off	= line_off;
+	lex->tokens.cnt = 0;
+}
+
+int lex_tokenize(lex_t *lex, str_t *src, str_t file, uint line_off)
+{
+	if (lex == NULL) {
+		return 1;
+	}
+
+	lex_set_src(lex, src, file, line_off);
+
 	size_t start;
 	size_t len;
 
 	for (size_t i = 0; i < lex->src->len;) {
-		token_t *token = arr_add(&lex->tokens, NULL);
-		size_t j       = 0;
-		int found      = 0;
+		token_t *token = arr_add(&lex->tokens);
+		if (token == NULL) {
+			return 1;
+		}
+
+		size_t j  = 0;
+		int found = 0;
 		strbuf_foreach(&lex->words, j, start, len)
 		{
 			if (i + len > lex->src->len) {
@@ -244,6 +266,8 @@ void lex_tokenize(lex_t *lex)
 
 		i++;
 	}
+
+	return 0;
 }
 
 int lex_print_token(const lex_t *lex, token_t token, print_dst_t dst)
@@ -283,7 +307,7 @@ int lex_print(const lex_t *lex, print_dst_t dst)
 
 int lex_token_loc_print_loc(const lex_t *lex, token_loc_t loc, print_dst_t dst)
 {
-	if (lex == NULL) {
+	if (lex == NULL || lex->file.data == NULL) {
 		return 0;
 	}
 
@@ -296,7 +320,7 @@ int lex_token_loc_print_loc(const lex_t *lex, token_loc_t loc, print_dst_t dst)
 
 int lex_token_loc_print_src(const lex_t *lex, token_loc_t loc, print_dst_t dst)
 {
-	if (lex == NULL) {
+	if (lex == NULL || lex->src == NULL) {
 		return 0;
 	}
 

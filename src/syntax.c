@@ -48,8 +48,8 @@ stx_rule_t stx_add_rule(stx_t *stx)
 		return STX_RULE_END;
 	}
 
-	stx_rule_t rule;
-	stx_rule_data_t *data = arr_add(&stx->rules, &rule);
+	stx_rule_t rule	      = stx->rules.cnt;
+	stx_rule_data_t *data = arr_add(&stx->rules);
 	if (data == NULL) {
 		log_error("cutils", "syntax", NULL, "failed to add rule");
 		return STX_RULE_END;

@@ -49,8 +49,8 @@ estx_rule_t estx_add_rule(estx_t *estx)
 		return ESTX_RULE_END;
 	}
 
-	estx_rule_t rule;
-	estx_rule_data_t *data = arr_add(&estx->rules, &rule);
+	estx_rule_t rule       = estx->rules.cnt;
+	estx_rule_data_t *data = arr_add(&estx->rules);
 	if (data == NULL) {
 		log_error("cutils", "esyntax", NULL, "failed to add rule");
 		return ESTX_RULE_END;

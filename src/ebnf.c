@@ -60,15 +60,15 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, print_dst_t dst)
 			 "<space>   ::= ' '\n");
 
 	lex_t lex = {0};
-	if (lex_init(&lex, STR(__FILE__), &sbnf, line, 1, 100, alloc) == NULL) {
+	if (lex_init(&lex, 0, 100, alloc) == NULL) {
 		log_error("cutils", "bnf", NULL, "failed to intialize lexer");
 		return NULL;
 	}
 
-	lex_tokenize(&lex);
+	lex_tokenize(&lex, &sbnf, STR(__FILE__), line);
 
 	bnf_t bnf = {0};
-        bnf_init(&bnf, alloc);
+	bnf_init(&bnf, alloc);
 	bnf_get_stx(&bnf);
 
 	prs_t prs = {0};

@@ -91,8 +91,8 @@ TEST(stx_from_bnf)
 			 "<space>       ::= ' '\n");
 
 	lex_t lex = {0};
-	lex_init(&lex, STR(__FILE__), &sbnf, line, 1, 1, ALLOC_STD);
-	lex_tokenize(&lex);
+	lex_init(&lex, 0, 1, ALLOC_STD);
+	lex_tokenize(&lex, &sbnf, STR(__FILE__), line);
 
 	prs_t prs = {0};
 	prs_init(&prs, &lex, &bnf.stx, 100, ALLOC_STD);
