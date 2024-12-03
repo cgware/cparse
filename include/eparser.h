@@ -32,7 +32,7 @@ typedef struct eprs_s {
 	tree_t nodes;
 } eprs_t;
 
-eprs_t *eprs_init(eprs_t *eprs, const lex_t *lex, const estx_t *estx, uint nodes_cap, alloc_t alloc);
+eprs_t *eprs_init(eprs_t *eprs, uint nodes_cap, alloc_t alloc);
 void eprs_free(eprs_t *eprs);
 
 eprs_node_t eprs_add(eprs_t *eprs, eprs_node_data_t node);
@@ -43,7 +43,7 @@ int eprs_remove_node(eprs_t *eprs, eprs_node_t node);
 eprs_node_t eprs_get_rule(const eprs_t *eprs, eprs_node_t parent, estx_rule_t rule);
 int eprs_get_str(const eprs_t *eprs, eprs_node_t parent, str_t *out);
 
-eprs_node_t eprs_parse(eprs_t *eprs, estx_rule_t rule, print_dst_t dst);
+int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t rule, eprs_node_t *root, print_dst_t dst);
 
 int eprs_print(const eprs_t *eprs, eprs_node_t node, print_dst_t dst);
 

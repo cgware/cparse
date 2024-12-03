@@ -2,14 +2,11 @@
 
 #include "log.h"
 
-eprs_t *eprs_init(eprs_t *eprs, const lex_t *lex, const estx_t *estx, uint nodes_cap, alloc_t alloc)
+eprs_t *eprs_init(eprs_t *eprs, uint nodes_cap, alloc_t alloc)
 {
 	if (eprs == NULL) {
 		return NULL;
 	}
-
-	eprs->lex  = lex;
-	eprs->estx = estx;
 
 	if (tree_init(&eprs->nodes, nodes_cap, sizeof(eprs_node_data_t), alloc) == NULL) {
 		log_error("cutils", "eparser", NULL, "failed to initialize nodes tree");
@@ -329,11 +326,16 @@ static int eprs_parse_rule(eprs_t *prs, const estx_rule_t rule_id, uint *off, ep
 	return 0;
 }
 
-eprs_node_t eprs_parse(eprs_t *eprs, estx_rule_t rule, print_dst_t dst)
+int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t rule, eprs_node_t *root, print_dst_t dst)
 {
-	if (eprs == NULL || eprs->lex == NULL) {
-		return EPRS_NODE_END;
+	if (eprs == NULL || lex == NULL || estx == NULL) {
+		return 1;
 	}
+
+	eprs->lex  = lex;
+	eprs->estx = estx;
+
+	eprs->nodes.cnt = 0;
 
 	eprs_parse_err_t err = {
 		.rule = ESTX_RULE_END,
@@ -341,12 +343,12 @@ eprs_node_t eprs_parse(eprs_t *eprs, estx_rule_t rule, print_dst_t dst)
 		.exp  = ESTX_TERM_END,
 	};
 
-	eprs_node_t root = eprs_add_node(eprs, EPRS_NODE_END, EPRS_NODE_RULE(eprs, rule));
-	uint parsed	 = 0;
-	if (eprs_parse_rule(eprs, rule, &parsed, root, &err) || parsed != eprs->lex->tokens.cnt) {
+	eprs_node_t tmp = eprs_add_node(eprs, EPRS_NODE_END, EPRS_NODE_RULE(eprs, rule));
+	uint parsed	= 0;
+	if (eprs_parse_rule(eprs, rule, &parsed, tmp, &err) || parsed != eprs->lex->tokens.cnt) {
 		if (err.exp == ESTX_TERM_END) {
 			log_error("cutils", "parser", NULL, "wrong syntax");
-			return EPRS_NODE_END;
+			return 1;
 		}
 
 		const estx_term_data_t *term = estx_get_term_data(eprs->estx, err.exp);
@@ -366,11 +368,15 @@ eprs_node_t eprs_parse(eprs_t *eprs, estx_rule_t rule, print_dst_t dst)
 		}
 
 		dst.off += lex_token_loc_print_src(eprs->lex, loc, dst);
-		return EPRS_NODE_END;
+		return 1;
+	}
+
+	if (root) {
+		*root = tmp;
 	}
 
 	log_trace("cutils", "eparser", NULL, "success");
-	return root;
+	return 0;
 }
 
 static int print_nodes(void *data, print_dst_t dst, const void *priv)
@@ -394,7 +400,9 @@ static int print_nodes(void *data, print_dst_t dst, const void *priv)
 		break;
 	}
 	case EPRS_NODE_LITERAL: {
-		dst.off += c_dprintf(dst, "\'%.*s\'\n", node->val.literal.len, &eprs->lex->src->data[node->val.literal.start]);
+		char val[32]	  = {0};
+		const int val_len = str_print(lex_get_token_val(eprs->lex, node->val.literal), PRINT_DST_BUF(val, sizeof(val), 0));
+		dst.off += c_dprintf(dst, "\'%.*s\'\n", val_len, val);
 		break;
 	}
 	default: break;
