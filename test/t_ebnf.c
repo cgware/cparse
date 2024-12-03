@@ -99,9 +99,10 @@ TEST(stx_from_ebnf)
 	lex_tokenize(&lex, &sbnf, STR(__FILE__), line);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &ebnf.stx, 100, ALLOC_STD);
+	prs_init(&prs, 100, ALLOC_STD);
 
-	prs_node_t prs_root = prs_parse(&prs, ebnf.file, PRINT_DST_NONE());
+	prs_node_t prs_root;
+	prs_parse(&prs, &lex, &ebnf.stx, ebnf.file, &prs_root, PRINT_DST_NONE());
 
 	strbuf_t names = {0};
 	strbuf_init(&names, 16 * sizeof(char), ALLOC_STD);
@@ -128,12 +129,10 @@ TEST(stx_from_ebnf_custom)
 	ebnf_get_stx(&ebnf, ALLOC_STD, PRINT_DST_NONE());
 
 	prs_t prs = {0};
-	prs_init(&prs, NULL, &ebnf.stx, 100, ALLOC_STD);
+	prs_init(&prs, 100, ALLOC_STD);
 
 	estx_t new_stx = {0};
 	estx_init(&new_stx, 10, 10, ALLOC_STD);
-
-	prs.stx = &ebnf.stx;
 
 	prs_node_t file	  = prs_add_node(&prs, PRS_NODE_END, PRS_NODE_RULE(&prs, ebnf.file));
 	prs_node_t pebnf  = prs_add_node(&prs, file, PRS_NODE_RULE(&prs, ebnf.ebnf));

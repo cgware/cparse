@@ -13,12 +13,12 @@ TEST(prs_init_free)
 
 	prs_t prs = {0};
 
-	EXPECT_EQ(prs_init(NULL, NULL, NULL, 0, ALLOC_STD), NULL);
+	EXPECT_EQ(prs_init(NULL, 0, ALLOC_STD), NULL);
 	mem_oom(1);
-	EXPECT_EQ(prs_init(&prs, NULL, NULL, 1, ALLOC_STD), NULL);
+	EXPECT_EQ(prs_init(&prs, 1, ALLOC_STD), NULL);
 	mem_oom(0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(prs_init(&prs, NULL, NULL, 0, ALLOC_STD), &prs);
+	EXPECT_EQ(prs_init(&prs, 0, ALLOC_STD), &prs);
 	log_set_quiet(0, 0);
 
 	EXPECT_NE(prs.nodes.data, NULL);
@@ -37,7 +37,7 @@ TEST(prs_add_node)
 
 	prs_t prs = {0};
 	log_set_quiet(0, 1);
-	prs_init(&prs, NULL, NULL, 0, ALLOC_STD);
+	prs_init(&prs, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
 	EXPECT_EQ(prs_add(NULL, (prs_node_data_t){.type = PRS_NODE_UNKNOWN}), PRS_NODE_END);
@@ -64,7 +64,7 @@ TEST(prs_remove_node)
 
 	prs_t prs = {0};
 	log_set_quiet(0, 1);
-	prs_init(&prs, NULL, NULL, 0, ALLOC_STD);
+	prs_init(&prs, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
 	prs_node_t node = prs_add_node(&prs, PRS_NODE_END, prs_add(&prs, (prs_node_data_t){.type = PRS_NODE_UNKNOWN}));
@@ -85,28 +85,21 @@ TEST(prs_get_rule)
 	START;
 
 	prs_t prs = {0};
-	prs_init(&prs, NULL, NULL, 1, ALLOC_STD);
-
-	stx_t stx = {0};
-	stx_init(&stx, 1, 1, ALLOC_STD);
-
-	stx_rule_t rule0 = stx_add_rule(&stx);
-	stx_rule_t rule1 = stx_add_rule(&stx);
+	prs_init(&prs, 1, ALLOC_STD);
 
 	prs_node_t root = prs_add_node(&prs, PRS_NODE_END, PRS_NODE_LITERAL(&prs, 0, 0));
 
 	prs_add_node(&prs, root, PRS_NODE_LITERAL(&prs, 0, 0));
-	prs_add_node(&prs, root, PRS_NODE_RULE(&prs, rule0));
-	prs_node_t node = prs_add_node(&prs, root, PRS_NODE_RULE(&prs, rule1));
+	prs_add_node(&prs, root, PRS_NODE_RULE(&prs, 0));
+	prs_node_t node = prs_add_node(&prs, root, PRS_NODE_RULE(&prs, 1));
 
 	EXPECT_EQ(prs_get_rule(NULL, PRS_NODE_END, STX_RULE_END), PRS_NODE_END);
 	log_set_quiet(0, 1);
 	EXPECT_EQ(prs_get_rule(&prs, PRS_NODE_END, STX_RULE_END), PRS_NODE_END);
 	log_set_quiet(0, 0);
 	EXPECT_EQ(prs_get_rule(&prs, root, STX_RULE_END), PRS_NODE_END);
-	EXPECT_EQ(prs_get_rule(&prs, root, rule1), node);
+	EXPECT_EQ(prs_get_rule(&prs, root, 1), node);
 
-	stx_free(&stx);
 	prs_free(&prs);
 
 	END;
@@ -116,25 +109,14 @@ TEST(prs_get_str)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("b");
-	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
-
 	prs_t prs = {0};
-	prs_init(&prs, &lex, NULL, 1, ALLOC_STD);
+	prs_init(&prs, 1, ALLOC_STD);
 
-	stx_t stx = {0};
-	stx_init(&stx, 1, 1, ALLOC_STD);
-
-	stx_rule_t rule0 = stx_add_rule(&stx);
-	stx_rule_t rule1 = stx_add_rule(&stx);
-
-	prs_node_t root = prs_add_node(&prs, PRS_NODE_END, PRS_NODE_RULE(&prs, rule0));
+	prs_node_t root = prs_add_node(&prs, PRS_NODE_END, PRS_NODE_RULE(&prs, 0));
 
 	prs_add_node(&prs, root, PRS_NODE_LITERAL(&prs, 0, 0));
 	prs_add_node(&prs, root, PRS_NODE_TOKEN(&prs, (token_t){0}));
-	prs_add_node(&prs, root, PRS_NODE_RULE(&prs, rule1));
+	prs_add_node(&prs, root, PRS_NODE_RULE(&prs, 1));
 	prs_add_node(&prs, root, prs_add(&prs, (prs_node_data_t){.type = PRS_NODE_UNKNOWN}));
 
 	str_t str = strz(16);
@@ -150,8 +132,6 @@ TEST(prs_get_str)
 	EXPECT_STR(str.data, "");
 
 	str_free(&str);
-	lex_free(&lex);
-	stx_free(&stx);
 	prs_free(&prs);
 
 	END;
@@ -161,7 +141,7 @@ TEST(prs_parse_gen)
 {
 	START;
 
-	EXPECT_EQ(prs_parse(NULL, STX_RULE_END, PRINT_DST_NONE()), PRS_NODE_END);
+	EXPECT_EQ(prs_parse(NULL, NULL, NULL, STX_RULE_END, NULL, PRINT_DST_NONE()), 1);
 
 	lex_t lex = {0};
 	str_t src = STR("<");
@@ -172,13 +152,13 @@ TEST(prs_parse_gen)
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &stx, 1, ALLOC_STD);
+	prs_init(&prs, 1, ALLOC_STD);
 
 	stx_rule_t rule = stx_add_rule(&stx);
 	stx_rule_add_term(&stx, rule, stx_create_term(&stx, (stx_term_data_t){.type = -1}));
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(prs_parse(&prs, rule, PRINT_DST_NONE()), PRS_NODE_END);
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_NONE()), 1);
 	log_set_quiet(0, 0);
 
 	stx_free(&stx);
@@ -201,13 +181,13 @@ TEST(prs_parse_rule_invalid)
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &stx, 256, ALLOC_STD);
+	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t rule = stx_add_rule(&stx);
 	stx_rule_add_term(&stx, rule, STX_TERM_RULE(&stx, -1));
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(prs_parse(&prs, rule, PRINT_DST_NONE()), PRS_NODE_END);
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_NONE()), 1);
 	log_set_quiet(0, 0);
 
 	stx_free(&stx);
@@ -230,7 +210,7 @@ TEST(prs_parse_rule)
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &stx, 256, ALLOC_STD);
+	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t line = stx_add_rule(&stx);
 	stx_rule_add_term(&stx, line, STX_TERM_LITERAL(&stx, STR(" ")));
@@ -238,7 +218,7 @@ TEST(prs_parse_rule)
 	stx_rule_t rule = stx_add_rule(&stx);
 	stx_rule_add_term(&stx, rule, STX_TERM_RULE(&stx, line));
 
-	EXPECT_NE(prs_parse(&prs, rule, PRINT_DST_NONE()), PRS_NODE_END);
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_NONE()), 0);
 
 	stx_free(&stx);
 	lex_free(&lex);
@@ -260,13 +240,13 @@ TEST(prs_parse_token_unexpected)
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &stx, 256, ALLOC_STD);
+	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t rule = stx_add_rule(&stx);
 	stx_rule_add_term(&stx, rule, STX_TERM_TOKEN(&stx, TOKEN_ALPHA));
 
 	char buf[256] = {0};
-	EXPECT_EQ(prs_parse(&prs, rule, PRINT_DST_BUF(buf, sizeof(buf), 0)), PRS_NODE_END);
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
 
 	EXPECT_STR(buf + sizeof(__FILE__ ":000:") - 1,
 		   "0: error: expected ALPHA\n"
@@ -293,12 +273,12 @@ TEST(prs_parse_token)
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &stx, 256, ALLOC_STD);
+	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t rule = stx_add_rule(&stx);
 	stx_rule_add_term(&stx, rule, STX_TERM_TOKEN(&stx, TOKEN_ALPHA));
 
-	EXPECT_NE(prs_parse(&prs, rule, PRINT_DST_NONE()), PRS_NODE_END);
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_NONE()), 0);
 
 	stx_free(&stx);
 	lex_free(&lex);
@@ -320,13 +300,13 @@ TEST(prs_parse_literal_unexpected_end)
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &stx, 256, ALLOC_STD);
+	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t rule = stx_add_rule(&stx);
 	stx_rule_add_term(&stx, rule, STX_TERM_LITERAL(&stx, STR("123")));
 
 	char buf[256] = {0};
-	EXPECT_EQ(prs_parse(&prs, rule, PRINT_DST_BUF(buf, sizeof(buf), 0)), PRS_NODE_END);
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
 
 	EXPECT_STR(buf + sizeof(__FILE__ ":000:") - 1,
 		   "1: error: expected '123'\n"
@@ -353,13 +333,13 @@ TEST(prs_parse_literal_unexpected)
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &stx, 256, ALLOC_STD);
+	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t rule = stx_add_rule(&stx);
 	stx_rule_add_term(&stx, rule, STX_TERM_LITERAL(&stx, STR("123")));
 
 	char buf[256] = {0};
-	EXPECT_EQ(prs_parse(&prs, rule, PRINT_DST_BUF(buf, sizeof(buf), 0)), PRS_NODE_END);
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
 
 	EXPECT_STR(buf + sizeof(__FILE__ ":000:") - 1,
 		   "1: error: expected '123'\n"
@@ -386,12 +366,12 @@ TEST(prs_parse_literal)
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &stx, 256, ALLOC_STD);
+	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t rule = stx_add_rule(&stx);
 	stx_rule_add_term(&stx, rule, STX_TERM_LITERAL(&stx, STR("1")));
 
-	EXPECT_NE(prs_parse(&prs, rule, PRINT_DST_NONE()), PRS_NODE_END);
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_NONE()), 0);
 
 	stx_free(&stx);
 	lex_free(&lex);
@@ -413,7 +393,7 @@ TEST(prs_parse_or_l)
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &stx, 256, ALLOC_STD);
+	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t rule = stx_add_rule(&stx);
 
@@ -421,7 +401,7 @@ TEST(prs_parse_or_l)
 	const stx_term_t b = STX_TERM_LITERAL(&stx, STRH("b"));
 	stx_rule_add_term(&stx, rule, STX_TERM_OR(&stx, a, b));
 
-	EXPECT_NE(prs_parse(&prs, rule, PRINT_DST_NONE()), PRS_NODE_END);
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_NONE()), 0);
 
 	stx_free(&stx);
 	lex_free(&lex);
@@ -443,7 +423,7 @@ TEST(prs_parse_or_r)
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &stx, 256, ALLOC_STD);
+	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t rule = stx_add_rule(&stx);
 
@@ -451,7 +431,7 @@ TEST(prs_parse_or_r)
 	const stx_term_t b = STX_TERM_LITERAL(&stx, STRH("b"));
 	stx_rule_add_term(&stx, rule, STX_TERM_OR(&stx, a, b));
 
-	EXPECT_NE(prs_parse(&prs, rule, PRINT_DST_NONE()), PRS_NODE_END);
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_NONE()), 0);
 
 	stx_free(&stx);
 	lex_free(&lex);
@@ -473,7 +453,7 @@ TEST(prs_parse_or_unexpected)
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &stx, 256, ALLOC_STD);
+	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t rule = stx_add_rule(&stx);
 
@@ -482,7 +462,7 @@ TEST(prs_parse_or_unexpected)
 	stx_rule_add_term(&stx, rule, STX_TERM_OR(&stx, a, b));
 
 	char buf[256] = {0};
-	EXPECT_EQ(prs_parse(&prs, rule, PRINT_DST_BUF(buf, sizeof(buf), 0)), PRS_NODE_END);
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
 
 	EXPECT_STR(buf + sizeof(__FILE__ ":000:") - 1,
 		   "0: error: expected 'b'\n"
@@ -509,7 +489,7 @@ TEST(prs_parse_cache)
 	stx_init(&stx, 10, 10, ALLOC_STD);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &stx, 100, ALLOC_STD);
+	prs_init(&prs, 100, ALLOC_STD);
 
 	const stx_rule_t file = stx_add_rule(&stx);
 	const stx_rule_t line = stx_add_rule(&stx);
@@ -522,8 +502,8 @@ TEST(prs_parse_cache)
 
 	stx_rule_add_term(&stx, ra, STX_TERM_LITERAL(&stx, STR("a")));
 
-	prs_node_t root = prs_parse(&prs, file, PRINT_DST_NONE());
-	EXPECT_EQ(root, 0);
+	prs_node_t root;
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, file, &root, PRINT_DST_NONE()), 0);
 
 	char buf[64] = {0};
 	EXPECT_EQ(prs_print(&prs, root, PRINT_DST_BUF(buf, sizeof(buf), 0)), 50);
@@ -552,40 +532,33 @@ TEST(prs_parse_bnf)
 	lex_t lex = {0};
 	lex_init(&lex, 0, 1, ALLOC_STD);
 
+	prs_t prs = {0};
+	prs_init(&prs, 256, ALLOC_STD);
+
 	{
 		str_t src = STR("<file> ::= <");
 		lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 1);
 
-		prs_t prs = {0};
-		prs_init(&prs, &lex, &bnf.stx, 256, ALLOC_STD);
-
 		char buf[256] = {0};
-		EXPECT_EQ(prs_parse(&prs, bnf.file, PRINT_DST_BUF(buf, sizeof(buf), 0)), PRS_NODE_END);
+		EXPECT_EQ(prs_parse(&prs, &lex, &bnf.stx, bnf.file, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
 
 		EXPECT_STR(buf + sizeof(__FILE__ ":000:") - 1,
 			   "12: error: expected LOWER\n"
 			   "<file> ::= <\n"
 			   "            ^\n");
-
-		prs_free(&prs);
 	}
 
 	{
 		str_t src = STR("<file> ::= ");
 		lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 1);
 
-		prs_t prs = {0};
-		prs_init(&prs, &lex, &bnf.stx, 256, ALLOC_STD);
-
 		char buf[256] = {0};
-		EXPECT_EQ(prs_parse(&prs, bnf.file, PRINT_DST_BUF(buf, sizeof(buf), 0)), PRS_NODE_END);
+		EXPECT_EQ(prs_parse(&prs, &lex, &bnf.stx, bnf.file, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
 
 		EXPECT_STR(buf + sizeof(__FILE__ ":000:") - 1,
 			   "11: error: expected '<'\n"
 			   "<file> ::= \n"
 			   "           ^\n");
-
-		prs_free(&prs);
 	}
 
 	{
@@ -612,20 +585,17 @@ TEST(prs_parse_bnf)
 
 		lex_tokenize(&lex, &sbnf, STR(__FILE__), line);
 
-		prs_t prs = {0};
-		prs_init(&prs, &lex, &bnf.stx, 20000, ALLOC_STD);
-
-		prs_node_t root = prs_parse(&prs, bnf.file, PRINT_DST_STD());
+		prs_node_t root;
+		prs_parse(&prs, &lex, &bnf.stx, bnf.file, &root, PRINT_DST_STD());
 		EXPECT_EQ(root, 0);
 		char *buf = malloc(160000);
 		EXPECT_EQ(prs_print(&prs, root, PRINT_DST_BUF(buf, 160000, 0)), 89752);
 		free(buf);
-
-		prs_free(&prs);
 	}
 
-	bnf_free(&bnf);
+	prs_free(&prs);
 	lex_free(&lex);
+	bnf_free(&bnf);
 
 	END;
 }
@@ -655,19 +625,10 @@ TEST(prs_print)
 {
 	START;
 
-	stx_t stx = {0};
-	stx_init(&stx, 1, 1, ALLOC_STD);
-	stx_rule_t rule = stx_add_rule(&stx);
-
-	lex_t lex = {0};
-	str_t src = STR("T");
-	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
-
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &stx, 1, ALLOC_STD);
+	prs_init(&prs, 1, ALLOC_STD);
 
-	prs_node_t root = prs_add_node(&prs, PRS_NODE_END, PRS_NODE_RULE(&prs, rule));
+	prs_node_t root = prs_add_node(&prs, PRS_NODE_END, PRS_NODE_RULE(&prs, 0));
 	prs_add_node(&prs, root, PRS_NODE_TOKEN(&prs, (token_t){0}));
 	prs_add_node(&prs, root, PRS_NODE_LITERAL(&prs, 0, 0));
 	prs_add_node(&prs, root, prs_add(&prs, (prs_node_data_t){.type = PRS_NODE_UNKNOWN}));
@@ -682,8 +643,6 @@ TEST(prs_print)
 		   "├─''\n"
 		   "└─");
 
-	lex_free(&lex);
-	stx_free(&stx);
 	prs_free(&prs);
 
 	END;

@@ -2,14 +2,11 @@
 
 #include "log.h"
 
-prs_t *prs_init(prs_t *prs, const lex_t *lex, const stx_t *stx, uint nodes_cap, alloc_t alloc)
+prs_t *prs_init(prs_t *prs, uint nodes_cap, alloc_t alloc)
 {
 	if (prs == NULL) {
 		return NULL;
 	}
-
-	prs->lex = lex;
-	prs->stx = stx;
 
 	if (tree_init(&prs->nodes, nodes_cap, sizeof(prs_node_data_t), alloc) == NULL) {
 		log_error("cutils", "parser", NULL, "failed to initialize nodes tree");
@@ -100,8 +97,8 @@ int prs_get_str(const prs_t *prs, prs_node_t parent, str_t *out)
 		prs_node_data_t *data = tree_get_data(&prs->nodes, child);
 		switch (data->type) {
 		case PRS_NODE_RULE: prs_get_str(prs, child, out); break;
-		case PRS_NODE_TOKEN: str_cat(out, lex_get_token_val(prs->lex, &data->val.token)); break;
-		case PRS_NODE_LITERAL: str_cat(out, lex_get_token_val(prs->lex, &data->val.literal)); break;
+		case PRS_NODE_TOKEN: str_cat(out, lex_get_token_val(prs->lex, data->val.token)); break;
+		case PRS_NODE_LITERAL: str_cat(out, lex_get_token_val(prs->lex, data->val.literal)); break;
 		case PRS_NODE_UNKNOWN:
 		default: log_error("cutils", "parser", NULL, "unexpected node: %d", data->type); break;
 		}
@@ -179,7 +176,7 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 			}
 
 			str_t c		= strc(&literal.data[i], 1);
-			str_t token_val = lex_get_token_val(prs->lex, &token);
+			str_t token_val = lex_get_token_val(prs->lex, token);
 			if (!str_eq(token_val, c)) {
 				if (err->tok == LEX_TOKEN_END || *off + i >= err->tok) {
 					err->rule = rule;
@@ -270,11 +267,16 @@ static int prs_parse_rule(prs_t *prs, const stx_rule_t rule_id, uint *off, prs_n
 	return 0;
 }
 
-prs_node_t prs_parse(prs_t *prs, stx_rule_t rule, print_dst_t dst)
+int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_rule_t rule, prs_node_t *root, print_dst_t dst)
 {
-	if (prs == NULL || prs->lex == NULL) {
-		return PRS_NODE_END;
+	if (prs == NULL || lex == NULL || stx == NULL) {
+		return 1;
 	}
+
+	prs->lex = lex;
+	prs->stx = stx;
+
+	prs->nodes.cnt = 0;
 
 	prs_parse_err_t err = {
 		.rule = STX_RULE_END,
@@ -282,12 +284,12 @@ prs_node_t prs_parse(prs_t *prs, stx_rule_t rule, print_dst_t dst)
 		.exp  = STX_TERM_END,
 	};
 
-	prs_node_t root = prs_add_node(prs, PRS_NODE_END, PRS_NODE_RULE(prs, rule));
-	uint parsed	= 0;
-	if (prs_parse_rule(prs, rule, &parsed, root, &err) || parsed != prs->lex->src->len) {
+	prs_node_t tmp = prs_add_node(prs, PRS_NODE_END, PRS_NODE_RULE(prs, rule));
+	uint parsed    = 0;
+	if (prs_parse_rule(prs, rule, &parsed, tmp, &err) || parsed != prs->lex->src->len) {
 		if (err.exp == STX_TERM_END) {
 			log_error("cutils", "parser", NULL, "wrong syntax");
-			return PRS_NODE_END;
+			return 1;
 		}
 
 		const stx_term_data_t *term = stx_get_term_data(prs->stx, err.exp);
@@ -307,11 +309,15 @@ prs_node_t prs_parse(prs_t *prs, stx_rule_t rule, print_dst_t dst)
 		}
 
 		dst.off += lex_token_loc_print_src(prs->lex, loc, dst);
-		return PRS_NODE_END;
+		return 1;
+	}
+
+	if (root) {
+		*root = tmp;
 	}
 
 	log_trace("cutils", "parser", NULL, "success");
-	return root;
+	return 0;
 }
 
 static int print_nodes(void *data, print_dst_t dst, const void *priv)
@@ -330,12 +336,14 @@ static int print_nodes(void *data, print_dst_t dst, const void *priv)
 		char type[32]	  = {0};
 		int type_len	  = token_type_print(1 << node->val.token.type, PRINT_DST_BUF(type, sizeof(type), 0));
 		char val[32]	  = {0};
-		const int val_len = str_print(lex_get_token_val(prs->lex, &node->val.token), PRINT_DST_BUF(val, sizeof(val), 0));
+		const int val_len = str_print(lex_get_token_val(prs->lex, node->val.token), PRINT_DST_BUF(val, sizeof(val), 0));
 		dst.off += c_dprintf(dst, "%.*s(%.*s)\n", type_len, type, val_len, val);
 		break;
 	}
 	case PRS_NODE_LITERAL: {
-		dst.off += c_dprintf(dst, "\'%.*s\'\n", node->val.literal.len, &prs->lex->src->data[node->val.literal.start]);
+		char val[32]	  = {0};
+		const int val_len = str_print(lex_get_token_val(prs->lex, node->val.literal), PRINT_DST_BUF(val, sizeof(val), 0));
+		dst.off += c_dprintf(dst, "\'%.*s\'\n", val_len, val);
 		break;
 	}
 	default: break;

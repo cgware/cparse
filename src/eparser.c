@@ -105,8 +105,8 @@ int eprs_get_str(const eprs_t *eprs, eprs_node_t parent, str_t *out)
 		eprs_node_data_t *data = tree_get_data(&eprs->nodes, child);
 		switch (data->type) {
 		case EPRS_NODE_RULE: eprs_get_str(eprs, child, out); break;
-		case EPRS_NODE_TOKEN: str_cat(out, lex_get_token_val(eprs->lex, &data->val.token)); break;
-		case EPRS_NODE_LITERAL: str_cat(out, lex_get_token_val(eprs->lex, &data->val.literal)); break;
+		case EPRS_NODE_TOKEN: str_cat(out, lex_get_token_val(eprs->lex, data->val.token)); break;
+		case EPRS_NODE_LITERAL: str_cat(out, lex_get_token_val(eprs->lex, data->val.literal)); break;
 		case EPRS_NODE_UNKNOWN:
 		default: log_error("cutils", "eparser", NULL, "unexpected node: %d", data->type); break;
 		}
@@ -183,7 +183,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 			}
 
 			str_t c		= strc(&literal.data[i], 1);
-			str_t token_val = lex_get_token_val(eprs->lex, &token);
+			str_t token_val = lex_get_token_val(eprs->lex, token);
 			if (!str_eq(token_val, c)) {
 				if (err->tok == LEX_TOKEN_END || *off + i >= err->tok) {
 					err->rule = rule;
@@ -389,7 +389,7 @@ static int print_nodes(void *data, print_dst_t dst, const void *priv)
 		char type[32]	  = {0};
 		int type_len	  = token_type_print(1 << node->val.token.type, PRINT_DST_BUF(type, sizeof(type), 0));
 		char val[32]	  = {0};
-		const int val_len = str_print(lex_get_token_val(eprs->lex, &node->val.token), PRINT_DST_BUF(val, sizeof(val), 0));
+		const int val_len = str_print(lex_get_token_val(eprs->lex, node->val.token), PRINT_DST_BUF(val, sizeof(val), 0));
 		dst.off += c_dprintf(dst, "%.*s(%.*s)\n", type_len, type, val_len, val);
 		break;
 	}

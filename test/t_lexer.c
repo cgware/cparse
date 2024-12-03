@@ -104,7 +104,8 @@ TEST(lex_get_token_val)
 
 	token_t token = lex_get_token(&lex, 0);
 
-	str_t val = lex_get_token_val(&lex, &token);
+	EXPECT_EQ(lex_get_token_val(NULL, token).len, 0);
+	str_t val = lex_get_token_val(&lex, token);
 
 	EXPECT_STRN(val.data, "s", val.len);
 
@@ -306,7 +307,7 @@ TEST(lex_token_loc_print_loc)
 	EXPECT_EQ(lex_token_loc_print_loc(NULL, loc, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
 	lex_token_loc_print_loc(&lex, loc, PRINT_DST_BUF(buf, sizeof(buf), 0));
 
-	EXPECT_STR(buf, __FILE__ ":299:1: ");
+	EXPECT_STR(buf, __FILE__ ":300:1: ");
 
 	lex_free(&lex);
 

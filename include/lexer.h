@@ -26,7 +26,7 @@ void lex_free(lex_t *lex);
 int lex_add_token(lex_t *lex, token_type_t type, str_t val, uint *index);
 #define lex_get_token(_lex, _index)                                                                                                        \
 	(_index < (_lex)->tokens.cnt ? *(token_t *)arr_get(&(_lex)->tokens, _index) : ((token_t){.type = (1 << TOKEN_EOF)}))
-#define lex_get_token_val(_lex, _token) strc(&(_lex)->src->data[(_token)->start], (_token)->len)
+str_t lex_get_token_val(const lex_t *lex, token_t token);
 token_loc_t lex_get_token_loc(const lex_t *lex, uint index);
 
 void lex_set_src(lex_t *lex, str_t *src, str_t file, uint line_off);

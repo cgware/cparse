@@ -72,9 +72,11 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, print_dst_t dst)
 	bnf_get_stx(&bnf);
 
 	prs_t prs = {0};
-	prs_init(&prs, &lex, &bnf.stx, 100, alloc);
+	prs_init(&prs, 100, alloc);
 
-	prs_node_t prs_root = prs_parse(&prs, bnf.file, dst);
+	prs_node_t prs_root;
+	prs_parse(&prs, &lex, &bnf.stx, bnf.file, &prs_root, dst);
+
 	bnf_free(&bnf);
 
 	strbuf_t names = {0};

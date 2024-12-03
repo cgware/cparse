@@ -902,8 +902,9 @@ TEST(eprs_parse_ebnf)
 
 		lex_tokenize(&lex, &sbnf, STR(__FILE__), line);
 
-		prs_init(&prs, &lex, &ebnf.stx, 100, ALLOC_STD);
-		prs_node_t prs_root = prs_parse(&prs, ebnf.file, PRINT_DST_NONE());
+		prs_init(&prs, 100, ALLOC_STD);
+		prs_node_t prs_root;
+		prs_parse(&prs, &lex, &ebnf.stx, ebnf.file, &prs_root, PRINT_DST_NONE());
 
 		strbuf_t names = {0};
 		strbuf_init(&names, 16 * sizeof(char), ALLOC_STD);
