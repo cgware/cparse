@@ -90,7 +90,7 @@ eprs_node_t eprs_get_rule(const eprs_t *eprs, eprs_node_t parent, estx_rule_t ru
 	return EPRS_NODE_END;
 }
 
-int eprs_get_str(const eprs_t *eprs, eprs_node_t parent, str_t *out)
+int eprs_get_str(const eprs_t *eprs, eprs_node_t parent, token_t *out)
 {
 	if (eprs == NULL || out == NULL) {
 		return 1;
@@ -102,8 +102,16 @@ int eprs_get_str(const eprs_t *eprs, eprs_node_t parent, str_t *out)
 		eprs_node_data_t *data = tree_get_data(&eprs->nodes, child);
 		switch (data->type) {
 		case EPRS_NODE_RULE: eprs_get_str(eprs, child, out); break;
-		case EPRS_NODE_TOKEN: str_cat(out, lex_get_token_val(eprs->lex, data->val.token)); break;
-		case EPRS_NODE_LITERAL: str_cat(out, lex_get_token_val(eprs->lex, data->val.literal)); break;
+		case EPRS_NODE_TOKEN: {
+			out->start = (out->len == 0 ? data->val.token.start : out->start);
+			out->len += data->val.token.len;
+			break;
+		}
+		case EPRS_NODE_LITERAL: {
+			out->start = (out->len == 0 ? data->val.literal.start : out->start);
+			out->len += data->val.literal.len;
+			break;
+		}
 		case EPRS_NODE_UNKNOWN:
 		default: log_error("cutils", "eparser", NULL, "unexpected node: %d", data->type); break;
 		}
@@ -166,7 +174,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 		return 1;
 	}
 	case ESTX_TERM_LITERAL: {
-		const str_t literal = term->val.literal;
+		str_t literal = strc((char *)&eprs->estx->strs.data[term->val.literal.start], term->val.literal.len);
 
 		for (size_t i = 0; i < literal.len; i++) {
 			token_t token = lex_get_token(eprs->lex, *off + i);
@@ -363,7 +371,7 @@ int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t r
 			dst.off += c_dprintf(dst, "error: expected %.*s\n", len, buf);
 
 		} else {
-			const str_t exp_str = term->val.literal;
+			const str_t exp_str = strc((char *)&eprs->estx->strs.data[term->val.literal.start], term->val.literal.len);
 			dst.off += c_dprintf(dst, "error: expected \'%.*s\'\n", exp_str.len, exp_str.data);
 		}
 

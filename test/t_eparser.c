@@ -122,7 +122,7 @@ TEST(eprs_get_str)
 	eprs_add_node(&eprs, root, EPRS_NODE_RULE(&eprs, 0));
 	eprs_add_node(&eprs, root, eprs_add(&eprs, (eprs_node_data_t){.type = EPRS_NODE_UNKNOWN}));
 
-	str_t str = strz(16);
+	token_t str = {0};
 
 	EXPECT_EQ(eprs_get_str(NULL, EPRS_NODE_END, NULL), 1);
 	EXPECT_EQ(eprs_get_str(&eprs, EPRS_NODE_END, NULL), 1);
@@ -132,9 +132,9 @@ TEST(eprs_get_str)
 	EXPECT_EQ(eprs_get_str(&eprs, root, &str), 0);
 	log_set_quiet(0, 0);
 
-	EXPECT_STR(str.data, "");
+	EXPECT_EQ(str.start, 0);
+	EXPECT_EQ(str.len, 0);
 
-	str_free(&str);
 	eprs_free(&eprs);
 
 	END;
@@ -836,7 +836,7 @@ TEST(eprs_parse_ebnf)
 		estx_init(&estx, 1, 1, ALLOC_STD);
 
 		estx_rule_t rule = estx_add_rule(&estx);
-		estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STRH("::="), ESTX_TERM_OCC_ONE));
+		estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STR("::="), ESTX_TERM_OCC_ONE));
 
 		EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_NONE()), 1);
 

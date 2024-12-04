@@ -40,7 +40,7 @@ prs_node_t prs_add_node(prs_t *prs, prs_node_t parent, prs_node_t node);
 int prs_remove_node(prs_t *prs, prs_node_t node);
 
 prs_node_t prs_get_rule(const prs_t *prs, prs_node_t parent, stx_rule_t rule);
-int prs_get_str(const prs_t *prs, prs_node_t parent, str_t *out);
+int prs_get_str(const prs_t *prs, prs_node_t parent, token_t *out);
 
 int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_rule_t rule, prs_node_t *root, print_dst_t dst);
 

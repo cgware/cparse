@@ -2,6 +2,7 @@
 #define SYNTAX_H
 
 #include "arr.h"
+#include "buf.h"
 #include "list.h"
 #include "print.h"
 #include "str.h"
@@ -26,7 +27,7 @@ typedef struct stx_term_data_s {
 	union {
 		stx_rule_t rule;
 		token_type_t token;
-		str_t literal;
+		token_t literal;
 		struct {
 			stx_term_t l;
 			stx_term_t r;
@@ -42,6 +43,7 @@ typedef struct stx_rule_data_s {
 typedef struct stx_s {
 	arr_t rules;
 	list_t terms;
+	buf_t strs;
 } stx_t;
 
 stx_t *stx_init(stx_t *stx, uint rules_cap, uint terms_cap, alloc_t alloc);
@@ -52,6 +54,8 @@ stx_rule_data_t *stx_get_rule_data(const stx_t *stx, stx_rule_t rule);
 
 stx_term_t stx_create_term(stx_t *stx, stx_term_data_t term);
 stx_term_data_t *stx_get_term_data(const stx_t *stx, stx_term_t term);
+
+stx_term_data_t stx_create_literal(stx_t *stx, str_t str);
 
 stx_term_t stx_rule_set_term(stx_t *stx, stx_rule_t rule, stx_term_t term);
 stx_term_t stx_rule_add_term(stx_t *stx, stx_rule_t rule, stx_term_t term);
@@ -66,7 +70,7 @@ int stx_print_tree(const stx_t *stx, print_dst_t dst);
 #define STX_TERM_NONE(_stx)		 STX_TERM_END
 #define STX_TERM_RULE(_stx, _rule)	 stx_create_term(_stx, (stx_term_data_t){.type = STX_TERM_RULE, .val.rule = _rule})
 #define STX_TERM_TOKEN(_stx, _token)	 stx_create_term(_stx, (stx_term_data_t){.type = STX_TERM_TOKEN, .val.token = _token})
-#define STX_TERM_LITERAL(_stx, _literal) stx_create_term(_stx, (stx_term_data_t){.type = STX_TERM_LITERAL, .val.literal = _literal})
+#define STX_TERM_LITERAL(_stx, _literal) stx_create_term(_stx, stx_create_literal(_stx, _literal))
 #define STX_TERM_OR(_stx, _l, _r)	 stx_create_term(_stx, (stx_term_data_t){.type = STX_TERM_OR, .val.orv = {.l = _l, .r = _r}})
 
 #define stx_rule_foreach arr_foreach

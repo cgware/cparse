@@ -12,6 +12,7 @@ TEST(estx_init_free)
 
 	EXPECT_EQ(estx_init(NULL, 0, 0, ALLOC_STD), NULL);
 	mem_oom(1);
+	EXPECT_EQ(estx_init(&estx, 0, 0, ALLOC_STD), NULL);
 	EXPECT_EQ(estx_init(&estx, 1, 0, ALLOC_STD), NULL);
 	EXPECT_EQ(estx_init(&estx, 0, 1, ALLOC_STD), NULL);
 	mem_oom(0);
@@ -66,6 +67,20 @@ TEST(estx_create_term)
 	mem_oom(0);
 	EXPECT_EQ(ESTX_TERM_RULE(&estx, -1, 0), 0);
 
+	estx_free(&estx);
+
+	END;
+}
+
+TEST(estx_create_literal)
+{
+	START;
+
+	estx_t estx = {0};
+	estx_init(&estx, 1, 1, ALLOC_STD);
+
+	estx_create_literal(NULL, STR_NULL, 0);
+	estx_create_literal(&estx, STR_NULL, 0);
 	estx_free(&estx);
 
 	END;
@@ -147,12 +162,12 @@ TEST(estx_print)
 
 	estx_term_add_term(&estx, line, ESTX_TERM_TOKEN(&estx, TOKEN_UNKNOWN, ESTX_TERM_OCC_OPT));
 	estx_term_add_term(&estx, line, ESTX_TERM_TOKEN(&estx, TOKEN_ALPHA, ESTX_TERM_OCC_REP));
-	estx_term_add_term(&estx, line, ESTX_TERM_LITERAL(&estx, STRH(";"), ESTX_TERM_OCC_OPT | ESTX_TERM_OCC_REP));
-	estx_term_add_term(&estx, line, ESTX_TERM_LITERAL(&estx, STRH("'"), 0));
+	estx_term_add_term(&estx, line, ESTX_TERM_LITERAL(&estx, STR(";"), ESTX_TERM_OCC_OPT | ESTX_TERM_OCC_REP));
+	estx_term_add_term(&estx, line, ESTX_TERM_LITERAL(&estx, STR("'"), 0));
 
 	const estx_term_t group = estx_term_add_term(&estx, line, ESTX_TERM_GROUP(&estx, 0));
-	const estx_term_t a	= ESTX_TERM_LITERAL(&estx, STRH("A"), 0);
-	const estx_term_t b	= ESTX_TERM_LITERAL(&estx, STRH("B"), 0);
+	const estx_term_t a	= ESTX_TERM_LITERAL(&estx, STR("A"), 0);
+	const estx_term_t b	= ESTX_TERM_LITERAL(&estx, STR("B"), 0);
 	const estx_term_t alt	= estx_term_add_term(&estx, group, ESTX_TERM_ALT(&estx));
 	estx_term_add_term(&estx, alt, a);
 	estx_term_add_term(&estx, alt, b);
@@ -226,6 +241,7 @@ STEST(esyntax)
 	RUN(estx_init_free);
 	RUN(estx_add_rule);
 	RUN(estx_create_term);
+	RUN(estx_create_literal);
 	RUN(estx_rule_set_term);
 	RUN(estx_term_add_term);
 	RUN(estx_print_no_term);

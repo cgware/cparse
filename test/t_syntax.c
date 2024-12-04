@@ -13,6 +13,7 @@ TEST(stx_init_free)
 
 	EXPECT_EQ(stx_init(NULL, 0, 0, ALLOC_STD), NULL);
 	mem_oom(1);
+	EXPECT_EQ(stx_init(&stx, 0, 0, ALLOC_STD), NULL);
 	EXPECT_EQ(stx_init(&stx, 1, 0, ALLOC_STD), NULL);
 	EXPECT_EQ(stx_init(&stx, 0, 1, ALLOC_STD), NULL);
 	mem_oom(0);
@@ -66,6 +67,21 @@ TEST(stx_create_term)
 	EXPECT_EQ(STX_TERM_RULE(&stx, -1), STX_TERM_END);
 	mem_oom(0);
 	EXPECT_EQ(STX_TERM_RULE(&stx, -1), 0);
+
+	stx_free(&stx);
+
+	END;
+}
+
+TEST(stx_create_literal)
+{
+	START;
+
+	stx_t stx = {0};
+	stx_init(&stx, 1, 1, ALLOC_STD);
+
+	stx_create_literal(NULL, STR_NULL);
+	stx_create_literal(&stx, STR_NULL);
 
 	stx_free(&stx);
 
@@ -196,11 +212,11 @@ TEST(stx_print)
 
 	stx_rule_add_term(&stx, line, STX_TERM_TOKEN(&stx, -1));
 	stx_rule_add_term(&stx, line, STX_TERM_TOKEN(&stx, TOKEN_ALPHA));
-	stx_rule_add_term(&stx, line, STX_TERM_LITERAL(&stx, STRH(";")));
-	stx_rule_add_term(&stx, line, STX_TERM_LITERAL(&stx, STRH("'")));
+	stx_rule_add_term(&stx, line, STX_TERM_LITERAL(&stx, STR(";")));
+	stx_rule_add_term(&stx, line, STX_TERM_LITERAL(&stx, STR("'")));
 
-	const stx_term_t a = STX_TERM_LITERAL(&stx, STRH("A"));
-	const stx_term_t b = STX_TERM_LITERAL(&stx, STRH("B"));
+	const stx_term_t a = STX_TERM_LITERAL(&stx, STR("A"));
+	const stx_term_t b = STX_TERM_LITERAL(&stx, STR("B"));
 	stx_rule_add_term(&stx, line, STX_TERM_OR(&stx, a, b));
 
 	char buf[64] = {0};
@@ -305,6 +321,7 @@ STEST(syntax)
 	RUN(stx_init_free);
 	RUN(stx_add_rule);
 	RUN(stx_create_term);
+	RUN(stx_create_literal);
 	RUN(stx_rule_set_term);
 	RUN(stx_rule_add_term);
 	RUN(stx_rule_add_or);

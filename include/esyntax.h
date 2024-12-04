@@ -2,6 +2,7 @@
 #define ESYNTAX_H
 
 #include "arr.h"
+#include "buf.h"
 #include "print.h"
 #include "str.h"
 #include "token.h"
@@ -35,7 +36,7 @@ typedef struct estx_term_data_s {
 	union {
 		estx_rule_t rule;
 		token_type_t token;
-		str_t literal;
+		token_t literal;
 	} val;
 } estx_term_data_t;
 
@@ -46,6 +47,7 @@ typedef struct estx_rule_data_s {
 typedef struct estx_s {
 	arr_t rules;
 	tree_t terms;
+	buf_t strs;
 } estx_t;
 
 estx_t *estx_init(estx_t *estx, uint rules_cap, uint terms_cap, alloc_t alloc);
@@ -56,6 +58,8 @@ estx_rule_data_t *estx_get_rule_data(const estx_t *estx, estx_rule_t rule);
 
 estx_term_t estx_create_term(estx_t *estx, estx_term_data_t term);
 estx_term_data_t *estx_get_term_data(const estx_t *estx, estx_term_t term);
+
+estx_term_data_t estx_create_literal(estx_t *estx, str_t str, estx_term_occ_t occ);
 
 estx_term_t estx_rule_set_term(estx_t *estx, estx_rule_t rule, estx_term_t term);
 estx_term_t estx_term_add_term(estx_t *estx, estx_term_t term, estx_term_t child);
@@ -68,11 +72,10 @@ int estx_print_tree(const estx_t *estx, print_dst_t dst);
 	estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_RULE, .val.rule = _rule, .occ = _occ})
 #define ESTX_TERM_TOKEN(_estx, _token, _occ)                                                                                               \
 	estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_TOKEN, .val.token = _token, .occ = _occ})
-#define ESTX_TERM_LITERAL(_estx, _literal, _occ)                                                                                           \
-	estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_LITERAL, .val.literal = _literal, .occ = _occ})
-#define ESTX_TERM_ALT(_estx)	     estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_ALT})
-#define ESTX_TERM_CON(_estx)	     estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_CON})
-#define ESTX_TERM_GROUP(_estx, _occ) estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_GROUP, .occ = _occ})
+#define ESTX_TERM_LITERAL(_estx, _literal, _occ) estx_create_term(_estx, estx_create_literal(_estx, _literal, _occ))
+#define ESTX_TERM_ALT(_estx)			 estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_ALT})
+#define ESTX_TERM_CON(_estx)			 estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_CON})
+#define ESTX_TERM_GROUP(_estx, _occ)		 estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_GROUP, .occ = _occ})
 
 #define estx_rule_foreach arr_foreach
 #define estx_term_foreach tree_foreach_child

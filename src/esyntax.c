@@ -20,6 +20,11 @@ estx_t *estx_init(estx_t *estx, uint rules_cap, uint terms_cap, alloc_t alloc)
 		return NULL;
 	}
 
+	if (buf_init(&estx->strs, 16, alloc) == NULL) {
+		log_error("cutils", "syntax", NULL, "failed to initialize strings buffer");
+		return NULL;
+	}
+
 	return estx;
 }
 
@@ -30,17 +35,8 @@ void estx_free(estx_t *estx)
 	}
 
 	arr_free(&estx->rules);
-
-	estx_term_t term;
-	tree_foreach_all(&estx->terms, term)
-	{
-		estx_term_data_t *data = tree_get_data(&estx->terms, term);
-		if (data->type == ESTX_TERM_LITERAL) {
-			str_free(&data->val.literal);
-		}
-	}
-
 	tree_free(&estx->terms);
+	buf_free(&estx->strs);
 }
 
 estx_rule_t estx_add_rule(estx_t *estx)
@@ -114,6 +110,18 @@ estx_term_data_t *estx_get_term_data(const estx_t *estx, estx_term_t term)
 	return data;
 }
 
+estx_term_data_t estx_create_literal(estx_t *estx, str_t str, estx_term_occ_t occ)
+{
+	if (estx == NULL) {
+		return (estx_term_data_t){0};
+	}
+
+	size_t start = estx->strs.used;
+	buf_add(&estx->strs, str.data, str.len, NULL);
+
+	return (estx_term_data_t){.type = ESTX_TERM_LITERAL, .val.literal = {.start = start, .len = str.len}, .occ = occ};
+}
+
 estx_term_t estx_rule_set_term(estx_t *estx, estx_rule_t rule, estx_term_t term)
 {
 	estx_rule_data_t *data = estx_get_rule_data(estx, rule);
@@ -170,14 +178,16 @@ static int estx_term_print(const estx_t *estx, const estx_term_t term, print_dst
 		dst.off += estx_term_occ_print(data->occ, dst);
 		break;
 	}
-	case ESTX_TERM_LITERAL:
-		if (str_eq(data->val.literal, STR("'"))) {
-			dst.off += c_dprintf(dst, " \"%.*s\"", data->val.literal.len, data->val.literal.data);
+	case ESTX_TERM_LITERAL: {
+		str_t literal = strc((char *)&estx->strs.data[data->val.literal.start], data->val.literal.len);
+		if (str_eq(literal, STR("'"))) {
+			dst.off += c_dprintf(dst, " \"%.*s\"", literal.len, literal.data);
 		} else {
-			dst.off += c_dprintf(dst, " \'%.*s\'", data->val.literal.len, data->val.literal.data);
+			dst.off += c_dprintf(dst, " \'%.*s\'", literal.len, literal.data);
 		}
 		dst.off += estx_term_occ_print(data->occ, dst);
 		break;
+	}
 	case ESTX_TERM_ALT: {
 		estx_term_t child;
 		int first = 1;
@@ -243,7 +253,8 @@ int estx_print(const estx_t *estx, print_dst_t dst)
 int term_print_cb(void *data, print_dst_t dst, const void *priv)
 {
 	const estx_term_data_t *term = data;
-	(void)priv;
+
+	const estx_t *estx = priv;
 
 	int off = dst.off;
 
@@ -258,14 +269,16 @@ int term_print_cb(void *data, print_dst_t dst, const void *priv)
 		dst.off += estx_term_occ_print(term->occ, dst);
 		break;
 	}
-	case ESTX_TERM_LITERAL:
-		if (str_eq(term->val.literal, STR("'"))) {
-			dst.off += c_dprintf(dst, "\"%.*s\"", term->val.literal.len, term->val.literal.data);
+	case ESTX_TERM_LITERAL: {
+		str_t literal = strc((char *)&estx->strs.data[term->val.literal.start], term->val.literal.len);
+		if (str_eq(literal, STR("'"))) {
+			dst.off += c_dprintf(dst, "\"%.*s\"", literal.len, literal.data);
 		} else {
-			dst.off += c_dprintf(dst, "\'%.*s\'", term->val.literal.len, term->val.literal.data);
+			dst.off += c_dprintf(dst, "\'%.*s\'", literal.len, literal.data);
 		}
 		dst.off += estx_term_occ_print(term->occ, dst);
 		break;
+	}
 	case ESTX_TERM_ALT: {
 		dst.off += c_dprintf(dst, "alt");
 		break;

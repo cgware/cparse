@@ -41,7 +41,7 @@ eprs_node_t eprs_add_node(eprs_t *eprs, eprs_node_t parent, eprs_node_t node);
 int eprs_remove_node(eprs_t *eprs, eprs_node_t node);
 
 eprs_node_t eprs_get_rule(const eprs_t *eprs, eprs_node_t parent, estx_rule_t rule);
-int eprs_get_str(const eprs_t *eprs, eprs_node_t parent, str_t *out);
+int eprs_get_str(const eprs_t *eprs, eprs_node_t parent, token_t *out);
 
 int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t rule, eprs_node_t *root, print_dst_t dst);
 
