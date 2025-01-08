@@ -11,17 +11,17 @@ stx_t *stx_init(stx_t *stx, uint rules_cap, uint terms_cap, alloc_t alloc)
 	}
 
 	if (arr_init(&stx->rules, rules_cap, sizeof(stx_rule_data_t), alloc) == NULL) {
-		log_error("cutils", "syntax", NULL, "failed to initialize rules array");
+		log_error("cparse", "syntax", NULL, "failed to initialize rules array");
 		return NULL;
 	}
 
 	if (list_init(&stx->terms, terms_cap, sizeof(stx_term_data_t), alloc) == NULL) {
-		log_error("cutils", "syntax", NULL, "failed to initialize terms list");
+		log_error("cparse", "syntax", NULL, "failed to initialize terms list");
 		return NULL;
 	}
 
 	if (buf_init(&stx->strs, 16, alloc) == NULL) {
-		log_error("cutils", "syntax", NULL, "failed to initialize strings buffer");
+		log_error("cparse", "syntax", NULL, "failed to initialize strings buffer");
 		return NULL;
 	}
 
@@ -48,7 +48,7 @@ stx_rule_t stx_add_rule(stx_t *stx)
 	stx_rule_t rule	      = stx->rules.cnt;
 	stx_rule_data_t *data = arr_add(&stx->rules);
 	if (data == NULL) {
-		log_error("cutils", "syntax", NULL, "failed to add rule");
+		log_error("cparse", "syntax", NULL, "failed to add rule");
 		return STX_RULE_END;
 	}
 
@@ -68,7 +68,7 @@ stx_rule_data_t *stx_get_rule_data(const stx_t *stx, stx_rule_t rule)
 	stx_rule_data_t *data = arr_get(&stx->rules, rule);
 
 	if (data == NULL) {
-		log_warn("cutils", "syntax", NULL, "invalid rule: %d", rule);
+		log_warn("cparse", "syntax", NULL, "invalid rule: %d", rule);
 		return NULL;
 	}
 
@@ -85,7 +85,7 @@ stx_term_t stx_create_term(stx_t *stx, stx_term_data_t term)
 	stx_term_data_t *data  = list_get_data(&stx->terms, child);
 
 	if (data == NULL) {
-		log_error("cutils", "syntax", NULL, "failed to create term");
+		log_error("cparse", "syntax", NULL, "failed to create term");
 		return STX_TERM_END;
 	}
 
@@ -103,7 +103,7 @@ stx_term_data_t *stx_get_term_data(const stx_t *stx, stx_term_t term)
 	stx_term_data_t *data = list_get_data(&stx->terms, term);
 
 	if (data == NULL) {
-		log_warn("cutils", "syntax", NULL, "invalid term: %d", term);
+		log_warn("cparse", "syntax", NULL, "invalid term: %d", term);
 		return NULL;
 	}
 
@@ -127,7 +127,7 @@ stx_term_t stx_rule_set_term(stx_t *stx, stx_rule_t rule, stx_term_t term)
 	stx_rule_data_t *data = stx_get_rule_data(stx, rule);
 
 	if (data == NULL) {
-		log_error("cutils", "syntax", NULL, "failed to get rule: %d", rule);
+		log_error("cparse", "syntax", NULL, "failed to get rule: %d", rule);
 		return STX_TERM_END;
 	}
 
@@ -139,7 +139,7 @@ stx_term_t stx_rule_add_term(stx_t *stx, stx_rule_t rule, stx_term_t term)
 	stx_rule_data_t *data = stx_get_rule_data(stx, rule);
 
 	if (data == NULL) {
-		log_error("cutils", "syntax", NULL, "failed to get rule: %d", rule);
+		log_error("cparse", "syntax", NULL, "failed to get rule: %d", rule);
 		return STX_TERM_END;
 	}
 
@@ -149,7 +149,7 @@ stx_term_t stx_rule_add_term(stx_t *stx, stx_rule_t rule, stx_term_t term)
 stx_term_t stx_term_add_term(stx_t *stx, stx_term_t term, stx_term_t next)
 {
 	if (stx_get_term_data(stx, term) == NULL) {
-		log_error("cutils", "syntax", NULL, "failed to get term: %d", term);
+		log_error("cparse", "syntax", NULL, "failed to get term: %d", term);
 		return STX_TERM_END;
 	}
 
@@ -228,7 +228,7 @@ static int stx_terms_print(const stx_t *stx, const stx_term_t terms, print_dst_t
 			dst.off += c_dprintf(dst, " |");
 			dst.off += stx_terms_print(stx, term->val.orv.r, dst);
 			break;
-		default: log_warn("cutils", "syntax", NULL, "unknown term type: %d", term->type); break;
+		default: log_warn("cparse", "syntax", NULL, "unknown term type: %d", term->type); break;
 		}
 	}
 
@@ -360,7 +360,7 @@ static int stx_rule_print_tree(const stx_t *stx, stx_rule_data_t *rule, uint rul
 			}
 			break;
 		default:
-			log_warn("cutils", "syntax", NULL, "unknown term type: %d", term->type);
+			log_warn("cparse", "syntax", NULL, "unknown term type: %d", term->type);
 			top--;
 			break;
 		}

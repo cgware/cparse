@@ -9,7 +9,7 @@ prs_t *prs_init(prs_t *prs, uint nodes_cap, alloc_t alloc)
 	}
 
 	if (tree_init(&prs->nodes, nodes_cap, sizeof(prs_node_data_t), alloc) == NULL) {
-		log_error("cutils", "parser", NULL, "failed to initialize nodes tree");
+		log_error("cparse", "parser", NULL, "failed to initialize nodes tree");
 		return NULL;
 	}
 
@@ -35,7 +35,7 @@ prs_node_t prs_add(prs_t *prs, prs_node_data_t node)
 
 	prs_node_data_t *data = tree_get_data(&prs->nodes, child);
 	if (data == NULL) {
-		log_error("cutils", "parser", NULL, "failed to add node");
+		log_error("cparse", "parser", NULL, "failed to add node");
 		return PRS_NODE_END;
 	}
 
@@ -108,7 +108,7 @@ int prs_get_str(const prs_t *prs, prs_node_t parent, token_t *out)
 			break;
 		}
 		case PRS_NODE_UNKNOWN:
-		default: log_error("cutils", "parser", NULL, "unexpected node: %d", data->type); break;
+		default: log_error("cparse", "parser", NULL, "unexpected node: %d", data->type); break;
 		}
 	}
 
@@ -154,7 +154,7 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 		if (token.type & (1 << token_type)) {
 			prs_add_node(
 				prs, node, PRS_NODE_TOKEN(prs, ((token_t){.type = token_type, .start = token.start, .len = token.len})));
-			log_trace("cutils", "parser", NULL, "%.*s: success +%d", len, buf, token.len);
+			log_trace("cparse", "parser", NULL, "%.*s: success +%d", len, buf, token.len);
 			*off += token.len;
 			return 0;
 		}
@@ -166,7 +166,7 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 		}
 		char act[32] = {0};
 		int act_len  = lex_print_token(prs->lex, token, PRINT_DST_BUF(act, sizeof(act), 0));
-		log_trace("cutils", "parser", NULL, "failed: expected %.*s, but got %.*s", len, buf, act_len, act);
+		log_trace("cparse", "parser", NULL, "failed: expected %.*s, but got %.*s", len, buf, act_len, act);
 		return 1;
 	}
 	case STX_TERM_LITERAL: {
@@ -179,7 +179,7 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 				err->rule = rule;
 				err->tok  = *off + i;
 				err->exp  = term_id;
-				log_trace("cutils", "parser", NULL, "\'%*s\': failed: end of tokens", literal.len, literal.data);
+				log_trace("cparse", "parser", NULL, "\'%*s\': failed: end of tokens", literal.len, literal.data);
 				return 1;
 			}
 
@@ -195,7 +195,7 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 				char buf[256] = {0};
 				const int len = str_print(token_val, PRINT_DST_BUF(buf, sizeof(buf), 0));
 
-				log_trace("cutils",
+				log_trace("cparse",
 					  "parser",
 					  NULL,
 					  "failed: expected \'%*s\', but got \'%.*s\'",
@@ -208,7 +208,7 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 		}
 
 		prs_add_node(prs, node, PRS_NODE_LITERAL(prs, *off, (uint)literal.len));
-		log_trace("cutils", "parser", NULL, "\'%*s\': success +%d", literal.len, literal.data, literal.len);
+		log_trace("cparse", "parser", NULL, "\'%*s\': success +%d", literal.len, literal.data, literal.len);
 		*off += (uint)literal.len;
 		return 0;
 	}
@@ -216,24 +216,24 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 		uint nodes_cnt = prs->nodes.cnt;
 		uint cur       = *off;
 		if (!prs_parse_terms(prs, rule, term->val.orv.l, off, node, err)) {
-			log_trace("cutils", "parser", NULL, "left: success");
+			log_trace("cparse", "parser", NULL, "left: success");
 			return 0;
 		}
 
-		log_trace("cutils", "parser", NULL, "left: failed");
+		log_trace("cparse", "parser", NULL, "left: failed");
 		tree_set_cnt(&prs->nodes, nodes_cnt);
 
 		if (!prs_parse_terms(prs, rule, term->val.orv.r, off, node, err)) {
-			log_trace("cutils", "parser", NULL, "right: success");
+			log_trace("cparse", "parser", NULL, "right: success");
 			return 0;
 		}
 
-		log_trace("cutils", "parser", NULL, "right: failed");
+		log_trace("cparse", "parser", NULL, "right: failed");
 		tree_set_cnt(&prs->nodes, nodes_cnt);
 		*off = cur;
 		return 1;
 	}
-	default: log_warn("cutils", "parser", NULL, "unknown term type: %d", term->type); break;
+	default: log_warn("cparse", "parser", NULL, "unknown term type: %d", term->type); break;
 	}
 
 	return 1;
@@ -258,20 +258,20 @@ static int prs_parse_rule(prs_t *prs, const stx_rule_t rule_id, uint *off, prs_n
 {
 	const stx_rule_data_t *rule = stx_get_rule_data(prs->stx, rule_id);
 	if (rule == NULL) {
-		log_error("cutils", "parser", NULL, "rule not found: %d", rule_id);
+		log_error("cparse", "parser", NULL, "rule not found: %d", rule_id);
 		return 1;
 	}
 
-	log_trace("cutils", "parser", NULL, "<%d>", rule_id);
+	log_trace("cparse", "parser", NULL, "<%d>", rule_id);
 
 	uint cur = *off;
 	if (prs_parse_terms(prs, rule_id, rule->terms, off, node, err)) {
-		log_trace("cutils", "parser", NULL, "<%d>: failed", rule_id);
+		log_trace("cparse", "parser", NULL, "<%d>: failed", rule_id);
 		*off = cur;
 		return 1;
 	}
 
-	log_trace("cutils", "parser", NULL, "<%d>: success +%d", rule_id, *off - cur);
+	log_trace("cparse", "parser", NULL, "<%d>: success +%d", rule_id, *off - cur);
 	return 0;
 }
 
@@ -296,7 +296,7 @@ int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_rule_t rule, p
 	uint parsed    = 0;
 	if (prs_parse_rule(prs, rule, &parsed, tmp, &err) || parsed != prs->lex->src->len) {
 		if (err.exp == STX_TERM_END) {
-			log_error("cutils", "parser", NULL, "wrong syntax");
+			log_error("cparse", "parser", NULL, "wrong syntax");
 			return 1;
 		}
 
@@ -324,7 +324,7 @@ int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_rule_t rule, p
 		*root = tmp;
 	}
 
-	log_trace("cutils", "parser", NULL, "success");
+	log_trace("cparse", "parser", NULL, "success");
 	return 0;
 }
 

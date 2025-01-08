@@ -11,7 +11,7 @@ ebnf_t *ebnf_init(ebnf_t *ebnf, alloc_t alloc)
 	}
 
 	if (stx_init(&ebnf->stx, 10, 10, alloc) == NULL) {
-		log_error("cutils", "ebnf", NULL, "failed to intialize syntax");
+		log_error("cparse", "ebnf", NULL, "failed to intialize syntax");
 		return NULL;
 	}
 
@@ -61,7 +61,7 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, print_dst_t dst)
 
 	lex_t lex = {0};
 	if (lex_init(&lex, 0, 100, alloc) == NULL) {
-		log_error("cutils", "bnf", NULL, "failed to intialize lexer");
+		log_error("cparse", "bnf", NULL, "failed to intialize lexer");
 		return NULL;
 	}
 

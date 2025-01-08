@@ -58,11 +58,3 @@ ifeq ($(SHOW), true)
 	@genhtml -q -o $(BUILDDIR)/report/coverage $(BUILDDIR)/bin/lcov.info 
 	@open $(BUILDDIR)/report/coverage/index.html
 endif
-
-libs/lib.a:
-libs2/lib2.a:
-
-LIBS := libs/lib.a libs2/lib2.a
-
-build: $(LIBS)
-	gcc main.c $(patsubst %,-L%,$(dir $(LIBS))) $(patsubst %,-l:%,$(notdir $(LIBS)))

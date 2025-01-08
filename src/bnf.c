@@ -11,7 +11,7 @@ bnf_t *bnf_init(bnf_t *bnf, alloc_t alloc)
 	}
 
 	if (stx_init(&bnf->stx, 20, 90, alloc) == NULL) {
-		log_error("cutils", "bnf", NULL, "failed to intialize syntax");
+		log_error("cparse", "bnf", NULL, "failed to intialize syntax");
 		return NULL;
 	}
 
