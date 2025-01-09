@@ -1,9 +1,9 @@
 CPARSE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 CPARSE_SRC := $(CPARSE_DIR)src/
-CPARSE_C := $(wildcard $(CPARSE_SRC)*.c)
-CPARSE_H := $(wildcard $(CPARSE_SRC)*.h)
-CPARSE_HEADERS := $(wildcard $(CPARSE_DIR)include/*.h)
+CPARSE_C := $(shell find $(CPARSE_SRC) -type f -name '*.c')
+CPARSE_H := $(shell find $(CPARSE_SRC) -type f -name '*.h')
+CPARSE_HEADERS := $(shell find $(CPARSE_DIR)include/ -type f -name '*.h')
 CPARSE_HEADERS += $(CUTILS_HEADERS)
 
 CPARSE_OUTDIR := $(BUILDDIR)bin/$(ARCH)-$(CONFIG)/cparse
@@ -28,8 +28,8 @@ $(CPARSE_INTDIR)%.o: $(CPARSE_SRC)%.c $(CPARSE_H) $(CPARSE_HEADERS)
 	@$(TCC) -m$(BITS) -c -I$(CPARSE_SRC) $(CPARSE_INCLUDES) $(CFLAGS) -o $@ $<
 
 CPARSE_TEST_SRC := $(CPARSE_DIR)test/
-CPARSE_TEST_C := $(wildcard $(CPARSE_TEST_SRC)*.c)
-CPARSE_TEST_H := $(wildcard $(CPARSE_TEST_SRC)*.h)
+CPARSE_TEST_C := $(shell find $(CPARSE_TEST_SRC) -type f -name '*.c')
+CPARSE_TEST_H := $(shell find $(CPARSE_TEST_SRC) -type f -name '*.h')
 CPARSE_TEST_HEADERS := $(CPARSE_HEADERS) $(CTEST_HEADERS)
 
 CPARSE_TEST_OUTDIR := $(BUILDDIR)bin/$(ARCH)-$(CONFIG)/cparse_test

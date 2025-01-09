@@ -11,6 +11,7 @@ STEST(lexer);
 STEST(parser);
 STEST(syntax);
 STEST(token);
+STEST(toml);
 
 TEST(cparse)
 {
@@ -23,6 +24,7 @@ TEST(cparse)
 	RUN(parser);
 	RUN(syntax);
 	RUN(token);
+	RUN(toml);
 	SEND;
 }
 
