@@ -236,8 +236,7 @@ toml_val_t toml_prs_parse(const toml_prs_t *toml_prs, strv_t str, toml_t *toml, 
 	eprs_init(&eprs, 100, alloc);
 
 	eprs_node_t prs_root;
-	eprs_parse(&eprs, &lex, &toml_prs->estx, toml_prs->file, &prs_root, dst);
-	if (prs_root >= eprs.nodes.cnt) {
+	if (eprs_parse(&eprs, &lex, &toml_prs->estx, toml_prs->file, &prs_root, dst)) {
 		eprs_free(&eprs);
 		lex_free(&lex);
 		return TOML_VAL_END;
