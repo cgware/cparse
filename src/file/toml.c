@@ -22,12 +22,10 @@ toml_t *toml_init(toml_t *toml, size_t strs_size, size_t vals_cap, alloc_t alloc
 		return NULL;
 	}
 
-	if (tree_init(&toml->vals, vals_cap + 1, sizeof(val_data_t), alloc) == NULL) {
+	if (tree_init(&toml->vals, vals_cap, sizeof(val_data_t), alloc) == NULL) {
 		log_error("cparse", "toml", NULL, "failed to initialize values");
 		return NULL;
 	}
-
-	toml->root = tree_add(&toml->vals);
 
 	return toml;
 }
@@ -42,19 +40,38 @@ void toml_free(toml_t *toml)
 	strbuf_free(&toml->strs);
 }
 
-static int create_data(toml_t *toml, uint key, toml_add_val_t val, val_data_t *data)
+toml_val_t toml_val_init(toml_t *toml, strv_t key, toml_add_val_t val)
 {
+	if (toml == NULL) {
+		return TOML_VAL_END;
+	}
+
+	uint key_id = -1;
+	if (key.data) {
+		key_id = toml->strs.buf.used;
+		if (strbuf_add(&toml->strs, key.data, key.len, NULL)) {
+			log_error("cparse", "toml", NULL, "failed to add key");
+			return TOML_VAL_END;
+		}
+	}
+
+	toml_val_t val_id = tree_add(&toml->vals);
+	val_data_t *data  = tree_get_data(&toml->vals, val_id);
+	if (data == NULL) {
+		log_error("cparse", "toml", NULL, "failed to add value");
+		return TOML_VAL_END;
+	}
+
 	switch (val.type) {
-	case TOML_VAL_NONE: return 2;
-	case TOML_VAL_STR: {
+	case TOML_VAL_STRL: {
 		uint str_id = toml->strs.buf.used;
 		if (strbuf_add(&toml->strs, val.val.str.data, val.val.str.len, NULL)) {
 			log_error("cparse", "toml", NULL, "failed to add string");
-			return 1;
+			return TOML_VAL_END;
 		}
 
 		*data = (val_data_t){
-			.key	 = key,
+			.key	 = key_id,
 			.type	 = val.type,
 			.val.str = str_id,
 		};
@@ -63,7 +80,7 @@ static int create_data(toml_t *toml, uint key, toml_add_val_t val, val_data_t *d
 	}
 	case TOML_VAL_INT: {
 		*data = (val_data_t){
-			.key   = key,
+			.key   = key_id,
 			.type  = val.type,
 			.val.i = val.val.i,
 		};
@@ -75,7 +92,7 @@ static int create_data(toml_t *toml, uint key, toml_add_val_t val, val_data_t *d
 	case TOML_VAL_TBL:
 	case TOML_VAL_TBL_ARR: {
 		*data = (val_data_t){
-			.key  = key,
+			.key  = key_id,
 			.type = val.type,
 		};
 
@@ -83,106 +100,20 @@ static int create_data(toml_t *toml, uint key, toml_add_val_t val, val_data_t *d
 	}
 	default: {
 		log_error("cparse", "toml", NULL, "unknown val type: %d", val.type);
-		return 1;
+		return TOML_VAL_END;
 	}
 	}
 
-	return 0;
+	return val_id;
 }
 
-static int add_data(tree_t *vals, val_data_t val, toml_val_t id)
-{
-	val_data_t *data = tree_get_data(vals, id);
-	if (data == NULL) {
-		log_error("cparse", "toml", NULL, "failed to add value");
-		return 1;
-	}
-
-	*data = val;
-
-	return 0;
-}
-
-int toml_add_val(toml_t *toml, strv_t key, toml_add_val_t val, toml_val_t *id)
+toml_val_t toml_add_val(toml_t *toml, toml_val_t parent, toml_val_t val)
 {
 	if (toml == NULL) {
-		return 1;
+		return TOML_VAL_END;
 	}
 
-	uint key_id = toml->strs.buf.used;
-	if (strbuf_add(&toml->strs, key.data, key.len, NULL)) {
-		log_error("cparse", "toml", NULL, "failed to add key");
-		return 1;
-	}
-
-	val_data_t data;
-	switch (create_data(toml, key_id, val, &data)) {
-	case 1: return 1;
-	case 2: return 0;
-	}
-
-	toml_val_t val_id = tree_add_child(&toml->vals, toml->root);
-	if (add_data(&toml->vals, data, val_id)) {
-		return 1;
-	}
-
-	if (id) {
-		*id = val_id;
-	}
-
-	return 0;
-}
-
-int toml_val_add_val(toml_t *toml, toml_val_t parent, uint key, toml_add_val_t val, toml_val_t *id)
-{
-	if (toml == NULL) {
-		return 1;
-	}
-
-	val_data_t data;
-	int res = create_data(toml, key, val, &data);
-	switch (res) {
-	case 1: return 1;
-	case 2: return 0;
-	}
-
-	val_data_t *arr_data = tree_get_data(&toml->vals, parent);
-	if (arr_data == NULL) {
-		log_error("cparse", "toml", NULL, "failed to get parent");
-		return 1;
-	}
-
-	toml_val_t val_id = tree_add_child(&toml->vals, parent);
-
-	if (add_data(&toml->vals, data, val_id)) {
-		return 1;
-	}
-
-	if (id) {
-		*id = val_id;
-	}
-
-	return 0;
-}
-
-int toml_arr_add_val(toml_t *toml, toml_val_t arr, toml_add_val_t val, toml_val_t *id)
-{
-	return toml_val_add_val(toml, arr, arr, val, id);
-}
-
-int toml_tbl_add_val(toml_t *toml, toml_val_t tbl, strv_t key, toml_add_val_t val, toml_val_t *id)
-{
-	if (toml == NULL) {
-		return 1;
-	}
-
-	uint key_id = toml->strs.buf.used;
-	if (strbuf_add(&toml->strs, key.data, key.len, NULL)) {
-		log_error("cparse", "toml", NULL, "failed to add key");
-		return 1;
-	}
-
-	return toml_val_add_val(toml, tbl, key_id, val, id);
+	return parent >= toml->vals.cnt ? tree_add(&toml->vals) : tree_set_child(&toml->vals, parent, val);
 }
 
 typedef enum val_mode_e {
@@ -218,7 +149,7 @@ static int toml_print_key(const toml_t *toml, const val_data_t *data, val_mode_t
 
 static int toml_print_vals(const toml_t *toml, toml_val_t parent, val_mode_t mode, int top, print_dst_t dst);
 
-static int toml_print_val(const toml_t *toml, toml_val_t val, val_mode_t mode, int top, print_dst_t dst)
+static int toml_print_val(const toml_t *toml, toml_val_t val, val_mode_t mode, print_dst_t dst)
 {
 	int off = dst.off;
 	int nl	= 0;
@@ -226,7 +157,7 @@ static int toml_print_val(const toml_t *toml, toml_val_t val, val_mode_t mode, i
 	const val_data_t *data = tree_get_data(&toml->vals, val);
 
 	switch (data->type) {
-	case TOML_VAL_STR:
+	case TOML_VAL_STRL:
 	case TOML_VAL_INT:
 	case TOML_VAL_ARR:
 	case TOML_VAL_INL: dst.off += toml_print_key(toml, data, mode == VAL_MODE_NONE ? VAL_MODE_NONE : VAL_MODE_INL, dst); break;
@@ -236,10 +167,10 @@ static int toml_print_val(const toml_t *toml, toml_val_t val, val_mode_t mode, i
 	}
 
 	switch (data->type) {
-	case TOML_VAL_STR: {
+	case TOML_VAL_STRL: {
 		uint start, len;
 		strbuf_get(&toml->strs, data->val.str, start, len);
-		dst.off += c_dprintf(dst, "\"%.*s\"", len, &toml->strs.buf.data[start]);
+		dst.off += c_dprintf(dst, "'%.*s'", len, &toml->strs.buf.data[start]);
 		nl = 1;
 		break;
 	}
@@ -270,7 +201,7 @@ static int toml_print_val(const toml_t *toml, toml_val_t val, val_mode_t mode, i
 			dst.off += toml_print_vals(toml, val, VAL_MODE_INL, 0, dst);
 			dst.off += c_dprintf(dst, "}");
 		}
-		nl = top;
+		nl = 0;
 		break;
 	}
 	case TOML_VAL_TBL_ARR: {
@@ -281,7 +212,7 @@ static int toml_print_val(const toml_t *toml, toml_val_t val, val_mode_t mode, i
 			dst.off += toml_print_vals(toml, val, VAL_MODE_NONE, 0, dst);
 			dst.off += c_dprintf(dst, "]");
 		}
-		nl = top;
+		nl = 0;
 		break;
 	}
 	default: log_error("cparse", "toml", NULL, "unknown type: %d", data->type); break;
@@ -299,15 +230,22 @@ static int toml_print_vals(const toml_t *toml, toml_val_t parent, val_mode_t mod
 	int off = dst.off;
 
 	toml_val_t child;
-	int first;
+	int first = 1;
 
 	tree_foreach_child(&toml->vals, parent, child)
 	{
-		if (mode != 1 && !first) {
-			dst.off += c_dprintf(dst, ", ");
+		if (!first) {
+			if (mode == VAL_MODE_NL || mode == VAL_MODE_NL_ARR) {
+				const val_data_t *data = tree_get_data(&toml->vals, child);
+				if (top && (data->type == TOML_VAL_TBL || data->type == TOML_VAL_TBL_ARR)) {
+					dst.off += c_dprintf(dst, "\n");
+				}
+			} else {
+				dst.off += c_dprintf(dst, ", ");
+			}
 		}
 
-		dst.off += toml_print_val(toml, child, mode, top, dst);
+		dst.off += toml_print_val(toml, child, mode, dst);
 
 		first = 0;
 	}
@@ -315,11 +253,11 @@ static int toml_print_vals(const toml_t *toml, toml_val_t parent, val_mode_t mod
 	return dst.off - off;
 }
 
-int toml_print(const toml_t *toml, print_dst_t dst)
+int toml_print(const toml_t *toml, toml_val_t val, print_dst_t dst)
 {
 	if (toml == NULL) {
 		return 0;
 	}
 
-	return toml_print_vals(toml, toml->root, VAL_MODE_NL, 1, dst);
+	return toml_print_vals(toml, val, VAL_MODE_NL, 1, dst);
 }

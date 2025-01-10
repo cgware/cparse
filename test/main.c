@@ -12,6 +12,7 @@ STEST(parser);
 STEST(syntax);
 STEST(token);
 STEST(toml);
+STEST(toml_parse);
 
 TEST(cparse)
 {
@@ -25,6 +26,7 @@ TEST(cparse)
 	RUN(syntax);
 	RUN(token);
 	RUN(toml);
+	RUN(toml_parse);
 	SEND;
 }
 
