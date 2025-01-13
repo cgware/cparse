@@ -3,7 +3,6 @@
 
 #include "arr.h"
 #include "str.h"
-#include "strv.h"
 #include "strbuf.h"
 #include "token.h"
 
@@ -22,7 +21,7 @@ typedef struct lex_s {
 lex_t *lex_init(lex_t *lex, size_t words_size, uint tokens_cap, alloc_t alloc);
 void lex_free(lex_t *lex);
 
-#define lex_add_word(_lex, _str, _len, _index) strbuf_add(&(_lex)->words, _str, _len, _index)
+#define lex_add_word(_lex, _str, _index) strbuf_add(&(_lex)->words, _str, _index)
 
 int lex_add_token(lex_t *lex, token_type_t type, str_t val, uint *index);
 #define lex_get_token(_lex, _index)                                                                                                        \

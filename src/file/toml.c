@@ -49,7 +49,7 @@ toml_val_t toml_val_init(toml_t *toml, strv_t key, toml_add_val_t val)
 	uint key_id = -1;
 	if (key.data) {
 		key_id = toml->strs.buf.used;
-		if (strbuf_add(&toml->strs, key.data, key.len, NULL)) {
+		if (strbuf_add(&toml->strs, key, NULL)) {
 			log_error("cparse", "toml", NULL, "failed to add key");
 			return TOML_VAL_END;
 		}
@@ -65,7 +65,7 @@ toml_val_t toml_val_init(toml_t *toml, strv_t key, toml_add_val_t val)
 	switch (val.type) {
 	case TOML_VAL_STRL: {
 		uint str_id = toml->strs.buf.used;
-		if (strbuf_add(&toml->strs, val.val.str.data, val.val.str.len, NULL)) {
+		if (strbuf_add(&toml->strs, val.val.str, NULL)) {
 			log_error("cparse", "toml", NULL, "failed to add string");
 			return TOML_VAL_END;
 		}

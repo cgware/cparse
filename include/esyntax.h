@@ -3,7 +3,6 @@
 
 #include "arr.h"
 #include "buf.h"
-#include "print.h"
 #include "str.h"
 #include "token.h"
 #include "tree.h"

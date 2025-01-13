@@ -34,7 +34,7 @@ TEST(lex_add_word)
 	lex_init(&lex, 1, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(lex_add_word(&lex, "Aa", 2, NULL), 0);
+	EXPECT_EQ(lex_add_word(&lex, STRV("Aa"), NULL), 0);
 
 	lex_free(&lex);
 
@@ -218,7 +218,7 @@ TEST(lex_tokenize)
 	str_t src = STR("Aabc");
 	lex_init(&lex, 1, 1, ALLOC_STD);
 
-	lex_add_word(&lex, "abc", 3, NULL);
+	lex_add_word(&lex, STRV("abc"), NULL);
 
 	EXPECT_EQ(lex_tokenize(NULL, NULL, STR_NULL, 0), 1);
 	mem_oom(1);

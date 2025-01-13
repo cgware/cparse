@@ -133,8 +133,8 @@ static stx_term_t term_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t p
 		strv_t name = lex_get_token_val(prs->lex, str);
 
 		stx_rule_t term_rule;
-		if (strbuf_get_index(names, name.data, name.len, &term_rule)) {
-			strbuf_add(names, name.data, name.len, &term_rule);
+		if (strbuf_get_index(names, name, &term_rule)) {
+			strbuf_add(names, name, &term_rule);
 			stx_add_rule(stx);
 		}
 
@@ -210,8 +210,8 @@ static stx_rule_t rules_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t 
 	strv_t name = lex_get_token_val(prs->lex, str);
 
 	stx_rule_t rule;
-	if (strbuf_get_index(names, name.data, name.len, &rule)) {
-		strbuf_add(names, name.data, name.len, &rule);
+	if (strbuf_get_index(names, name, &rule)) {
+		strbuf_add(names, name, &rule);
 		stx_add_rule(stx);
 	}
 

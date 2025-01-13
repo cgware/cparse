@@ -55,20 +55,18 @@ toml_prs_t *toml_prs_init(toml_prs_t *toml_prs, alloc_t alloc)
 	estx_rule_t estx_root = estx_from_ebnf(&ebnf, &prs, prs_root, &toml_prs->estx, &names);
 	(void)estx_root;
 
-#define PSTRV(_str) _str, sizeof(_str) - 1
-
-	strbuf_get_index(&names, PSTRV("file"), &toml_prs->file);
-	strbuf_get_index(&names, PSTRV("toml"), &toml_prs->toml);
-	strbuf_get_index(&names, PSTRV("kv"), &toml_prs->kv);
-	strbuf_get_index(&names, PSTRV("key"), &toml_prs->key);
-	strbuf_get_index(&names, PSTRV("val"), &toml_prs->val);
-	strbuf_get_index(&names, PSTRV("int"), &toml_prs->i);
-	strbuf_get_index(&names, PSTRV("strl"), &toml_prs->strl);
-	strbuf_get_index(&names, PSTRV("arr"), &toml_prs->arr);
-	strbuf_get_index(&names, PSTRV("inl"), &toml_prs->inl);
-	strbuf_get_index(&names, PSTRV("tbl"), &toml_prs->tbl);
-	strbuf_get_index(&names, PSTRV("tbla"), &toml_prs->tbla);
-	strbuf_get_index(&names, PSTRV("ent"), &toml_prs->ent);
+	strbuf_get_index(&names, STRV("file"), &toml_prs->file);
+	strbuf_get_index(&names, STRV("toml"), &toml_prs->toml);
+	strbuf_get_index(&names, STRV("kv"), &toml_prs->kv);
+	strbuf_get_index(&names, STRV("key"), &toml_prs->key);
+	strbuf_get_index(&names, STRV("val"), &toml_prs->val);
+	strbuf_get_index(&names, STRV("int"), &toml_prs->i);
+	strbuf_get_index(&names, STRV("strl"), &toml_prs->strl);
+	strbuf_get_index(&names, STRV("arr"), &toml_prs->arr);
+	strbuf_get_index(&names, STRV("inl"), &toml_prs->inl);
+	strbuf_get_index(&names, STRV("tbl"), &toml_prs->tbl);
+	strbuf_get_index(&names, STRV("tbla"), &toml_prs->tbla);
+	strbuf_get_index(&names, STRV("ent"), &toml_prs->ent);
 
 	strbuf_free(&names);
 	prs_free(&prs);
