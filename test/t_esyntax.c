@@ -79,8 +79,8 @@ TEST(estx_create_literal)
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
 
-	estx_create_literal(NULL, STR_NULL, 0);
-	estx_create_literal(&estx, STR_NULL, 0);
+	estx_create_literal(NULL, STRV_NULL, 0);
+	estx_create_literal(&estx, STRV_NULL, 0);
 	estx_free(&estx);
 
 	END;
@@ -162,12 +162,12 @@ TEST(estx_print)
 
 	estx_term_add_term(&estx, line, ESTX_TERM_TOKEN(&estx, TOKEN_UNKNOWN, ESTX_TERM_OCC_OPT));
 	estx_term_add_term(&estx, line, ESTX_TERM_TOKEN(&estx, TOKEN_ALPHA, ESTX_TERM_OCC_REP));
-	estx_term_add_term(&estx, line, ESTX_TERM_LITERAL(&estx, STR(";"), ESTX_TERM_OCC_OPT | ESTX_TERM_OCC_REP));
-	estx_term_add_term(&estx, line, ESTX_TERM_LITERAL(&estx, STR("'"), 0));
+	estx_term_add_term(&estx, line, ESTX_TERM_LITERAL(&estx, STRV(";"), ESTX_TERM_OCC_OPT | ESTX_TERM_OCC_REP));
+	estx_term_add_term(&estx, line, ESTX_TERM_LITERAL(&estx, STRV("'"), 0));
 
 	const estx_term_t group = estx_term_add_term(&estx, line, ESTX_TERM_GROUP(&estx, 0));
-	const estx_term_t a	= ESTX_TERM_LITERAL(&estx, STR("A"), 0);
-	const estx_term_t b	= ESTX_TERM_LITERAL(&estx, STR("B"), 0);
+	const estx_term_t a	= ESTX_TERM_LITERAL(&estx, STRV("A"), 0);
+	const estx_term_t b	= ESTX_TERM_LITERAL(&estx, STRV("B"), 0);
 	const estx_term_t alt	= estx_term_add_term(&estx, group, ESTX_TERM_ALT(&estx));
 	estx_term_add_term(&estx, alt, a);
 	estx_term_add_term(&estx, alt, b);

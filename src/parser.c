@@ -183,9 +183,9 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 				return 1;
 			}
 
-			str_t c		= strc(&literal.data[i], 1);
-			str_t token_val = lex_get_token_val(prs->lex, token);
-			if (!str_eq(token_val, c)) {
+			strv_t c	 = STRVN(&literal.data[i], 1);
+			strv_t token_val = lex_get_token_val(prs->lex, token);
+			if (!strv_eq(token_val, c)) {
 				if (err->tok == LEX_TOKEN_END || *off + i >= err->tok) {
 					err->rule = rule;
 					err->tok  = *off + i;
@@ -193,7 +193,7 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 				}
 
 				char buf[256] = {0};
-				const int len = str_print(token_val, PRINT_DST_BUF(buf, sizeof(buf), 0));
+				const int len = strv_print(token_val, PRINT_DST_BUF(buf, sizeof(buf), 0));
 
 				log_trace("cparse",
 					  "parser",
@@ -344,13 +344,13 @@ static int print_nodes(void *data, print_dst_t dst, const void *priv)
 		char type[32]	  = {0};
 		int type_len	  = token_type_print(1 << node->val.token.type, PRINT_DST_BUF(type, sizeof(type), 0));
 		char val[32]	  = {0};
-		const int val_len = str_print(lex_get_token_val(prs->lex, node->val.token), PRINT_DST_BUF(val, sizeof(val), 0));
+		const int val_len = strv_print(lex_get_token_val(prs->lex, node->val.token), PRINT_DST_BUF(val, sizeof(val), 0));
 		dst.off += c_dprintf(dst, "%.*s(%.*s)\n", type_len, type, val_len, val);
 		break;
 	}
 	case PRS_NODE_LITERAL: {
 		char val[32]	  = {0};
-		const int val_len = str_print(lex_get_token_val(prs->lex, node->val.literal), PRINT_DST_BUF(val, sizeof(val), 0));
+		const int val_len = strv_print(lex_get_token_val(prs->lex, node->val.literal), PRINT_DST_BUF(val, sizeof(val), 0));
 		dst.off += c_dprintf(dst, "\'%.*s\'\n", val_len, val);
 		break;
 	}

@@ -216,7 +216,7 @@ TEST(eprs_parse_rule)
 	eprs_init(&eprs, 256, ALLOC_STD);
 
 	estx_rule_t line = estx_add_rule(&estx);
-	estx_rule_set_term(&estx, line, ESTX_TERM_LITERAL(&estx, STR(" "), ESTX_TERM_OCC_ONE));
+	estx_rule_set_term(&estx, line, ESTX_TERM_LITERAL(&estx, STRV(" "), ESTX_TERM_OCC_ONE));
 
 	estx_rule_t rule = estx_add_rule(&estx);
 	estx_rule_set_term(&estx, rule, ESTX_TERM_RULE(&estx, line, ESTX_TERM_OCC_ONE));
@@ -306,7 +306,7 @@ TEST(eprs_parse_literal_unexpected_end)
 	eprs_init(&eprs, 256, ALLOC_STD);
 
 	estx_rule_t rule = estx_add_rule(&estx);
-	estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STR("123"), ESTX_TERM_OCC_ONE));
+	estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STRV("123"), ESTX_TERM_OCC_ONE));
 
 	char buf[256] = {0};
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
@@ -339,7 +339,7 @@ TEST(eprs_parse_literal_unexpected)
 	eprs_init(&eprs, 256, ALLOC_STD);
 
 	estx_rule_t rule = estx_add_rule(&estx);
-	estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STR("123"), ESTX_TERM_OCC_ONE));
+	estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STRV("123"), ESTX_TERM_OCC_ONE));
 
 	char buf[256] = {0};
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
@@ -372,7 +372,7 @@ TEST(eprs_parse_literal)
 	eprs_init(&eprs, 256, ALLOC_STD);
 
 	estx_rule_t rule = estx_add_rule(&estx);
-	estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STR("1"), ESTX_TERM_OCC_ONE));
+	estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STRV("1"), ESTX_TERM_OCC_ONE));
 
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_NONE()), 0);
 
@@ -400,8 +400,8 @@ TEST(eprs_parse_alt_failed)
 
 	estx_rule_t rule = estx_add_rule(&estx);
 	estx_term_t alt	 = estx_rule_set_term(&estx, rule, ESTX_TERM_ALT(&estx));
-	estx_term_add_term(&estx, alt, ESTX_TERM_LITERAL(&estx, STR("a"), ESTX_TERM_OCC_ONE));
-	estx_term_add_term(&estx, alt, ESTX_TERM_LITERAL(&estx, STR("b"), ESTX_TERM_OCC_ONE));
+	estx_term_add_term(&estx, alt, ESTX_TERM_LITERAL(&estx, STRV("a"), ESTX_TERM_OCC_ONE));
+	estx_term_add_term(&estx, alt, ESTX_TERM_LITERAL(&estx, STRV("b"), ESTX_TERM_OCC_ONE));
 
 	char buf[256] = {0};
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
@@ -435,8 +435,8 @@ TEST(eprs_parse_alt)
 
 	estx_rule_t rule = estx_add_rule(&estx);
 	estx_term_t alt	 = estx_rule_set_term(&estx, rule, ESTX_TERM_ALT(&estx));
-	estx_term_add_term(&estx, alt, ESTX_TERM_LITERAL(&estx, STR("a"), ESTX_TERM_OCC_ONE));
-	estx_term_add_term(&estx, alt, ESTX_TERM_LITERAL(&estx, STR("b"), ESTX_TERM_OCC_ONE));
+	estx_term_add_term(&estx, alt, ESTX_TERM_LITERAL(&estx, STRV("a"), ESTX_TERM_OCC_ONE));
+	estx_term_add_term(&estx, alt, ESTX_TERM_LITERAL(&estx, STRV("b"), ESTX_TERM_OCC_ONE));
 
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_NONE()), 0);
 
@@ -464,8 +464,8 @@ TEST(eprs_parse_con_failed)
 
 	estx_rule_t rule = estx_add_rule(&estx);
 	estx_term_t con	 = estx_rule_set_term(&estx, rule, ESTX_TERM_CON(&estx));
-	estx_term_add_term(&estx, con, ESTX_TERM_LITERAL(&estx, STR("a"), ESTX_TERM_OCC_ONE));
-	estx_term_add_term(&estx, con, ESTX_TERM_LITERAL(&estx, STR("b"), ESTX_TERM_OCC_ONE));
+	estx_term_add_term(&estx, con, ESTX_TERM_LITERAL(&estx, STRV("a"), ESTX_TERM_OCC_ONE));
+	estx_term_add_term(&estx, con, ESTX_TERM_LITERAL(&estx, STRV("b"), ESTX_TERM_OCC_ONE));
 
 	char buf[256] = {0};
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
@@ -499,8 +499,8 @@ TEST(eprs_parse_con)
 
 	estx_rule_t rule = estx_add_rule(&estx);
 	estx_term_t con	 = estx_rule_set_term(&estx, rule, ESTX_TERM_CON(&estx));
-	estx_term_add_term(&estx, con, ESTX_TERM_LITERAL(&estx, STR("a"), ESTX_TERM_OCC_ONE));
-	estx_term_add_term(&estx, con, ESTX_TERM_LITERAL(&estx, STR("b"), ESTX_TERM_OCC_ONE));
+	estx_term_add_term(&estx, con, ESTX_TERM_LITERAL(&estx, STRV("a"), ESTX_TERM_OCC_ONE));
+	estx_term_add_term(&estx, con, ESTX_TERM_LITERAL(&estx, STRV("b"), ESTX_TERM_OCC_ONE));
 
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_NONE()), 0);
 
@@ -528,8 +528,8 @@ TEST(eprs_parse_group_failed)
 
 	estx_rule_t rule  = estx_add_rule(&estx);
 	estx_term_t group = estx_rule_set_term(&estx, rule, ESTX_TERM_GROUP(&estx, ESTX_TERM_OCC_ONE));
-	estx_term_add_term(&estx, group, ESTX_TERM_LITERAL(&estx, STR("a"), ESTX_TERM_OCC_ONE));
-	estx_term_add_term(&estx, group, ESTX_TERM_LITERAL(&estx, STR("b"), ESTX_TERM_OCC_ONE));
+	estx_term_add_term(&estx, group, ESTX_TERM_LITERAL(&estx, STRV("a"), ESTX_TERM_OCC_ONE));
+	estx_term_add_term(&estx, group, ESTX_TERM_LITERAL(&estx, STRV("b"), ESTX_TERM_OCC_ONE));
 
 	char buf[256] = {0};
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
@@ -563,8 +563,8 @@ TEST(eprs_parse_group)
 
 	estx_rule_t rule  = estx_add_rule(&estx);
 	estx_term_t group = estx_rule_set_term(&estx, rule, ESTX_TERM_GROUP(&estx, ESTX_TERM_OCC_ONE));
-	estx_term_add_term(&estx, group, ESTX_TERM_LITERAL(&estx, STR("a"), ESTX_TERM_OCC_ONE));
-	estx_term_add_term(&estx, group, ESTX_TERM_LITERAL(&estx, STR("b"), ESTX_TERM_OCC_ONE));
+	estx_term_add_term(&estx, group, ESTX_TERM_LITERAL(&estx, STRV("a"), ESTX_TERM_OCC_ONE));
+	estx_term_add_term(&estx, group, ESTX_TERM_LITERAL(&estx, STRV("b"), ESTX_TERM_OCC_ONE));
 
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_NONE()), 0);
 
@@ -591,7 +591,7 @@ TEST(eprs_parse_opt)
 	eprs_init(&eprs, 256, ALLOC_STD);
 
 	estx_rule_t rule = estx_add_rule(&estx);
-	estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STR("a"), ESTX_TERM_OCC_OPT));
+	estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STRV("a"), ESTX_TERM_OCC_OPT));
 
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_NONE()), 0);
 
@@ -618,7 +618,7 @@ TEST(eprs_parse_rep_failed)
 	eprs_init(&eprs, 256, ALLOC_STD);
 
 	estx_rule_t rule = estx_add_rule(&estx);
-	estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STR("a"), ESTX_TERM_OCC_REP));
+	estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STRV("a"), ESTX_TERM_OCC_REP));
 
 	char buf[256] = {0};
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
@@ -657,7 +657,7 @@ TEST(eprs_parse_rep_loop)
 	estx_rule_set_term(&estx, file, ESTX_TERM_RULE(&estx, line, ESTX_TERM_OCC_OPT | ESTX_TERM_OCC_REP));
 	estx_term_add_term(&estx, file, ESTX_TERM_TOKEN(&estx, TOKEN_EOF, ESTX_TERM_OCC_ONE));
 	estx_rule_set_term(&estx, line, ESTX_TERM_RULE(&estx, val, ESTX_TERM_OCC_OPT));
-	estx_rule_set_term(&estx, val, ESTX_TERM_LITERAL(&estx, STR("a"), ESTX_TERM_OCC_ONE));
+	estx_rule_set_term(&estx, val, ESTX_TERM_LITERAL(&estx, STRV("a"), ESTX_TERM_OCC_ONE));
 
 	log_set_quiet(0, 1);
 	eprs_node_t root;
@@ -688,7 +688,7 @@ TEST(eprs_parse_rep)
 	eprs_init(&eprs, 256, ALLOC_STD);
 
 	estx_rule_t rule = estx_add_rule(&estx);
-	estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STR("a"), ESTX_TERM_OCC_REP));
+	estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STRV("a"), ESTX_TERM_OCC_REP));
 
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_NONE()), 0);
 
@@ -722,8 +722,8 @@ TEST(eprs_parse_name)
 	estx_term_add_term(&estx, file_alt, ESTX_TERM_RULE(&estx, vala, ESTX_TERM_OCC_ONE));
 	estx_term_add_term(&estx, file_alt, ESTX_TERM_RULE(&estx, valb, ESTX_TERM_OCC_ONE));
 
-	estx_rule_set_term(&estx, valb, ESTX_TERM_LITERAL(&estx, STR("b"), ESTX_TERM_OCC_ONE));
-	estx_rule_set_term(&estx, vala, ESTX_TERM_LITERAL(&estx, STR("a"), ESTX_TERM_OCC_ONE));
+	estx_rule_set_term(&estx, valb, ESTX_TERM_LITERAL(&estx, STRV("b"), ESTX_TERM_OCC_ONE));
+	estx_rule_set_term(&estx, vala, ESTX_TERM_LITERAL(&estx, STRV("a"), ESTX_TERM_OCC_ONE));
 
 	eprs_node_t root;
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, file, &root, PRINT_DST_NONE()), 0);
@@ -764,7 +764,7 @@ TEST(eprs_parse_cache)
 	estx_rule_set_term(&estx, file, ESTX_TERM_RULE(&estx, line, ESTX_TERM_OCC_ONE));
 	estx_term_add_term(&estx, file, ESTX_TERM_TOKEN(&estx, TOKEN_EOF, ESTX_TERM_OCC_ONE));
 	estx_rule_set_term(&estx, line, ESTX_TERM_RULE(&estx, ra, ESTX_TERM_OCC_OPT | ESTX_TERM_OCC_REP));
-	estx_rule_set_term(&estx, ra, ESTX_TERM_LITERAL(&estx, STR("a"), ESTX_TERM_OCC_ONE));
+	estx_rule_set_term(&estx, ra, ESTX_TERM_LITERAL(&estx, STRV("a"), ESTX_TERM_OCC_ONE));
 
 	eprs_node_t root;
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, file, &root, PRINT_DST_NONE()), 0);
@@ -836,7 +836,7 @@ TEST(eprs_parse_ebnf)
 		estx_init(&estx, 1, 1, ALLOC_STD);
 
 		estx_rule_t rule = estx_add_rule(&estx);
-		estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STR("::="), ESTX_TERM_OCC_ONE));
+		estx_rule_set_term(&estx, rule, ESTX_TERM_LITERAL(&estx, STRV("::="), ESTX_TERM_OCC_ONE));
 
 		EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, PRINT_DST_NONE()), 1);
 

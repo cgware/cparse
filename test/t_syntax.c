@@ -80,8 +80,8 @@ TEST(stx_create_literal)
 	stx_t stx = {0};
 	stx_init(&stx, 1, 1, ALLOC_STD);
 
-	stx_create_literal(NULL, STR_NULL);
-	stx_create_literal(&stx, STR_NULL);
+	stx_create_literal(NULL, STRV_NULL);
+	stx_create_literal(&stx, STRV_NULL);
 
 	stx_free(&stx);
 
@@ -142,7 +142,7 @@ TEST(stx_rule_add_or)
 	stx_add_rule(&stx);
 
 	EXPECT_EQ(stx_rule_add_or(NULL, STX_RULE_END, 0), STX_TERM_END);
-	stx_term_t term = STX_TERM_LITERAL(&stx, STR("T"));
+	stx_term_t term = STX_TERM_LITERAL(&stx, STRV("T"));
 	log_set_quiet(0, 1);
 	EXPECT_EQ(stx_rule_add_or(NULL, STX_RULE_END, 1, term), STX_TERM_END);
 	EXPECT_EQ(stx_rule_add_or(NULL, STX_RULE_END, 2, term, term), STX_TERM_END);
@@ -164,7 +164,7 @@ TEST(stx_rule_add_arr)
 
 	stx_rule_t rule = stx_add_rule(&stx);
 
-	STX_TERM_LITERAL(&stx, STR("T"));
+	STX_TERM_LITERAL(&stx, STRV("T"));
 
 	EXPECT_EQ(stx_rule_add_arr(NULL, STX_RULE_END, STX_TERM_TOKEN(&stx, TOKEN_UPPER), STX_TERM_NONE(&stx)), STX_TERM_END);
 	log_set_quiet(0, 1);
@@ -212,11 +212,11 @@ TEST(stx_print)
 
 	stx_rule_add_term(&stx, line, STX_TERM_TOKEN(&stx, -1));
 	stx_rule_add_term(&stx, line, STX_TERM_TOKEN(&stx, TOKEN_ALPHA));
-	stx_rule_add_term(&stx, line, STX_TERM_LITERAL(&stx, STR(";")));
-	stx_rule_add_term(&stx, line, STX_TERM_LITERAL(&stx, STR("'")));
+	stx_rule_add_term(&stx, line, STX_TERM_LITERAL(&stx, STRV(";")));
+	stx_rule_add_term(&stx, line, STX_TERM_LITERAL(&stx, STRV("'")));
 
-	const stx_term_t a = STX_TERM_LITERAL(&stx, STR("A"));
-	const stx_term_t b = STX_TERM_LITERAL(&stx, STR("B"));
+	const stx_term_t a = STX_TERM_LITERAL(&stx, STRV("A"));
+	const stx_term_t b = STX_TERM_LITERAL(&stx, STRV("B"));
 	stx_rule_add_term(&stx, line, STX_TERM_OR(&stx, a, b));
 
 	char buf[64] = {0};
@@ -272,8 +272,8 @@ TEST(stx_print_tree)
 			4,
 			STX_TERM_TOKEN(&stx, TOKEN_ALPHA),
 			STX_TERM_TOKEN(&stx, TOKEN_DIGIT),
-			STX_TERM_LITERAL(&stx, STR("_")),
-			STX_TERM_LITERAL(&stx, STR("'")));
+			STX_TERM_LITERAL(&stx, STRV("_")),
+			STX_TERM_LITERAL(&stx, STRV("'")));
 
 	char buf[256] = {0};
 

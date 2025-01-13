@@ -62,11 +62,11 @@ const stx_t *bnf_get_stx(bnf_t *bnf)
 
 	stx_rule_add_arr(stx, bnf->rules, STX_TERM_RULE(stx, bnf->rule), STX_TERM_NONE(stx));
 
-	stx_rule_add_term(stx, bnf->rule, STX_TERM_LITERAL(stx, STR("<")));
+	stx_rule_add_term(stx, bnf->rule, STX_TERM_LITERAL(stx, STRV("<")));
 	stx_rule_add_term(stx, bnf->rule, STX_TERM_RULE(stx, bnf->rname));
-	stx_rule_add_term(stx, bnf->rule, STX_TERM_LITERAL(stx, STR(">")));
+	stx_rule_add_term(stx, bnf->rule, STX_TERM_LITERAL(stx, STRV(">")));
 	stx_rule_add_term(stx, bnf->rule, STX_TERM_RULE(stx, spaces));
-	stx_rule_add_term(stx, bnf->rule, STX_TERM_LITERAL(stx, STR("::=")));
+	stx_rule_add_term(stx, bnf->rule, STX_TERM_LITERAL(stx, STRV("::=")));
 	stx_rule_add_term(stx, bnf->rule, STX_TERM_RULE(stx, space));
 	stx_rule_add_term(stx, bnf->rule, STX_TERM_RULE(stx, bnf->expr));
 	stx_rule_add_term(stx, bnf->rule, STX_TERM_TOKEN(stx, TOKEN_NL));
@@ -77,28 +77,28 @@ const stx_t *bnf_get_stx(bnf_t *bnf)
 
 	stx_rule_add_arr(stx, rchars, STX_TERM_RULE(stx, rchar), STX_TERM_NONE(stx));
 
-	stx_rule_add_term(stx, rchar, STX_TERM_OR(stx, STX_TERM_TOKEN(stx, TOKEN_LOWER), STX_TERM_LITERAL(stx, STR("-"))));
+	stx_rule_add_term(stx, rchar, STX_TERM_OR(stx, STX_TERM_TOKEN(stx, TOKEN_LOWER), STX_TERM_LITERAL(stx, STRV("-"))));
 
 	const stx_term_t expr_l = STX_TERM_RULE(stx, bnf->terms);
 	stx_term_add_term(stx, expr_l, STX_TERM_RULE(stx, space));
-	stx_term_add_term(stx, expr_l, STX_TERM_LITERAL(stx, STR("|")));
+	stx_term_add_term(stx, expr_l, STX_TERM_LITERAL(stx, STRV("|")));
 	stx_term_add_term(stx, expr_l, STX_TERM_RULE(stx, space));
 	stx_term_add_term(stx, expr_l, STX_TERM_RULE(stx, bnf->expr));
 	stx_rule_add_term(stx, bnf->expr, STX_TERM_OR(stx, expr_l, STX_TERM_RULE(stx, bnf->terms)));
 
 	stx_rule_add_arr(stx, bnf->terms, STX_TERM_RULE(stx, bnf->term), STX_TERM_RULE(stx, space));
 
-	const stx_term_t term_rule = STX_TERM_LITERAL(stx, STR("<"));
+	const stx_term_t term_rule = STX_TERM_LITERAL(stx, STRV("<"));
 	stx_term_add_term(stx, term_rule, STX_TERM_RULE(stx, bnf->rname));
-	stx_term_add_term(stx, term_rule, STX_TERM_LITERAL(stx, STR(">")));
+	stx_term_add_term(stx, term_rule, STX_TERM_LITERAL(stx, STRV(">")));
 	stx_rule_add_or(stx, bnf->term, 3, STX_TERM_RULE(stx, bnf->literal), STX_TERM_RULE(stx, bnf->token), term_rule);
 
-	const stx_term_t lsingle = STX_TERM_LITERAL(stx, STR("'"));
+	const stx_term_t lsingle = STX_TERM_LITERAL(stx, STRV("'"));
 	stx_term_add_term(stx, lsingle, STX_TERM_RULE(stx, bnf->tdouble));
-	stx_term_add_term(stx, lsingle, STX_TERM_LITERAL(stx, STR("'")));
-	const stx_term_t ldouble = STX_TERM_LITERAL(stx, STR("\""));
+	stx_term_add_term(stx, lsingle, STX_TERM_LITERAL(stx, STRV("'")));
+	const stx_term_t ldouble = STX_TERM_LITERAL(stx, STRV("\""));
 	stx_term_add_term(stx, ldouble, STX_TERM_RULE(stx, bnf->tsingle));
-	stx_term_add_term(stx, ldouble, STX_TERM_LITERAL(stx, STR("\"")));
+	stx_term_add_term(stx, ldouble, STX_TERM_LITERAL(stx, STRV("\"")));
 	stx_rule_add_term(stx, bnf->literal, STX_TERM_OR(stx, lsingle, ldouble));
 
 	stx_rule_add_arr(stx, bnf->token, STX_TERM_TOKEN(stx, TOKEN_UPPER), STX_TERM_NONE(stx));
@@ -106,8 +106,8 @@ const stx_t *bnf_get_stx(bnf_t *bnf)
 	stx_rule_add_arr(stx, bnf->tdouble, STX_TERM_RULE(stx, cdouble), STX_TERM_NONE(stx));
 	stx_rule_add_arr(stx, bnf->tsingle, STX_TERM_RULE(stx, csingle), STX_TERM_NONE(stx));
 
-	stx_rule_add_term(stx, cdouble, STX_TERM_OR(stx, STX_TERM_RULE(stx, character), STX_TERM_LITERAL(stx, STR("\""))));
-	stx_rule_add_term(stx, csingle, STX_TERM_OR(stx, STX_TERM_RULE(stx, character), STX_TERM_LITERAL(stx, STR("'"))));
+	stx_rule_add_term(stx, cdouble, STX_TERM_OR(stx, STX_TERM_RULE(stx, character), STX_TERM_LITERAL(stx, STRV("\""))));
+	stx_rule_add_term(stx, csingle, STX_TERM_OR(stx, STX_TERM_RULE(stx, character), STX_TERM_LITERAL(stx, STRV("'"))));
 
 	stx_rule_add_or(stx,
 			character,
@@ -119,7 +119,7 @@ const stx_t *bnf_get_stx(bnf_t *bnf)
 
 	stx_rule_add_arr(stx, spaces, STX_TERM_RULE(stx, space), STX_TERM_NONE(stx));
 
-	stx_rule_add_term(stx, space, STX_TERM_LITERAL(stx, STR(" ")));
+	stx_rule_add_term(stx, space, STX_TERM_LITERAL(stx, STRV(" ")));
 
 	return stx;
 }
@@ -130,7 +130,7 @@ static stx_term_t term_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t p
 	if (prs_rule_name < prs->nodes.cnt) {
 		token_t str = {0};
 		prs_get_str(prs, prs_rule_name, &str);
-		str_t name = lex_get_token_val(prs->lex, str);
+		strv_t name = lex_get_token_val(prs->lex, str);
 
 		stx_rule_t term_rule;
 		if (strbuf_get_index(names, name.data, name.len, &term_rule)) {
@@ -207,7 +207,7 @@ static stx_rule_t rules_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t 
 
 	token_t str = {0};
 	prs_get_str(prs, prs_rname, &str);
-	str_t name = lex_get_token_val(prs->lex, str);
+	strv_t name = lex_get_token_val(prs->lex, str);
 
 	stx_rule_t rule;
 	if (strbuf_get_index(names, name.data, name.len, &rule)) {

@@ -177,13 +177,13 @@ int lex_add_token(lex_t *lex, token_type_t type, str_t val, uint *index)
 	return 0;
 }
 
-str_t lex_get_token_val(const lex_t *lex, token_t token)
+strv_t lex_get_token_val(const lex_t *lex, token_t token)
 {
 	if (lex == NULL || lex->src == NULL || lex->src->data == NULL) {
-		return STR_NULL;
+		return STRV_NULL;
 	}
 
-	return strc(&lex->src->data[token.start], token.len);
+	return STRVN(&lex->src->data[token.start], token.len);
 }
 
 token_loc_t lex_get_token_loc(const lex_t *lex, uint index)
@@ -288,9 +288,9 @@ int lex_print_token(const lex_t *lex, token_t token, print_dst_t dst)
 	int off = dst.off;
 
 	dst.off += token_type_print(token.type, dst);
-	str_t val    = lex_get_token_val(lex, token);
+	strv_t val   = lex_get_token_val(lex, token);
 	char buf[32] = {0};
-	int len	     = str_print(val, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	int len	     = strv_print(val, PRINT_DST_BUF(buf, sizeof(buf), 0));
 	dst.off += c_dprintf(dst, "(%.*s)", len, buf);
 
 	return dst.off - off;

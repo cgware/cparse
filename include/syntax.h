@@ -5,7 +5,7 @@
 #include "buf.h"
 #include "list.h"
 #include "print.h"
-#include "str.h"
+#include "strv.h"
 #include "token.h"
 
 #define STX_RULE_END ARR_END
@@ -55,7 +55,7 @@ stx_rule_data_t *stx_get_rule_data(const stx_t *stx, stx_rule_t rule);
 stx_term_t stx_create_term(stx_t *stx, stx_term_data_t term);
 stx_term_data_t *stx_get_term_data(const stx_t *stx, stx_term_t term);
 
-stx_term_data_t stx_create_literal(stx_t *stx, str_t str);
+stx_term_data_t stx_create_literal(stx_t *stx, strv_t str);
 
 stx_term_t stx_rule_set_term(stx_t *stx, stx_rule_t rule, stx_term_t term);
 stx_term_t stx_rule_add_term(stx_t *stx, stx_rule_t rule, stx_term_t term);

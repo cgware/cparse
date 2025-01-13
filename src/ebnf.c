@@ -84,25 +84,25 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, print_dst_t dst)
 
 	stx_from_bnf(&bnf, &prs, prs_root, &ebnf->stx, &names);
 
-#define STRV(_str) _str, sizeof(_str) - 1
+#define PSTRV(_str) _str, sizeof(_str) - 1
 
-	strbuf_get_index(&names, STRV("file"), &ebnf->file);
-	strbuf_get_index(&names, STRV("ebnf"), &ebnf->ebnf);
-	strbuf_get_index(&names, STRV("rules"), &ebnf->rules);
-	strbuf_get_index(&names, STRV("rule"), &ebnf->rule);
-	strbuf_get_index(&names, STRV("rname"), &ebnf->rname);
-	strbuf_get_index(&names, STRV("alt"), &ebnf->alt);
-	strbuf_get_index(&names, STRV("concat"), &ebnf->concat);
-	strbuf_get_index(&names, STRV("factor"), &ebnf->factor);
-	strbuf_get_index(&names, STRV("term"), &ebnf->term);
-	strbuf_get_index(&names, STRV("literal"), &ebnf->literal);
-	strbuf_get_index(&names, STRV("tdouble"), &ebnf->tdouble);
-	strbuf_get_index(&names, STRV("tsingle"), &ebnf->tsingle);
-	strbuf_get_index(&names, STRV("token"), &ebnf->token);
-	strbuf_get_index(&names, STRV("group"), &ebnf->group);
-	strbuf_get_index(&names, STRV("opt"), &ebnf->opt);
-	strbuf_get_index(&names, STRV("rep"), &ebnf->rep);
-	strbuf_get_index(&names, STRV("opt-rep"), &ebnf->opt_rep);
+	strbuf_get_index(&names, PSTRV("file"), &ebnf->file);
+	strbuf_get_index(&names, PSTRV("ebnf"), &ebnf->ebnf);
+	strbuf_get_index(&names, PSTRV("rules"), &ebnf->rules);
+	strbuf_get_index(&names, PSTRV("rule"), &ebnf->rule);
+	strbuf_get_index(&names, PSTRV("rname"), &ebnf->rname);
+	strbuf_get_index(&names, PSTRV("alt"), &ebnf->alt);
+	strbuf_get_index(&names, PSTRV("concat"), &ebnf->concat);
+	strbuf_get_index(&names, PSTRV("factor"), &ebnf->factor);
+	strbuf_get_index(&names, PSTRV("term"), &ebnf->term);
+	strbuf_get_index(&names, PSTRV("literal"), &ebnf->literal);
+	strbuf_get_index(&names, PSTRV("tdouble"), &ebnf->tdouble);
+	strbuf_get_index(&names, PSTRV("tsingle"), &ebnf->tsingle);
+	strbuf_get_index(&names, PSTRV("token"), &ebnf->token);
+	strbuf_get_index(&names, PSTRV("group"), &ebnf->group);
+	strbuf_get_index(&names, PSTRV("opt"), &ebnf->opt);
+	strbuf_get_index(&names, PSTRV("rep"), &ebnf->rep);
+	strbuf_get_index(&names, PSTRV("opt-rep"), &ebnf->opt_rep);
 
 	strbuf_free(&names);
 
@@ -122,7 +122,7 @@ static void term_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 	if (prs_rname < prs->nodes.cnt) {
 		token_t str = {0};
 		prs_get_str(prs, prs_rname, &str);
-		str_t name = lex_get_token_val(prs->lex, str);
+		strv_t name = lex_get_token_val(prs->lex, str);
 
 		estx_rule_t new_rule;
 		if (strbuf_get_index(names, name.data, name.len, &new_rule)) {
@@ -153,7 +153,7 @@ static void term_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 			return;
 		}
 
-		str_t literal = lex_get_token_val(prs->lex, str);
+		strv_t literal = lex_get_token_val(prs->lex, str);
 
 		if (rule != ESTX_RULE_END) {
 			estx_rule_set_term(estx, rule, ESTX_TERM_LITERAL(estx, literal, occ));
@@ -167,7 +167,7 @@ static void term_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 	if (prs_token < prs->nodes.cnt) {
 		token_t str = {0};
 		prs_get_str(prs, prs_token, &str);
-		str_t token = lex_get_token_val(prs->lex, str);
+		strv_t token = lex_get_token_val(prs->lex, str);
 		if (rule != ESTX_RULE_END) {
 			estx_rule_set_term(estx, rule, ESTX_TERM_TOKEN(estx, token_type_enum(token), occ));
 		} else {
@@ -257,7 +257,7 @@ static estx_rule_t rules_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_nod
 
 	token_t str = {0};
 	prs_get_str(prs, prs_rname, &str);
-	str_t name = lex_get_token_val(prs->lex, str);
+	strv_t name = lex_get_token_val(prs->lex, str);
 
 	estx_rule_t rule;
 	if (strbuf_get_index(names, name.data, name.len, &rule)) {

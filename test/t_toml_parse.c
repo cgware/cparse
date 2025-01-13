@@ -32,7 +32,7 @@ TEST(toml_parse_null)
 	toml_t toml = {0};
 	toml_init(&toml, 1, 1, ALLOC_STD);
 
-	strv_t str = STRVC("");
+	strv_t str = STRV("");
 
 	EXPECT_EQ(toml_prs_parse(NULL, STRV_NULL, NULL, ALLOC_STD, PRINT_DST_NONE()), TOML_VAL_END);
 	EXPECT_EQ(toml_prs_parse(&prs, STRV_NULL, NULL, ALLOC_STD, PRINT_DST_NONE()), TOML_VAL_END);
@@ -58,7 +58,7 @@ TEST(toml_parse_fail)
 	toml_t toml = {0};
 	toml_init(&toml, 1, 1, ALLOC_STD);
 
-	strv_t str = STRVC("int0 = 1\n");
+	strv_t str = STRV("int0 = 1\n");
 
 	EXPECT_EQ(toml_prs_parse(&prs, str, &toml, ALLOC_STD, PRINT_DST_NONE()), TOML_VAL_END);
 
@@ -78,18 +78,18 @@ TEST(toml_parse_test)
 	toml_t toml = {0};
 	toml_init(&toml, 1, 1, ALLOC_STD);
 
-	strv_t str = STRVC("int = 1\n"
-			   "strl = 'str'\n"
-			   "arr = ['str', 1]\n"
-			   "inl = {strl = 'str', int = 1}\n"
-			   "[tbl]\n"
-			   "int = 1\n"
-			   "strl = 'str'\n"
-			   "[[tblarr]]\n"
-			   "int = 1\n"
-			   "strl = 'str'\n"
-			   "\n"
-			   "[tbll]\n");
+	strv_t str = STRV("int = 1\n"
+			  "strl = 'str'\n"
+			  "arr = ['str', 1]\n"
+			  "inl = {strl = 'str', int = 1}\n"
+			  "[tbl]\n"
+			  "int = 1\n"
+			  "strl = 'str'\n"
+			  "[[tblarr]]\n"
+			  "int = 1\n"
+			  "strl = 'str'\n"
+			  "\n"
+			  "[tbll]\n");
 
 	toml_val_t root = toml_prs_parse(&prs, str, &toml, ALLOC_STD, PRINT_DST_NONE());
 	EXPECT_EQ(root, 0);

@@ -211,7 +211,7 @@ TEST(prs_parse_rule)
 	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t line = stx_add_rule(&stx);
-	stx_rule_add_term(&stx, line, STX_TERM_LITERAL(&stx, STR(" ")));
+	stx_rule_add_term(&stx, line, STX_TERM_LITERAL(&stx, STRV(" ")));
 
 	stx_rule_t rule = stx_add_rule(&stx);
 	stx_rule_add_term(&stx, rule, STX_TERM_RULE(&stx, line));
@@ -301,7 +301,7 @@ TEST(prs_parse_literal_unexpected_end)
 	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t rule = stx_add_rule(&stx);
-	stx_rule_add_term(&stx, rule, STX_TERM_LITERAL(&stx, STR("123")));
+	stx_rule_add_term(&stx, rule, STX_TERM_LITERAL(&stx, STRV("123")));
 
 	char buf[256] = {0};
 	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
@@ -334,7 +334,7 @@ TEST(prs_parse_literal_unexpected)
 	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t rule = stx_add_rule(&stx);
-	stx_rule_add_term(&stx, rule, STX_TERM_LITERAL(&stx, STR("123")));
+	stx_rule_add_term(&stx, rule, STX_TERM_LITERAL(&stx, STRV("123")));
 
 	char buf[256] = {0};
 	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1);
@@ -367,7 +367,7 @@ TEST(prs_parse_literal)
 	prs_init(&prs, 256, ALLOC_STD);
 
 	stx_rule_t rule = stx_add_rule(&stx);
-	stx_rule_add_term(&stx, rule, STX_TERM_LITERAL(&stx, STR("1")));
+	stx_rule_add_term(&stx, rule, STX_TERM_LITERAL(&stx, STRV("1")));
 
 	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_NONE()), 0);
 
@@ -395,8 +395,8 @@ TEST(prs_parse_or_l)
 
 	stx_rule_t rule = stx_add_rule(&stx);
 
-	const stx_term_t a = STX_TERM_LITERAL(&stx, STR("a"));
-	const stx_term_t b = STX_TERM_LITERAL(&stx, STR("b"));
+	const stx_term_t a = STX_TERM_LITERAL(&stx, STRV("a"));
+	const stx_term_t b = STX_TERM_LITERAL(&stx, STRV("b"));
 	stx_rule_add_term(&stx, rule, STX_TERM_OR(&stx, a, b));
 
 	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_NONE()), 0);
@@ -425,8 +425,8 @@ TEST(prs_parse_or_r)
 
 	stx_rule_t rule = stx_add_rule(&stx);
 
-	const stx_term_t a = STX_TERM_LITERAL(&stx, STR("a"));
-	const stx_term_t b = STX_TERM_LITERAL(&stx, STR("b"));
+	const stx_term_t a = STX_TERM_LITERAL(&stx, STRV("a"));
+	const stx_term_t b = STX_TERM_LITERAL(&stx, STRV("b"));
 	stx_rule_add_term(&stx, rule, STX_TERM_OR(&stx, a, b));
 
 	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, PRINT_DST_NONE()), 0);
@@ -455,8 +455,8 @@ TEST(prs_parse_or_unexpected)
 
 	stx_rule_t rule = stx_add_rule(&stx);
 
-	const stx_term_t a = STX_TERM_LITERAL(&stx, STR("a"));
-	const stx_term_t b = STX_TERM_LITERAL(&stx, STR("b"));
+	const stx_term_t a = STX_TERM_LITERAL(&stx, STRV("a"));
+	const stx_term_t b = STX_TERM_LITERAL(&stx, STRV("b"));
 	stx_rule_add_term(&stx, rule, STX_TERM_OR(&stx, a, b));
 
 	char buf[256] = {0};
@@ -498,7 +498,7 @@ TEST(prs_parse_cache)
 
 	stx_rule_add_arr(&stx, line, STX_TERM_RULE(&stx, ra), STX_TERM_NONE(&stx));
 
-	stx_rule_add_term(&stx, ra, STX_TERM_LITERAL(&stx, STR("a")));
+	stx_rule_add_term(&stx, ra, STX_TERM_LITERAL(&stx, STRV("a")));
 
 	prs_node_t root;
 	EXPECT_EQ(prs_parse(&prs, &lex, &stx, file, &root, PRINT_DST_NONE()), 0);

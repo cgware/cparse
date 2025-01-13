@@ -19,8 +19,8 @@ TEST(token_type_enum)
 {
 	START;
 
-	EXPECT_EQ(token_type_enum(STR("ALPHA")), TOKEN_ALPHA);
-	EXPECT_EQ(token_type_enum(STR("")), TOKEN_UNKNOWN);
+	EXPECT_EQ(token_type_enum(STRV("ALPHA")), TOKEN_ALPHA);
+	EXPECT_EQ(token_type_enum(STRV("")), TOKEN_UNKNOWN);
 
 	END;
 }

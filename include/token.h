@@ -2,7 +2,7 @@
 #define TOKEN_H
 
 #include "print.h"
-#include "str.h"
+#include "strv.h"
 #include "type.h"
 
 typedef enum token_type_e {
@@ -38,6 +38,6 @@ typedef struct token_loc_s {
 } token_loc_t;
 
 int token_type_print(uint type, print_dst_t dst);
-token_type_t token_type_enum(str_t str);
+token_type_t token_type_enum(strv_t str);
 
 #endif

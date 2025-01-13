@@ -105,7 +105,7 @@ TEST(lex_get_token_val)
 	token_t token = lex_get_token(&lex, 0);
 
 	EXPECT_EQ(lex_get_token_val(NULL, token).len, 0);
-	str_t val = lex_get_token_val(&lex, token);
+	strv_t val = lex_get_token_val(&lex, token);
 
 	EXPECT_STRN(val.data, "s", val.len);
 

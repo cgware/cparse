@@ -110,7 +110,7 @@ estx_term_data_t *estx_get_term_data(const estx_t *estx, estx_term_t term)
 	return data;
 }
 
-estx_term_data_t estx_create_literal(estx_t *estx, str_t str, estx_term_occ_t occ)
+estx_term_data_t estx_create_literal(estx_t *estx, strv_t str, estx_term_occ_t occ)
 {
 	if (estx == NULL) {
 		return (estx_term_data_t){0};

@@ -110,7 +110,7 @@ stx_term_data_t *stx_get_term_data(const stx_t *stx, stx_term_t term)
 	return data;
 }
 
-stx_term_data_t stx_create_literal(stx_t *stx, str_t str)
+stx_term_data_t stx_create_literal(stx_t *stx, strv_t str)
 {
 	if (stx == NULL) {
 		return (stx_term_data_t){0};
@@ -215,8 +215,8 @@ static int stx_terms_print(const stx_t *stx, const stx_term_t terms, print_dst_t
 			break;
 		}
 		case STX_TERM_LITERAL: {
-			str_t literal = strc((char *)&stx->strs.data[term->val.literal.start], term->val.literal.len);
-			if (str_eq(literal, STR("'"))) {
+			strv_t literal = STRVN((char *)&stx->strs.data[term->val.literal.start], term->val.literal.len);
+			if (strv_eq(literal, STRV("'"))) {
 				dst.off += c_dprintf(dst, " \"%.*s\"", literal.len, literal.data);
 			} else {
 				dst.off += c_dprintf(dst, " \'%.*s\'", literal.len, literal.data);
@@ -337,8 +337,8 @@ static int stx_rule_print_tree(const stx_t *stx, stx_rule_data_t *rule, uint rul
 		}
 		case STX_TERM_LITERAL: {
 			dst.off += print_header(stx, stack, state, top, dst);
-			str_t literal = strc((char *)&stx->strs.data[term->val.literal.start], term->val.literal.len);
-			if (str_eq(literal, STR("'"))) {
+			strv_t literal = STRVN((char *)&stx->strs.data[term->val.literal.start], term->val.literal.len);
+			if (strv_eq(literal, STRV("'"))) {
 				dst.off += c_dprintf(dst, "\"%.*s\"", literal.len, literal.data);
 			} else {
 				dst.off += c_dprintf(dst, "\'%.*s\'", literal.len, literal.data);

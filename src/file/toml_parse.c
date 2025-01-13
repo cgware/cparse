@@ -92,17 +92,15 @@ static toml_val_t toml_parse_value(const toml_prs_t *toml_prs, eprs_t *eprs, str
 		token_t val = {0};
 		eprs_get_str(eprs, node, &val);
 
-		str_t val_str = lex_get_token_val(eprs->lex, val);
-		int val_int   = strtol(val_str.data, NULL, 10);
+		strv_t val_str = lex_get_token_val(eprs->lex, val);
+		int val_int    = strtol(val_str.data, NULL, 10);
 
 		ret = TOML_INT(toml, key, val_int);
 	} else if ((node = eprs_get_rule(eprs, value, toml_prs->strl)) < eprs->nodes.cnt) {
 		token_t val = {0};
 		eprs_get_str(eprs, node, &val);
 
-		str_t val_str = lex_get_token_val(eprs->lex, val);
-
-		ret = TOML_STRL(toml, key, STRV(val_str.data, val_str.len));
+		ret = TOML_STRL(toml, key, lex_get_token_val(eprs->lex, val));
 	} else if ((node = eprs_get_rule(eprs, value, toml_prs->arr)) < eprs->nodes.cnt) {
 		eprs_node_t child;
 		ret = TOML_ARR(toml, key);
@@ -139,9 +137,8 @@ static toml_val_t toml_parse_kv(const toml_prs_t *toml_prs, eprs_t *eprs, eprs_n
 	token_t key = {0};
 	eprs_get_str(eprs, prs_key, &key);
 
-	str_t key_str	    = lex_get_token_val(eprs->lex, key);
 	eprs_node_t prs_val = eprs_get_rule(eprs, kv, toml_prs->val);
-	toml_val_t s	    = toml_parse_value(toml_prs, eprs, STRV(key_str.data, key_str.len), prs_val, toml);
+	toml_val_t s	    = toml_parse_value(toml_prs, eprs, lex_get_token_val(eprs->lex, key), prs_val, toml);
 	return s;
 }
 
@@ -154,8 +151,7 @@ toml_val_t toml_parse_tbl(const toml_prs_t *toml_prs, eprs_t *eprs, eprs_node_t 
 	token_t key = {0};
 	eprs_get_str(eprs, prs_key, &key);
 
-	str_t key_str  = lex_get_token_val(eprs->lex, key);
-	toml_val_t tbl = TOML_TBL(toml, STRV(key_str.data, key_str.len));
+	toml_val_t tbl = TOML_TBL(toml, lex_get_token_val(eprs->lex, key));
 
 	eprs_node_t prs_ent = eprs_get_rule(eprs, kv, toml_prs->ent);
 
@@ -171,8 +167,7 @@ toml_val_t toml_parse_tbla(const toml_prs_t *toml_prs, eprs_t *eprs, eprs_node_t
 	token_t key = {0};
 	eprs_get_str(eprs, prs_key, &key);
 
-	str_t key_str  = lex_get_token_val(eprs->lex, key);
-	toml_val_t tbl = TOML_TBL_ARR(toml, STRV(key_str.data, key_str.len));
+	toml_val_t tbl = TOML_TBL_ARR(toml, lex_get_token_val(eprs->lex, key));
 
 	eprs_node_t prs_ent = eprs_get_rule(eprs, kv, toml_prs->ent);
 

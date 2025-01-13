@@ -38,7 +38,7 @@ TEST(toml_val_init)
 	EXPECT_EQ(toml_val_init(NULL, STRV_NULL, TOML_NULL), TOML_VAL_END);
 	mem_oom(1);
 	EXPECT_EQ(toml_val_init(&toml, STRV_NULL, TOML_NULL), TOML_VAL_END);
-	EXPECT_EQ(toml_val_init(&toml, STRVC(""), TOML_NULL), TOML_VAL_END);
+	EXPECT_EQ(toml_val_init(&toml, STRV(""), TOML_NULL), TOML_VAL_END);
 	mem_oom(0);
 	log_set_quiet(0, 1);
 	EXPECT_EQ(toml_val_init(&toml, STRV_NULL, (toml_add_val_t){.type = -1}), TOML_VAL_END);
@@ -68,7 +68,7 @@ TEST(toml_val_init_strl)
 	toml_init(&toml, 0, 1, ALLOC_STD);
 	log_set_quiet(0, 0);
 	mem_oom(1);
-	EXPECT_EQ(TOML_STRL(&toml, STRV_NULL, STRVC("")), TOML_VAL_END);
+	EXPECT_EQ(TOML_STRL(&toml, STRV_NULL, STRV("")), TOML_VAL_END);
 	mem_oom(0);
 	toml_free(&toml);
 
@@ -157,12 +157,12 @@ TEST(toml_print)
 
 	toml_init(&toml, 1, 1, ALLOC_STD);
 	toml_val_t root = toml_add_val(&toml, TOML_VAL_END, TOML_VAL_END);
-	toml_add_val(&toml, root, TOML_STRL(&toml, STRVC("strl"), STRVC("str")));
-	toml_add_val(&toml, root, TOML_INT(&toml, STRVC("int"), 1));
-	toml_add_val(&toml, root, TOML_ARR(&toml, STRVC("arr")));
-	toml_add_val(&toml, root, TOML_INL(&toml, STRVC("inl")));
-	toml_add_val(&toml, root, TOML_TBL(&toml, STRVC("tbl")));
-	toml_add_val(&toml, root, TOML_TBL_ARR(&toml, STRVC("tbl_arr")));
+	toml_add_val(&toml, root, TOML_STRL(&toml, STRV("strl"), STRV("str")));
+	toml_add_val(&toml, root, TOML_INT(&toml, STRV("int"), 1));
+	toml_add_val(&toml, root, TOML_ARR(&toml, STRV("arr")));
+	toml_add_val(&toml, root, TOML_INL(&toml, STRV("inl")));
+	toml_add_val(&toml, root, TOML_TBL(&toml, STRV("tbl")));
+	toml_add_val(&toml, root, TOML_TBL_ARR(&toml, STRV("tbl_arr")));
 
 	EXPECT_EQ(toml_print(NULL, TOML_VAL_END, PRINT_DST_NONE()), 0);
 
@@ -192,7 +192,7 @@ TEST(toml_print_none)
 	toml_init(&toml, 1, 1, ALLOC_STD);
 	toml_val_t root = toml_add_val(&toml, TOML_VAL_END, TOML_VAL_END);
 
-	toml_val_t none	 = toml_add_val(&toml, root, TOML_INT(&toml, STRVC("none"), 0));
+	toml_val_t none	 = toml_add_val(&toml, root, TOML_INT(&toml, STRV("none"), 0));
 	val_data_t *data = tree_get_data(&toml.vals, none);
 
 	data->type = 0;
@@ -217,16 +217,16 @@ TEST(toml_print_arr)
 	toml_init(&toml, 1, 1, ALLOC_STD);
 	toml_val_t root = toml_add_val(&toml, TOML_VAL_END, TOML_VAL_END);
 
-	toml_val_t arr = toml_add_val(&toml, root, TOML_ARR(&toml, STRVC("arr")));
-	toml_add_val(&toml, arr, TOML_STRL(&toml, STRV_NULL, STRVC("str")));
+	toml_val_t arr = toml_add_val(&toml, root, TOML_ARR(&toml, STRV("arr")));
+	toml_add_val(&toml, arr, TOML_STRL(&toml, STRV_NULL, STRV("str")));
 	toml_add_val(&toml, arr, TOML_INT(&toml, STRV_NULL, 1));
 	toml_add_val(&toml, arr, TOML_ARR(&toml, STRV_NULL));
 	toml_add_val(&toml, arr, TOML_TBL(&toml, STRV_NULL));
 	toml_add_val(&toml, arr, TOML_INL(&toml, STRV_NULL));
 
 	toml_val_t tbl = toml_add_val(&toml, arr, TOML_TBL(&toml, STRV_NULL));
-	toml_add_val(&toml, tbl, TOML_STRL(&toml, STRVC("strl"), STRVC("str")));
-	toml_add_val(&toml, tbl, TOML_INT(&toml, STRVC("int"), 1));
+	toml_add_val(&toml, tbl, TOML_STRL(&toml, STRV("strl"), STRV("str")));
+	toml_add_val(&toml, tbl, TOML_INT(&toml, STRV("int"), 1));
 
 	char buf[1024] = {0};
 	toml_print(&toml, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
@@ -246,11 +246,11 @@ TEST(toml_print_inl)
 	toml_init(&toml, 1, 1, ALLOC_STD);
 	toml_val_t root = toml_add_val(&toml, TOML_VAL_END, TOML_VAL_END);
 
-	toml_val_t inl = toml_add_val(&toml, root, TOML_INL(&toml, STRVC("inl")));
-	toml_add_val(&toml, inl, TOML_STRL(&toml, STRVC("strl"), STRVC("str")));
-	toml_add_val(&toml, inl, TOML_INT(&toml, STRVC("int"), 1));
-	toml_val_t inl_inl = toml_add_val(&toml, inl, TOML_INL(&toml, STRVC("inl_inl")));
-	toml_add_val(&toml, inl_inl, TOML_INT(&toml, STRVC("int"), 1));
+	toml_val_t inl = toml_add_val(&toml, root, TOML_INL(&toml, STRV("inl")));
+	toml_add_val(&toml, inl, TOML_STRL(&toml, STRV("strl"), STRV("str")));
+	toml_add_val(&toml, inl, TOML_INT(&toml, STRV("int"), 1));
+	toml_val_t inl_inl = toml_add_val(&toml, inl, TOML_INL(&toml, STRV("inl_inl")));
+	toml_add_val(&toml, inl_inl, TOML_INT(&toml, STRV("int"), 1));
 
 	char buf[1024] = {0};
 	toml_print(&toml, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
@@ -270,12 +270,12 @@ TEST(toml_print_tbl)
 	toml_init(&toml, 1, 1, ALLOC_STD);
 	toml_val_t root = toml_add_val(&toml, TOML_VAL_END, TOML_VAL_END);
 
-	toml_val_t tbl = toml_add_val(&toml, root, TOML_TBL(&toml, STRVC("tbl")));
-	toml_add_val(&toml, tbl, TOML_STRL(&toml, STRVC("strl"), STRVC("str")));
-	toml_add_val(&toml, tbl, TOML_INT(&toml, STRVC("int"), 1));
-	toml_add_val(&toml, tbl, TOML_ARR(&toml, STRVC("arr")));
-	toml_add_val(&toml, tbl, TOML_INL(&toml, STRVC("inl")));
-	toml_add_val(&toml, tbl, TOML_TBL(&toml, STRVC("tbl.tbl")));
+	toml_val_t tbl = toml_add_val(&toml, root, TOML_TBL(&toml, STRV("tbl")));
+	toml_add_val(&toml, tbl, TOML_STRL(&toml, STRV("strl"), STRV("str")));
+	toml_add_val(&toml, tbl, TOML_INT(&toml, STRV("int"), 1));
+	toml_add_val(&toml, tbl, TOML_ARR(&toml, STRV("arr")));
+	toml_add_val(&toml, tbl, TOML_INL(&toml, STRV("inl")));
+	toml_add_val(&toml, tbl, TOML_TBL(&toml, STRV("tbl.tbl")));
 
 	char buf[1024] = {0};
 	toml_print(&toml, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
@@ -301,15 +301,15 @@ TEST(toml_print_tbl_arr)
 	toml_init(&toml, 1, 1, ALLOC_STD);
 	toml_val_t root = toml_add_val(&toml, TOML_VAL_END, TOML_VAL_END);
 
-	toml_val_t tbl_arr = toml_add_val(&toml, root, TOML_TBL_ARR(&toml, STRVC("tblarr")));
-	toml_add_val(&toml, tbl_arr, TOML_STRL(&toml, STRVC("strl"), STRVC("str")));
-	toml_add_val(&toml, tbl_arr, TOML_INT(&toml, STRVC("int"), 1));
+	toml_val_t tbl_arr = toml_add_val(&toml, root, TOML_TBL_ARR(&toml, STRV("tblarr")));
+	toml_add_val(&toml, tbl_arr, TOML_STRL(&toml, STRV("strl"), STRV("str")));
+	toml_add_val(&toml, tbl_arr, TOML_INT(&toml, STRV("int"), 1));
 
-	toml_val_t tbl	= toml_add_val(&toml, tbl_arr, TOML_TBL(&toml, STRVC("tblarr.tbl")));
-	toml_val_t inl	= toml_add_val(&toml, tbl, TOML_INL(&toml, STRVC("inl")));
-	toml_val_t ita	= toml_add_val(&toml, inl, TOML_TBL_ARR(&toml, STRVC("inl_tbl_arr")));
+	toml_val_t tbl	= toml_add_val(&toml, tbl_arr, TOML_TBL(&toml, STRV("tblarr.tbl")));
+	toml_val_t inl	= toml_add_val(&toml, tbl, TOML_INL(&toml, STRV("inl")));
+	toml_val_t ita	= toml_add_val(&toml, inl, TOML_TBL_ARR(&toml, STRV("inl_tbl_arr")));
 	toml_val_t tbl0 = toml_add_val(&toml, ita, TOML_TBL(&toml, STRV_NULL));
-	toml_add_val(&toml, tbl0, TOML_INT(&toml, STRVC("int"), 1));
+	toml_add_val(&toml, tbl0, TOML_INT(&toml, STRV("int"), 1));
 
 	char buf[1024] = {0};
 	toml_print(&toml, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
