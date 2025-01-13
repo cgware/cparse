@@ -174,7 +174,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 		return 1;
 	}
 	case ESTX_TERM_LITERAL: {
-		str_t literal = strc((char *)&eprs->estx->strs.data[term->val.literal.start], term->val.literal.len);
+		strv_t literal = STRVN((char *)&eprs->estx->strs.data[term->val.literal.start], term->val.literal.len);
 
 		for (size_t i = 0; i < literal.len; i++) {
 			token_t token = lex_get_token(eprs->lex, *off + i);
@@ -371,7 +371,7 @@ int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t r
 			dst.off += c_dprintf(dst, "error: expected %.*s\n", len, buf);
 
 		} else {
-			const str_t exp_str = strc((char *)&eprs->estx->strs.data[term->val.literal.start], term->val.literal.len);
+			strv_t exp_str = STRVN((char *)&eprs->estx->strs.data[term->val.literal.start], term->val.literal.len);
 			dst.off += c_dprintf(dst, "error: expected \'%.*s\'\n", exp_str.len, exp_str.data);
 		}
 

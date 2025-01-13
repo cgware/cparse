@@ -179,8 +179,8 @@ static int estx_term_print(const estx_t *estx, const estx_term_t term, print_dst
 		break;
 	}
 	case ESTX_TERM_LITERAL: {
-		str_t literal = strc((char *)&estx->strs.data[data->val.literal.start], data->val.literal.len);
-		if (str_eq(literal, STR("'"))) {
+		strv_t literal = STRVN((char *)&estx->strs.data[data->val.literal.start], data->val.literal.len);
+		if (strv_eq(literal, STRV("'"))) {
 			dst.off += c_dprintf(dst, " \"%.*s\"", literal.len, literal.data);
 		} else {
 			dst.off += c_dprintf(dst, " \'%.*s\'", literal.len, literal.data);
@@ -270,8 +270,8 @@ int term_print_cb(void *data, print_dst_t dst, const void *priv)
 		break;
 	}
 	case ESTX_TERM_LITERAL: {
-		str_t literal = strc((char *)&estx->strs.data[term->val.literal.start], term->val.literal.len);
-		if (str_eq(literal, STR("'"))) {
+		strv_t literal = STRVN((char *)&estx->strs.data[term->val.literal.start], term->val.literal.len);
+		if (strv_eq(literal, STRV("'"))) {
 			dst.off += c_dprintf(dst, "\"%.*s\"", literal.len, literal.data);
 		} else {
 			dst.off += c_dprintf(dst, "\'%.*s\'", literal.len, literal.data);

@@ -170,7 +170,7 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 		return 1;
 	}
 	case STX_TERM_LITERAL: {
-		const str_t literal = strc((char *)&prs->stx->strs.data[term->val.literal.start], term->val.literal.len);
+		strv_t literal = STRVN((char *)&prs->stx->strs.data[term->val.literal.start], term->val.literal.len);
 
 		for (uint i = 0; i < (uint)literal.len; i++) {
 			token_t token = lex_get_token(prs->lex, *off + i);
@@ -312,7 +312,7 @@ int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_rule_t rule, p
 			dst.off += c_dprintf(dst, "error: expected %.*s\n", len, buf);
 
 		} else {
-			const str_t exp_str = strc((char *)&prs->stx->strs.data[term->val.literal.start], term->val.literal.len);
+			strv_t exp_str = STRVN((char *)&prs->stx->strs.data[term->val.literal.start], term->val.literal.len);
 			dst.off += c_dprintf(dst, "error: expected \'%.*s\'\n", exp_str.len, exp_str.data);
 		}
 
