@@ -105,7 +105,7 @@ TEST(stx_from_ebnf)
 	prs_parse(&prs, &lex, &ebnf.stx, ebnf.file, &prs_root, PRINT_DST_NONE());
 
 	strbuf_t names = {0};
-	strbuf_init(&names, 16 * sizeof(char), ALLOC_STD);
+	strbuf_init(&names, 16, 16, ALLOC_STD);
 
 	estx_t new_stx = {0};
 	estx_init(&new_stx, 10, 10, ALLOC_STD);
@@ -155,7 +155,7 @@ TEST(stx_from_ebnf_custom)
 	prs_add_node(&prs, f_grp, PRS_NODE_RULE(&prs, ebnf.opt_rep));
 
 	strbuf_t names = {0};
-	strbuf_init(&names, 16 * sizeof(char), ALLOC_STD);
+	strbuf_init(&names, 16, 16, ALLOC_STD);
 
 	log_set_quiet(0, 1);
 	EXPECT_EQ(estx_from_ebnf(&ebnf, &prs, file, &new_stx, &names), 0);

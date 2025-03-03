@@ -877,7 +877,7 @@ TEST(eprs_parse_ebnf)
 		prs_parse(&prs, &lex, &ebnf.stx, ebnf.file, &prs_root, PRINT_DST_NONE());
 
 		strbuf_t names = {0};
-		strbuf_init(&names, 16 * sizeof(char), ALLOC_STD);
+		strbuf_init(&names, 16, 16, ALLOC_STD);
 
 		estx_init(&estx, 10, 10, ALLOC_STD);
 		estx_root = estx_from_ebnf(&ebnf, &prs, prs_root, &estx, &names);

@@ -100,7 +100,7 @@ TEST(stx_from_bnf)
 	prs_parse(&prs, &lex, &bnf.stx, bnf.file, &prs_root, PRINT_DST_STD());
 
 	strbuf_t names = {0};
-	strbuf_init(&names, 16 * sizeof(char), ALLOC_STD);
+	strbuf_init(&names, 16, 16, ALLOC_STD);
 
 	stx_t new_stx = {0};
 	stx_init(&new_stx, 10, 10, ALLOC_STD);
@@ -151,7 +151,7 @@ TEST(stx_from_bnf_custom)
 	prs_add_node(&prs, terms1, PRS_NODE_RULE(&prs, bnf.term));
 
 	strbuf_t names = {0};
-	strbuf_init(&names, 16 * sizeof(char), ALLOC_STD);
+	strbuf_init(&names, 16, 16, ALLOC_STD);
 
 	log_set_quiet(0, 1);
 	EXPECT_EQ(stx_from_bnf(&bnf, &prs, file, &new_stx, &names), 0);

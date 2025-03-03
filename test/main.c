@@ -8,6 +8,7 @@ STEST(ebnf);
 STEST(eparser);
 STEST(esyntax);
 STEST(lexer);
+STEST(make);
 STEST(parser);
 STEST(syntax);
 STEST(token);
@@ -22,6 +23,7 @@ TEST(cparse)
 	RUN(eparser);
 	RUN(esyntax);
 	RUN(lexer);
+	RUN(make);
 	RUN(parser);
 	RUN(syntax);
 	RUN(token);

@@ -49,7 +49,7 @@ toml_prs_t *toml_prs_init(toml_prs_t *toml_prs, alloc_t alloc)
 	ebnf_free(&ebnf);
 
 	strbuf_t names = {0};
-	strbuf_init(&names, 16 * sizeof(char), ALLOC_STD);
+	strbuf_init(&names, 16, 16, ALLOC_STD);
 
 	estx_init(&toml_prs->estx, 10, 10, ALLOC_STD);
 	estx_rule_t estx_root = estx_from_ebnf(&ebnf, &prs, prs_root, &toml_prs->estx, &names);

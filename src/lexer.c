@@ -111,7 +111,7 @@ static const uint s_chars[128] = {
 	['~']  = (1 << TOKEN_SYMBOL),
 };
 
-lex_t *lex_init(lex_t *lex, size_t words_size, uint tokens_cap, alloc_t alloc)
+lex_t *lex_init(lex_t *lex, uint words_cap, uint tokens_cap, alloc_t alloc)
 {
 	if (lex == NULL) {
 		return NULL;
@@ -120,8 +120,8 @@ lex_t *lex_init(lex_t *lex, size_t words_size, uint tokens_cap, alloc_t alloc)
 	lex->chars     = s_chars;
 	lex->chars_len = sizeof(s_chars) / sizeof(uint);
 
-	if (words_size > 0) {
-		if (strbuf_init(&lex->words, words_size, alloc) == NULL) {
+	if (words_cap > 0) {
+		if (strbuf_init(&lex->words, words_cap, words_cap * 8, alloc) == NULL) {
 			return NULL;
 		}
 	} else {
@@ -231,8 +231,7 @@ int lex_tokenize(lex_t *lex, str_t *src, str_t file, uint line_off)
 
 	lex_set_src(lex, src, file, line_off);
 
-	size_t start;
-	size_t len;
+	strv_t word;
 
 	for (size_t i = 0; i < lex->src->len;) {
 		token_t *token = arr_add(&lex->tokens);
@@ -242,22 +241,22 @@ int lex_tokenize(lex_t *lex, str_t *src, str_t file, uint line_off)
 
 		size_t j  = 0;
 		int found = 0;
-		strbuf_foreach(&lex->words, j, start, len)
+		strbuf_foreach(&lex->words, j, word)
 		{
-			if (i + len > lex->src->len) {
+			if (i + word.len > lex->src->len) {
 				continue;
 			}
 
-			if (memcmp(&lex->src->data[i], &lex->words.buf.data[start], len) != 0) {
+			if (memcmp(&lex->src->data[i], word.data, word.len) != 0) {
 				continue;
 			}
 
 			*token = (token_t){
 				.type  = 1 << TOKEN_WORD,
 				.start = i,
-				.len   = len,
+				.len   = word.len,
 			};
-			i += len;
+			i += word.len;
 			found = 1;
 			break;
 		}

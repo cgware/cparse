@@ -80,7 +80,7 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, print_dst_t dst)
 	bnf_free(&bnf);
 
 	strbuf_t names = {0};
-	strbuf_init(&names, 16 * sizeof(char), ALLOC_STD);
+	strbuf_init(&names, 16, 16, ALLOC_STD);
 
 	stx_from_bnf(&bnf, &prs, prs_root, &ebnf->stx, &names);
 

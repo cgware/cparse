@@ -11,13 +11,13 @@ typedef struct val_data_s {
 	} val;
 } val_data_t;
 
-toml_t *toml_init(toml_t *toml, size_t strs_size, size_t vals_cap, alloc_t alloc)
+toml_t *toml_init(toml_t *toml, uint strs_cap, uint vals_cap, alloc_t alloc)
 {
 	if (toml == NULL) {
 		return NULL;
 	}
 
-	if (strbuf_init(&toml->strs, strs_size, alloc) == NULL) {
+	if (strbuf_init(&toml->strs, strs_cap, strs_cap * 8, alloc) == NULL) {
 		log_error("cparse", "toml", NULL, "failed to initialize stings");
 		return NULL;
 	}
@@ -48,8 +48,7 @@ toml_val_t toml_val_init(toml_t *toml, strv_t key, toml_add_val_t val)
 
 	uint key_id = -1;
 	if (key.data) {
-		key_id = toml->strs.buf.used;
-		if (strbuf_add(&toml->strs, key, NULL)) {
+		if (strbuf_add(&toml->strs, key, &key_id)) {
 			log_error("cparse", "toml", NULL, "failed to add key");
 			return TOML_VAL_END;
 		}
@@ -64,8 +63,8 @@ toml_val_t toml_val_init(toml_t *toml, strv_t key, toml_add_val_t val)
 
 	switch (val.type) {
 	case TOML_VAL_STRL: {
-		uint str_id = toml->strs.buf.used;
-		if (strbuf_add(&toml->strs, val.val.str, NULL)) {
+		uint str_id;
+		if (strbuf_add(&toml->strs, val.val.str, &str_id)) {
 			log_error("cparse", "toml", NULL, "failed to add string");
 			return TOML_VAL_END;
 		}
@@ -126,21 +125,21 @@ typedef enum val_mode_e {
 static int toml_print_key(const toml_t *toml, const val_data_t *data, val_mode_t mode, print_dst_t dst)
 {
 	int off = dst.off;
-	uint start, len;
+	strv_t key;
 
 	switch (mode) {
 	case VAL_MODE_NONE: break;
 	case VAL_MODE_NL:
-		strbuf_get(&toml->strs, data->key, start, len);
-		dst.off += c_dprintf(dst, "[%.*s]\n", len, &toml->strs.buf.data[start]);
+		key = strbuf_get(&toml->strs, data->key);
+		dst.off += c_dprintf(dst, "[%.*s]\n", key.len, key.data);
 		break;
 	case VAL_MODE_NL_ARR:
-		strbuf_get(&toml->strs, data->key, start, len);
-		dst.off += c_dprintf(dst, "[[%.*s]]\n", len, &toml->strs.buf.data[start]);
+		key = strbuf_get(&toml->strs, data->key);
+		dst.off += c_dprintf(dst, "[[%.*s]]\n", key.len, key.data);
 		break;
 	case VAL_MODE_INL:
-		strbuf_get(&toml->strs, data->key, start, len);
-		dst.off += c_dprintf(dst, "%.*s = ", len, &toml->strs.buf.data[start]);
+		key = strbuf_get(&toml->strs, data->key);
+		dst.off += c_dprintf(dst, "%.*s = ", key.len, key.data);
 		break;
 	}
 
@@ -168,9 +167,8 @@ static int toml_print_val(const toml_t *toml, toml_val_t val, val_mode_t mode, p
 
 	switch (data->type) {
 	case TOML_VAL_STRL: {
-		uint start, len;
-		strbuf_get(&toml->strs, data->val.str, start, len);
-		dst.off += c_dprintf(dst, "'%.*s'", len, &toml->strs.buf.data[start]);
+		strv_t str = strbuf_get(&toml->strs, data->val.str);
+		dst.off += c_dprintf(dst, "'%.*s'", str.len, str.data);
 		nl = 1;
 		break;
 	}

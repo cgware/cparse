@@ -32,7 +32,7 @@ typedef struct toml_add_val_s {
 	} val;
 } toml_add_val_t;
 
-toml_t *toml_init(toml_t *toml, size_t strs_size, size_t vals_cap, alloc_t alloc);
+toml_t *toml_init(toml_t *toml, uint strs_cap, uint vals_cap, alloc_t alloc);
 void toml_free(toml_t *toml);
 
 toml_val_t toml_val_init(toml_t *toml, strv_t key, toml_add_val_t val);

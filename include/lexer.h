@@ -18,7 +18,7 @@ typedef struct lex_s {
 	arr_t tokens;
 } lex_t;
 
-lex_t *lex_init(lex_t *lex, size_t words_size, uint tokens_cap, alloc_t alloc);
+lex_t *lex_init(lex_t *lex, uint words_cap, uint tokens_cap, alloc_t alloc);
 void lex_free(lex_t *lex);
 
 #define lex_add_word(_lex, _str, _index) strbuf_add(&(_lex)->words, _str, _index)
