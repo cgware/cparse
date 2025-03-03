@@ -1336,7 +1336,7 @@ TEST(make_vars_print)
 
 	char buf[256] = {0};
 	make_vars_print(&make, &vars, PRINT_DST_BUF(buf, sizeof(buf), 0));
-	EXPECT_STR(buf, "VAR              A                                    A\n");
+	EXPECT_STR(buf, "VAR              A                                                                A\n");
 
 	make_vars_free(&vars);
 	make_free(&make);
