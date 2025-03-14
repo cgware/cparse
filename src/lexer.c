@@ -145,7 +145,7 @@ void lex_free(lex_t *lex)
 	strbuf_free(&lex->words);
 }
 
-int lex_add_token(lex_t *lex, token_type_t type, str_t val, uint *index)
+int lex_add_token(lex_t *lex, token_type_t type, strv_t val, uint *index)
 {
 	if (lex == NULL || lex->src == NULL) {
 		return 1;

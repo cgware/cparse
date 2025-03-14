@@ -52,19 +52,19 @@ TEST(lex_add_token)
 	log_set_quiet(0, 0);
 	lex_set_src(&lex, &src, STR(__FILE__), __LINE__);
 
-	EXPECT_EQ(lex_add_token(NULL, 0, str_null(), NULL), 1);
+	EXPECT_EQ(lex_add_token(NULL, 0, STRV_NULL, NULL), 1);
 	mem_oom(1);
-	EXPECT_EQ(lex_add_token(&lex, 0, STR("A"), NULL), 1);
+	EXPECT_EQ(lex_add_token(&lex, 0, STRV("A"), NULL), 1);
 	mem_oom(0);
 	str_free(&src);
 	src	= strz(2);
 	lex.src = &src;
 	mem_oom(1);
-	EXPECT_EQ(lex_add_token(&lex, 0, STR("A"), NULL), 1);
+	EXPECT_EQ(lex_add_token(&lex, 0, STRV("A"), NULL), 1);
 	mem_oom(0);
-	EXPECT_EQ(lex_add_token(&lex, 0, STR("A"), NULL), 0);
+	EXPECT_EQ(lex_add_token(&lex, 0, STRV("A"), NULL), 0);
 	uint index;
-	EXPECT_EQ(lex_add_token(&lex, 0, STR("A"), &index), 0);
+	EXPECT_EQ(lex_add_token(&lex, 0, STRV("A"), &index), 0);
 	EXPECT_EQ(index, 1);
 
 	EXPECT_STRN(src.data, "AA", src.len);

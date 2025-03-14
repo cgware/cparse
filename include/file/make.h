@@ -16,6 +16,8 @@ typedef make_act_t make_rule_t;
 typedef make_act_t make_rule_target_t;
 typedef make_act_t make_cmd_t;
 typedef make_act_t make_if_t;
+typedef make_act_t make_def_t;
+typedef make_act_t make_eval_def_t;
 
 typedef enum make_var_type_e {
 	MAKE_VAR_INST, //:=
@@ -63,6 +65,7 @@ typedef struct make_s {
 } make_t;
 
 typedef struct make_vars_s {
+	strbuf_t names;
 	arr_t flags;
 	strbuf_t expanded;
 	strbuf_t resolved;
@@ -78,6 +81,8 @@ make_rule_t make_create_rule(make_t *make, make_rule_target_data_t target, int f
 make_rule_t make_create_phony(make_t *make);
 make_cmd_t make_create_cmd(make_t *make, make_cmd_data_t cmd);
 make_if_t make_create_if(make_t *make, make_str_data_t l, make_str_data_t r);
+make_if_t make_create_def(make_t *make, str_t name);
+make_if_t make_create_eval_def(make_t *make, make_def_t def);
 
 make_act_t make_add_act(make_t *make, make_act_t act);
 make_var_t make_var_add_val(make_t *make, make_var_t var, make_str_data_t val);
@@ -85,6 +90,8 @@ make_str_t make_rule_add_depend(make_t *make, make_rule_t rule, make_rule_target
 make_act_t make_rule_add_act(make_t *make, make_rule_t rule, make_act_t act);
 make_act_t make_if_add_true_act(make_t *make, make_if_t mif, make_act_t act);
 make_act_t make_if_add_false_act(make_t *make, make_if_t mif, make_act_t act);
+make_act_t make_def_add_act(make_t *make, make_def_t def, make_act_t act);
+make_var_t make_eval_def_add_arg(make_t *make, make_eval_def_t def, make_str_data_t arg);
 
 make_str_t make_ext_set_val(make_t *make, uint id, make_str_data_t val);
 
@@ -96,9 +103,9 @@ void make_vars_free(make_vars_t *vars);
 int make_vars_eval(const make_t *make, make_vars_t *vars);
 
 strv_t make_vars_get_expanded(const make_vars_t *make, uint id);
-strv_t make_vars_get_resolved(const make_t *make, const make_vars_t *vars, uint id);
+strv_t make_vars_get_resolved(const make_vars_t *vars, uint id);
 
-int make_vars_print(const make_t *make, const make_vars_t *vars, print_dst_t dst);
+int make_vars_print(const make_vars_t *vars, print_dst_t dst);
 
 int make_print(const make_t *make, print_dst_t dst);
 
