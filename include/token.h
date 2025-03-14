@@ -26,8 +26,8 @@ typedef enum token_type_e {
 
 typedef struct token_s {
 	uint type;
-	uint start;
 	uint len;
+	size_t start;
 } token_t;
 
 typedef struct token_loc_s {

@@ -154,7 +154,7 @@ int lex_add_token(lex_t *lex, token_type_t type, strv_t val, uint *index)
 	token_t token = {
 		.type  = type,
 		.start = lex->src->len,
-		.len   = val.len,
+		.len   = (uint)val.len,
 	};
 
 	size_t len = lex->src->len;
@@ -239,7 +239,7 @@ int lex_tokenize(lex_t *lex, str_t *src, str_t file, uint line_off)
 			return 1;
 		}
 
-		size_t j  = 0;
+		uint j  = 0;
 		int found = 0;
 		strbuf_foreach(&lex->words, j, word)
 		{
@@ -254,7 +254,7 @@ int lex_tokenize(lex_t *lex, str_t *src, str_t file, uint line_off)
 			*token = (token_t){
 				.type  = 1 << TOKEN_WORD,
 				.start = i,
-				.len   = word.len,
+				.len   = (uint)word.len,
 			};
 			i += word.len;
 			found = 1;

@@ -119,7 +119,7 @@ stx_term_data_t stx_create_literal(stx_t *stx, strv_t str)
 	size_t start = stx->strs.used;
 	buf_add(&stx->strs, str.data, str.len, NULL);
 
-	return (stx_term_data_t){.type = STX_TERM_LITERAL, .val.literal = {.start = start, .len = str.len}};
+	return (stx_term_data_t){.type = STX_TERM_LITERAL, .val.literal = {.start = start, .len = (uint)str.len}};
 }
 
 stx_term_t stx_rule_set_term(stx_t *stx, stx_rule_t rule, stx_term_t term)

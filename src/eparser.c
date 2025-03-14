@@ -176,7 +176,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 	case ESTX_TERM_LITERAL: {
 		strv_t literal = STRVN((char *)&eprs->estx->strs.data[term->val.literal.start], term->val.literal.len);
 
-		for (size_t i = 0; i < literal.len; i++) {
+		for (uint i = 0; i < (uint)literal.len; i++) {
 			token_t token = lex_get_token(eprs->lex, *off + i);
 
 			if (token.type & (1 << TOKEN_EOF)) {
@@ -213,7 +213,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 
 		eprs_add_node(eprs, node, EPRS_NODE_LITERAL(eprs, *off, (uint)literal.len));
 		log_trace("cparse", "parser", NULL, "\'%*s\': success +%d", literal.len, literal.data, literal.len);
-		*off += literal.len;
+		*off += (uint)literal.len;
 		return 0;
 	}
 	case ESTX_TERM_ALT: {

@@ -119,7 +119,7 @@ estx_term_data_t estx_create_literal(estx_t *estx, strv_t str, estx_term_occ_t o
 	size_t start = estx->strs.used;
 	buf_add(&estx->strs, str.data, str.len, NULL);
 
-	return (estx_term_data_t){.type = ESTX_TERM_LITERAL, .val.literal = {.start = start, .len = str.len}, .occ = occ};
+	return (estx_term_data_t){.type = ESTX_TERM_LITERAL, .val.literal = {.start = start, .len = (uint)str.len}, .occ = occ};
 }
 
 estx_term_t estx_rule_set_term(estx_t *estx, estx_rule_t rule, estx_term_t term)
