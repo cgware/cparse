@@ -12,12 +12,31 @@ typedef struct make_var_data_s {
 	int ext : 1;
 } make_var_data_t;
 
+typedef struct make_str_data_s {
+	make_str_type_t type;
+	union {
+		uint id;
+		make_var_t var;
+	} val;
+} make_str_data_t;
+
+typedef struct make_rule_target_data_s {
+	make_str_data_t target;
+	uint action;
+} make_rule_target_data_t;
+
 typedef struct make_rule_data_s {
 	make_rule_target_data_t target;
 	lnode_t depends;
 	make_act_t acts;
 	int file : 1;
 } make_rule_data_t;
+
+typedef struct make_cmd_data_s {
+	make_cmd_type_t type;
+	uint arg1;
+	uint arg2;
+} make_cmd_data_t;
 
 typedef struct make_if_data_s {
 	make_str_data_t l;
@@ -27,7 +46,7 @@ typedef struct make_if_data_s {
 } make_if_data_t;
 
 typedef struct make_def_data_s {
-	str_t name;
+	uint name;
 	make_act_t acts;
 } make_def_data_t;
 
@@ -95,13 +114,13 @@ static make_var_t make_var_get_name(const make_t *make, uint id)
 	return MAKE_END;
 }
 
-make_t *make_init(make_t *make, uint strs_cap, uint acts_cap, uint targets_cap, uint vars_cap, alloc_t alloc)
+make_t *make_init(make_t *make, uint arrs_cap, uint acts_cap, uint targets_cap, uint strs_cap, alloc_t alloc)
 {
 	if (make == NULL) {
 		return NULL;
 	}
 
-	if (list_init(&make->strs, strs_cap, sizeof(make_str_data_t), alloc) == NULL) {
+	if (list_init(&make->arrs, arrs_cap, sizeof(make_str_data_t), alloc) == NULL) {
 		return NULL;
 	}
 
@@ -113,7 +132,7 @@ make_t *make_init(make_t *make, uint strs_cap, uint acts_cap, uint targets_cap, 
 		return NULL;
 	}
 
-	if (strbuf_init(&make->vars, vars_cap, 8, alloc) == NULL) {
+	if (strbuf_init(&make->strs, strs_cap, 8, alloc) == NULL) {
 		return NULL;
 	}
 
@@ -122,79 +141,16 @@ make_t *make_init(make_t *make, uint strs_cap, uint acts_cap, uint targets_cap, 
 	return make;
 }
 
-static void make_str_free(make_str_data_t *str)
-{
-	if (str->type != MAKE_STR_STR) {
-		return;
-	}
-
-	str_free(&str->val.str);
-}
-
-static inline void make_var_free(make_var_data_t *var)
-{
-	(void)var;
-}
-
-static inline void make_rule_free(make_rule_data_t *rule)
-{
-	make_str_free(&rule->target.target);
-	str_free(&rule->target.action);
-}
-
-static inline void make_cmd_free(make_cmd_data_t *cmd)
-{
-	str_free(&cmd->arg1);
-	str_free(&cmd->arg2);
-}
-
-static inline void make_if_free(make_if_data_t *mif)
-{
-	make_str_free(&mif->l);
-	make_str_free(&mif->r);
-}
-
-static inline void make_def_free(make_def_data_t *def)
-{
-	str_free(&def->name);
-}
-
 void make_free(make_t *make)
 {
 	if (make == NULL) {
 		return;
 	}
 
-	make_str_data_t *str;
-	list_foreach_all(&make->strs, str)
-	{
-		make_str_free(str);
-	}
-	list_free(&make->strs);
-
-	make_act_data_t *act;
-	list_foreach_all(&make->acts, act)
-	{
-		switch (act->type) {
-		case MAKE_ACT_VAR: make_var_free(&act->val.var); break;
-		case MAKE_ACT_RULE: make_rule_free(&act->val.rule); break;
-		case MAKE_ACT_CMD: make_cmd_free(&act->val.cmd); break;
-		case MAKE_ACT_IF: make_if_free(&act->val.mif); break;
-		case MAKE_ACT_DEF: make_def_free(&act->val.def); break;
-		default: break;
-		}
-	}
+	list_free(&make->arrs);
 	list_free(&make->acts);
-
-	make_rule_target_data_t *target;
-	list_foreach_all(&make->targets, target)
-	{
-		make_str_free(&target->target);
-		str_free(&target->action);
-	}
 	list_free(&make->targets);
-
-	strbuf_free(&make->vars);
+	strbuf_free(&make->strs);
 
 	make->root = MAKE_END;
 }
@@ -233,9 +189,9 @@ static make_var_t make_create_var_ex(make_t *make, strv_t name, make_var_type_t 
 	}
 
 	uint index;
-	if (id && *id < make->vars.off.cnt) {
+	if (id && *id < make->strs.off.cnt) {
 		index = *id;
-	} else if (strbuf_add(&make->vars, name, &index)) {
+	} else if (strbuf_add(&make->strs, name, &index)) {
 		return MAKE_END;
 	}
 
@@ -267,7 +223,23 @@ make_var_t make_create_var_ext(make_t *make, strv_t name, uint *id)
 	return make_create_var_ex(make, name, MAKE_VAR_REF, id, 1);
 }
 
-make_rule_t make_create_rule(make_t *make, make_rule_target_data_t target, int file)
+static int create_str(make_t *make, make_create_str_t str, make_str_data_t *data)
+{
+	if (str.type != MAKE_STR_STR) {
+		*data = (make_str_data_t){.type = str.type, .val.var = str.val.var};
+		return 0;
+	}
+
+	uint index;
+	if (strbuf_add(&make->strs, str.val.str, &index)) {
+		return 1;
+	}
+
+	*data = (make_str_data_t){.type = str.type, .val.id = index};
+	return 0;
+}
+
+make_rule_t make_create_rule(make_t *make, make_create_rule_t target, int file)
 {
 	if (make == NULL) {
 		return MAKE_END;
@@ -284,22 +256,30 @@ make_rule_t make_create_rule(make_t *make, make_rule_target_data_t target, int f
 		.type = MAKE_ACT_RULE,
 		.val.rule =
 			{
-				.target	 = target,
-				.depends = MAKE_END,
-				.acts	 = MAKE_END,
-				.file	 = file,
+				.target.action = ARR_END,
+				.depends       = MAKE_END,
+				.acts	       = MAKE_END,
+				.file	       = file,
 			},
 	};
+
+	if (create_str(make, target.target, &data->val.rule.target.target)) {
+		return MAKE_END;
+	}
+
+	if (target.action.data != NULL && strbuf_add(&make->strs, target.action, &data->val.rule.target.action)) {
+		return MAKE_END;
+	}
 
 	return act;
 }
 
 make_rule_t make_create_phony(make_t *make)
 {
-	return make_create_rule(make, MRULE(MSTR(STR(".PHONY"))), 1);
+	return make_create_rule(make, MRULE(MSTR(STRV(".PHONY"))), 1);
 }
 
-make_cmd_t make_create_cmd(make_t *make, make_cmd_data_t cmd)
+make_cmd_t make_create_cmd(make_t *make, make_create_cmd_t cmd)
 {
 	if (make == NULL) {
 		return MAKE_END;
@@ -313,14 +293,27 @@ make_cmd_t make_create_cmd(make_t *make, make_cmd_data_t cmd)
 	}
 
 	*data = (make_act_data_t){
-		.type	 = MAKE_ACT_CMD,
-		.val.cmd = cmd,
+		.type = MAKE_ACT_CMD,
+		.val.cmd =
+			{
+				.type = cmd.type,
+				.arg1 = ARR_END,
+				.arg2 = ARR_END,
+			},
 	};
+
+	if (cmd.arg1.data != NULL && strbuf_add(&make->strs, cmd.arg1, &data->val.cmd.arg1)) {
+		return MAKE_END;
+	}
+
+	if (cmd.arg2.data != NULL && strbuf_add(&make->strs, cmd.arg2, &data->val.cmd.arg2)) {
+		return MAKE_END;
+	}
 
 	return act;
 }
 
-make_if_t make_create_if(make_t *make, make_str_data_t l, make_str_data_t r)
+make_if_t make_create_if(make_t *make, make_create_str_t l, make_create_str_t r)
 {
 	if (make == NULL) {
 		return MAKE_END;
@@ -337,17 +330,23 @@ make_if_t make_create_if(make_t *make, make_str_data_t l, make_str_data_t r)
 		.type = MAKE_ACT_IF,
 		.val.mif =
 			{
-				.l	    = l,
-				.r	    = r,
 				.true_acts  = MAKE_END,
 				.false_acts = MAKE_END,
 			},
 	};
 
+	if (create_str(make, l, &data->val.mif.l)) {
+		return MAKE_END;
+	}
+
+	if (create_str(make, r, &data->val.mif.r)) {
+		return MAKE_END;
+	}
+
 	return act;
 }
 
-make_def_t make_create_def(make_t *make, str_t name)
+make_def_t make_create_def(make_t *make, strv_t name)
 {
 	if (make == NULL) {
 		return MAKE_END;
@@ -364,12 +363,36 @@ make_def_t make_create_def(make_t *make, str_t name)
 		.type = MAKE_ACT_DEF,
 		.val.def =
 			{
-				.name = name,
 				.acts = MAKE_END,
 			},
 	};
 
+	if (strbuf_add(&make->strs, name, &data->val.def.name)) {
+		return MAKE_END;
+	}
+
 	return act;
+}
+
+static make_var_t eval_def_add_arg(make_t *make, make_eval_def_t def, make_str_data_t arg)
+{
+	make_eval_def_data_t *data = make_act_get_type(make, def, MAKE_ACT_EVAL_DEF);
+
+	if (data == NULL) {
+		return MAKE_END;
+	}
+
+	make_str_t str;
+	list_add_next_node(&make->arrs, data->args, str);
+	make_str_data_t *target = list_get_data(&make->arrs, str);
+
+	if (target == NULL) {
+		return MAKE_END;
+	}
+
+	*target = arg;
+
+	return def;
 }
 
 make_var_t make_create_eval_def(make_t *make, make_def_t def)
@@ -399,65 +422,11 @@ make_var_t make_create_eval_def(make_t *make, make_def_t def)
 		return MAKE_END;
 	}
 
-	make_eval_def_add_arg(make, act, MSTR(strn(def_data->name.data, def_data->name.len, def_data->name.len + 1)));
-
-	return act;
+	return eval_def_add_arg(make, act, (make_str_data_t){.type = MAKE_STR_STR, .val.id = def_data->name});
 }
 
-make_act_t make_add_act(make_t *make, make_act_t act)
+static make_str_t rule_add_depend(make_t *make, make_rule_t rule, make_rule_target_data_t depend)
 {
-	make_act_data_t *data = make_act_get(make, act);
-	if (data == NULL) {
-		return MAKE_END;
-	}
-
-	if (data->type == MAKE_ACT_RULE && !data->val.rule.file) {
-		make_rule_t phony = make_rule_get_target(make, MRULE(MSTR(STR(".PHONY"))));
-		if (phony == MAKE_END) {
-			phony = make_add_act(make, make_create_phony(make));
-		}
-		make_rule_target_data_t depend = data->val.rule.target;
-		if (depend.target.type == MAKE_STR_STR) {
-			depend.target.val.str.ref = 1;
-			depend.action.ref	  = 1;
-		}
-		make_rule_add_depend(make, phony, depend);
-	}
-
-	return list_set_next_node(&make->acts, make->root, act);
-}
-
-make_var_t make_var_add_val(make_t *make, make_var_t var, make_str_data_t val)
-{
-	if (make == NULL) {
-		return MAKE_END;
-	}
-
-	make_var_data_t *data = make_act_get_type(make, var, MAKE_ACT_VAR);
-
-	if (data == NULL || data->ext) {
-		return MAKE_END;
-	}
-
-	make_str_t str;
-	list_add_next_node(&make->strs, data->values, str);
-	make_str_data_t *target = list_get_data(&make->strs, str);
-
-	if (target == NULL) {
-		return MAKE_END;
-	}
-
-	*target = val;
-
-	return var;
-}
-
-make_str_t make_rule_add_depend(make_t *make, make_rule_t rule, make_rule_target_data_t depend)
-{
-	if (make == NULL) {
-		return MAKE_END;
-	}
-
 	make_rule_data_t *data = make_act_get_type(make, rule, MAKE_ACT_RULE);
 
 	if (data == NULL) {
@@ -475,6 +444,70 @@ make_str_t make_rule_add_depend(make_t *make, make_rule_t rule, make_rule_target
 	*target = depend;
 
 	return str;
+}
+
+make_act_t make_add_act(make_t *make, make_act_t act)
+{
+	make_act_data_t *data = make_act_get(make, act);
+	if (data == NULL) {
+		return MAKE_END;
+	}
+
+	if (data->type == MAKE_ACT_RULE && !data->val.rule.file) {
+		make_rule_t phony = make_rule_get_target(make, MRULE(MSTR(STRV(".PHONY"))));
+		if (phony == MAKE_END) {
+			phony = make_add_act(make, make_create_phony(make));
+		}
+		rule_add_depend(make, phony, data->val.rule.target);
+	}
+
+	return list_set_next_node(&make->acts, make->root, act);
+}
+
+make_var_t make_var_add_val(make_t *make, make_var_t var, make_create_str_t val)
+{
+	if (make == NULL) {
+		return MAKE_END;
+	}
+
+	make_var_data_t *data = make_act_get_type(make, var, MAKE_ACT_VAR);
+
+	if (data == NULL || data->ext) {
+		return MAKE_END;
+	}
+
+	make_str_t str;
+	list_add_next_node(&make->arrs, data->values, str);
+	make_str_data_t *target = list_get_data(&make->arrs, str);
+
+	if (target == NULL) {
+		return MAKE_END;
+	}
+
+	if (create_str(make, val, target)) {
+		return MAKE_END;
+	}
+
+	return var;
+}
+
+make_str_t make_rule_add_depend(make_t *make, make_rule_t rule, make_create_rule_t depend)
+{
+	if (make == NULL) {
+		return MAKE_END;
+	}
+
+	make_rule_target_data_t target = {.action = ARR_END};
+
+	if (create_str(make, depend.target, &target.target)) {
+		return MAKE_END;
+	}
+
+	if (depend.action.data != NULL && strbuf_add(&make->strs, depend.action, &target.action)) {
+		return MAKE_END;
+	}
+
+	return rule_add_depend(make, rule, target);
 }
 
 make_act_t make_rule_add_act(make_t *make, make_rule_t rule, make_act_t act)
@@ -533,32 +566,21 @@ make_act_t make_def_add_act(make_t *make, make_def_t def, make_act_t act)
 	return list_set_next_node(&make->acts, data->acts, act);
 }
 
-make_var_t make_eval_def_add_arg(make_t *make, make_eval_def_t def, make_str_data_t arg)
+make_var_t make_eval_def_add_arg(make_t *make, make_eval_def_t def, make_create_str_t arg)
 {
 	if (make == NULL) {
 		return MAKE_END;
 	}
 
-	make_eval_def_data_t *data = make_act_get_type(make, def, MAKE_ACT_EVAL_DEF);
-
-	if (data == NULL) {
+	make_str_data_t str;
+	if (create_str(make, arg, &str)) {
 		return MAKE_END;
 	}
 
-	make_str_t str;
-	list_add_next_node(&make->strs, data->args, str);
-	make_str_data_t *target = list_get_data(&make->strs, str);
-
-	if (target == NULL) {
-		return MAKE_END;
-	}
-
-	*target = arg;
-
-	return def;
+	return eval_def_add_arg(make, def, str);
 }
 
-make_str_t make_ext_set_val(make_t *make, uint id, make_str_data_t val)
+make_str_t make_ext_set_val(make_t *make, uint id, make_create_str_t val)
 {
 	if (make == NULL) {
 		return MAKE_END;
@@ -572,25 +594,27 @@ make_str_t make_ext_set_val(make_t *make, uint id, make_str_data_t val)
 	}
 
 	make_str_t str;
-	list_add_node(&make->strs, ((make_var_data_t *)make_act_get_type(make, act, MAKE_ACT_VAR))->values, str);
-	make_str_data_t *target = list_get_data(&make->strs, str);
+	list_add_node(&make->arrs, ((make_var_data_t *)make_act_get_type(make, act, MAKE_ACT_VAR))->values, str);
+	make_str_data_t *target = list_get_data(&make->arrs, str);
 
 	if (target == NULL) {
 		return MAKE_END;
 	}
 
-	*target = val;
+	if (create_str(make, val, target)) {
+		return MAKE_END;
+	}
 
 	return str;
 }
 
-static int make_rule_target_eq(const make_t *make, make_rule_target_data_t target1, make_rule_target_data_t target2)
+static int make_rule_target_eq(const make_t *make, make_rule_target_data_t target1, make_create_rule_t target2)
 {
 	if (target1.target.type != target2.target.type) {
 		return 0;
 	}
 
-	if (!strv_eq(STRV_STR(target1.action), STRV_STR(target2.action))) {
+	if (!strv_eq(target1.action < make->strs.off.cnt ? strbuf_get(&make->strs, target1.action) : STRV_NULL, target2.action)) {
 		return 0;
 	}
 
@@ -598,11 +622,11 @@ static int make_rule_target_eq(const make_t *make, make_rule_target_data_t targe
 	case MAKE_STR_VAR:
 		return ((make_var_data_t *)make_act_get_type(make, target1.target.val.var, MAKE_ACT_VAR))->id ==
 		       ((make_var_data_t *)make_act_get_type(make, target2.target.val.var, MAKE_ACT_VAR))->id;
-	default: return strv_eq(STRV_STR(target1.target.val.str), STRV_STR(target2.target.val.str));
+	default: return strv_eq(strbuf_get(&make->strs, target1.target.val.id), target2.target.val.str);
 	}
 }
 
-make_rule_t make_rule_get_target(const make_t *make, make_rule_target_data_t target)
+make_rule_t make_rule_get_target(const make_t *make, make_create_rule_t target)
 {
 	if (make == NULL) {
 		return MAKE_END;
@@ -627,10 +651,10 @@ make_vars_t *make_vars_init(const make_t *make, make_vars_t *vars, alloc_t alloc
 		return NULL;
 	}
 
-	if (strbuf_init(&vars->names, make->vars.off.cnt, 16, alloc) == NULL ||
-	    arr_init(&vars->flags, make->vars.off.cnt, sizeof(make_var_flags_t), alloc) == NULL ||
-	    strbuf_init(&vars->expanded, make->vars.off.cnt, 16, alloc) == NULL ||
-	    strbuf_init(&vars->resolved, make->vars.off.cnt, 16, alloc) == NULL) {
+	if (strbuf_init(&vars->names, make->strs.off.cnt, 16, alloc) == NULL ||
+	    arr_init(&vars->flags, make->strs.off.cnt, sizeof(make_var_flags_t), alloc) == NULL ||
+	    strbuf_init(&vars->expanded, make->strs.off.cnt, 16, alloc) == NULL ||
+	    strbuf_init(&vars->resolved, make->strs.off.cnt, 16, alloc) == NULL) {
 		return NULL;
 	}
 
@@ -667,7 +691,7 @@ static int replace_vars(const void *priv, strv_t name, strv_t *val)
 }
 
 typedef struct replace_args_priv_s {
-	list_t strs;
+	const make_t *make;
 	lnode_t args;
 } replace_args_priv_t;
 
@@ -687,14 +711,14 @@ static int replace_args(const void *priv, strv_t name, strv_t *val)
 		id = LIST_END;
 	}
 
-	make_str_t index = list_get_at(&p->strs, p->args, id);
+	make_str_t index = list_get_at(&p->make->arrs, p->args, id);
 
-	const make_str_data_t *data = list_get_data(&p->strs, index);
+	const make_str_data_t *data = list_get_data(&p->make->arrs, index);
 	if (data == NULL) {
 		return 1;
 	}
 
-	*val = STRV_STR(data->val.str);
+	*val = strbuf_get(&p->make->strs, data->val.id);
 	return 0;
 }
 
@@ -743,7 +767,7 @@ static int eval_args(const make_t *make, strv_t val, lnode_t args, str_t *buf)
 	str_cat(buf, val);
 
 	replace_args_priv_t priv = {
-		.strs = make->strs,
+		.make = make,
 		.args = args,
 	};
 
@@ -761,14 +785,14 @@ static int make_str_expand(const make_t *make, const make_str_data_t *str, lnode
 			return 1;
 		}
 		str_cat(buf, STRV("$("));
-		str_cat(buf, strbuf_get(&make->vars, data->id));
+		str_cat(buf, strbuf_get(&make->strs, data->id));
 		str_cat(buf, STRV(")"));
 		break;
 	}
 	default: {
 		char b[256] = {0};
 		str_t tmp   = strb(b, sizeof(b), 0);
-		ret |= eval_args(make, STRV_STR(str->val.str), args, &tmp);
+		ret |= eval_args(make, strbuf_get(&make->strs, str->val.id), args, &tmp);
 		str_cat(buf, STRV_STR(tmp));
 		break;
 	}
@@ -794,7 +818,7 @@ static int make_var_app(make_vars_t *vars, uint id, int app, str_t *buf)
 		}
 	} else {
 		if (strbuf_set(&vars->expanded, STRV_STR(*buf), id)) {
-			log_error("cparse", "make", NULL, "failed to append variable");
+			log_error("cparse", "make", NULL, "failed to set variable");
 			ret = 1;
 		}
 	}
@@ -819,7 +843,7 @@ static int make_var_app(make_vars_t *vars, uint id, int app, str_t *buf)
 		}
 	} else {
 		if (strbuf_set(&vars->resolved, STRV_STR(*buf), id)) {
-			log_error("cparse", "make", NULL, "failed to append variable");
+			log_error("cparse", "make", NULL, "failed to set variable");
 			ret = 1;
 		}
 	}
@@ -835,7 +859,7 @@ static int make_var_eval(const make_t *make, make_vars_t *vars, const make_var_d
 
 	const make_str_data_t *value;
 	int first = 1;
-	list_foreach(&make->strs, var->values, value)
+	list_foreach(&make->arrs, var->values, value)
 	{
 		if (!first) {
 			str_cat(buf, STRV(" "));
@@ -881,7 +905,7 @@ static int make_vars_eval_act(const make_t *make, make_vars_t *vars, make_act_t 
 			const make_var_data_t *var = &act->val.var;
 
 			uint id;
-			strv_t name = strbuf_get(&make->vars, var->id);
+			strv_t name = strbuf_get(&make->strs, var->id);
 			ret |= eval_args(make, name, args, buf);
 			if (make_vars_add_var(vars, STRV_STR(*buf), 0, &id)) {
 				ret = 1;
@@ -890,7 +914,7 @@ static int make_vars_eval_act(const make_t *make, make_vars_t *vars, make_act_t 
 
 			make_var_flags_t *flags = arr_get(&vars->flags, id);
 
-			if (var->ext && var->values < make->strs.cnt) {
+			if (var->ext && var->values < make->arrs.cnt) {
 				flags->ref = 1;
 				ret |= make_var_eval(make, vars, var, id, args, 0, buf);
 				flags->ext = 1;
@@ -1055,8 +1079,9 @@ static int make_rule_target_print(const make_t *make, const make_rule_target_dat
 	buf->len = 0;
 	make_str_expand(make, &target->target, MAKE_END, buf);
 	dst.off += c_dprintf(dst, "%.*s", buf->len, buf->data);
-	if (target->action.data != NULL) {
-		dst.off += c_dprintf(dst, "%.*s", target->action.len, target->action.data);
+	if (target->action != ARR_END) {
+		strv_t action = strbuf_get(&make->strs, target->action);
+		dst.off += c_dprintf(dst, "%.*s", action.len, action.data);
 	}
 
 	return dst.off - off;
@@ -1083,11 +1108,11 @@ static int make_acts_print(const make_t *make, make_act_t acts, print_dst_t dst,
 				break;
 			}
 
-			strv_t name = strbuf_get(&make->vars, act->val.var.id);
+			strv_t name = strbuf_get(&make->strs, act->val.var.id);
 			dst.off += c_dprintf(dst, "%.*s %s", name.len, name.data, var_type_str);
 
 			const make_str_data_t *value;
-			list_foreach(&make->strs, act->val.var.values, value)
+			list_foreach(&make->arrs, act->val.var.values, value)
 			{
 				buf->len = 0;
 				make_str_expand(make, value, MAKE_END, buf);
@@ -1116,25 +1141,25 @@ static int make_acts_print(const make_t *make, make_act_t acts, print_dst_t dst,
 		case MAKE_ACT_CMD: {
 			switch (act->val.cmd.type) {
 			case MAKE_CMD_CHILD: {
-				if (act->val.cmd.arg2.data == NULL) {
-					dst.off += c_dprintf(dst, "\t@$(MAKE) -C %.*s\n", act->val.cmd.arg1.len, act->val.cmd.arg1.data);
+				if (act->val.cmd.arg2 < make->strs.off.cnt) {
+					strv_t arg1 = strbuf_get(&make->strs, act->val.cmd.arg1);
+					strv_t arg2 = strbuf_get(&make->strs, act->val.cmd.arg2);
+					dst.off += c_dprintf(dst, "\t@$(MAKE) -C %.*s %.*s\n", arg1.len, arg1.data, arg2.len, arg2.data);
+
 				} else {
-					dst.off += c_dprintf(dst,
-							     "\t@$(MAKE) -C %.*s %.*s\n",
-							     act->val.cmd.arg1.len,
-							     act->val.cmd.arg1.data,
-							     act->val.cmd.arg2.len,
-							     act->val.cmd.arg2.data);
+					strv_t arg1 = strbuf_get(&make->strs, act->val.cmd.arg1);
+					dst.off += c_dprintf(dst, "\t@$(MAKE) -C %.*s\n", arg1.len, arg1.data);
 				}
 				break;
 			}
 			case MAKE_CMD_ERR: {
-				dst.off += c_dprintf(
-					dst, "%s$(error %.*s)\n", rule ? "\t" : "", act->val.cmd.arg1.len, act->val.cmd.arg1.data);
+				strv_t arg1 = strbuf_get(&make->strs, act->val.cmd.arg1);
+				dst.off += c_dprintf(dst, "%s$(error %.*s)\n", rule ? "\t" : "", arg1.len, arg1.data);
 				break;
 			}
 			default: {
-				dst.off += c_dprintf(dst, "%s%.*s\n", rule ? "\t" : "", act->val.cmd.arg1.len, act->val.cmd.arg1.data);
+				strv_t arg1 = strbuf_get(&make->strs, act->val.cmd.arg1);
+				dst.off += c_dprintf(dst, "%s%.*s\n", rule ? "\t" : "", arg1.len, arg1.data);
 				break;
 			}
 			}
@@ -1162,7 +1187,8 @@ static int make_acts_print(const make_t *make, make_act_t acts, print_dst_t dst,
 			break;
 		}
 		case MAKE_ACT_DEF: {
-			dst.off += c_dprintf(dst, "define %.*s\n", act->val.def.name.len, act->val.def.name.data);
+			strv_t name = strbuf_get(&make->strs, act->val.def.name);
+			dst.off += c_dprintf(dst, "define %.*s\n", name.len, name.data);
 			dst.off += make_acts_print(make, act->val.def.acts, dst, rule, buf);
 			dst.off += c_dprintf(dst, "endef\n");
 			break;
@@ -1173,10 +1199,11 @@ static int make_acts_print(const make_t *make, make_act_t acts, print_dst_t dst,
 				break;
 			}
 
-			dst.off += c_dprintf(dst, "$(eval $(call %.*s", def->name.len, def->name.data);
+			strv_t name = strbuf_get(&make->strs, def->name);
+			dst.off += c_dprintf(dst, "$(eval $(call %.*s", name.len, name.data);
 
 			const make_str_data_t *value;
-			list_foreach(&make->strs, act->val.eval_def.args, value)
+			list_foreach(&make->arrs, act->val.eval_def.args, value)
 			{
 				if (_i == act->val.eval_def.args) {
 					continue;
@@ -1226,7 +1253,7 @@ int make_dbg(const make_t *make, print_dst_t dst)
 			break;
 		}
 		case MAKE_ACT_VAR: {
-			strv_t name = strbuf_get(&make->vars, act->val.var.id);
+			strv_t name = strbuf_get(&make->strs, act->val.var.id);
 			dst.off += c_dprintf(dst,
 					     "VAR\n"
 					     "    NAME    : %.*s %s\n"
@@ -1235,7 +1262,7 @@ int make_dbg(const make_t *make, print_dst_t dst)
 					     name.data,
 					     act->val.var.ext ? "(ext)" : "");
 			const make_str_data_t *value;
-			list_foreach(&make->strs, act->val.var.values, value)
+			list_foreach(&make->arrs, act->val.var.values, value)
 			{
 				buf.len = 0;
 				make_str_expand(make, value, MAKE_END, &buf);
@@ -1260,15 +1287,17 @@ int make_dbg(const make_t *make, print_dst_t dst)
 			break;
 		}
 		case MAKE_ACT_CMD: {
+			strv_t arg1 = act->val.cmd.arg1 < make->strs.off.cnt ? strbuf_get(&make->strs, act->val.cmd.arg1) : STRV("");
+			strv_t arg2 = act->val.cmd.arg2 < make->strs.off.cnt ? strbuf_get(&make->strs, act->val.cmd.arg2) : STRV("");
 			dst.off += c_dprintf(dst,
 					     "CMD\n"
 					     "    ARG1: %.*s\n"
 					     "    ARG2: %.*s\n"
 					     "    TYPE: %d\n",
-					     act->val.cmd.arg1.len,
-					     act->val.cmd.arg1.data,
-					     act->val.cmd.arg2.len,
-					     act->val.cmd.arg2.data,
+					     arg1.len,
+					     arg1.data,
+					     arg2.len,
+					     arg2.data,
 					     act->val.cmd.type);
 			break;
 		}
@@ -1286,11 +1315,12 @@ int make_dbg(const make_t *make, print_dst_t dst)
 			break;
 		}
 		case MAKE_ACT_DEF: {
+			strv_t name = strbuf_get(&make->strs, act->val.def.name);
 			dst.off += c_dprintf(dst,
 					     "DEF\n"
 					     "    NAME: '%.*s'\n",
-					     act->val.def.name.len,
-					     act->val.def.name.data);
+					     name.len,
+					     name.data);
 			break;
 		}
 		case MAKE_ACT_EVAL_DEF: {
@@ -1299,14 +1329,15 @@ int make_dbg(const make_t *make, print_dst_t dst)
 				break;
 			}
 
+			strv_t name = strbuf_get(&make->strs, def->name);
 			dst.off += c_dprintf(dst,
 					     "EVAL DEF\n"
 					     "    DEF: '%.*s'\n"
 					     "    ARGS:\n",
-					     def->name.len,
-					     def->name.data);
+					     name.len,
+					     name.data);
 			const make_str_data_t *arg;
-			list_foreach(&make->strs, act->val.eval_def.args, arg)
+			list_foreach(&make->arrs, act->val.eval_def.args, arg)
 			{
 				buf.len = 0;
 				make_str_expand(make, arg, MAKE_END, &buf);
