@@ -784,7 +784,7 @@ static int make_str_expand(const make_t *make, const make_str_data_t *str, lnode
 			log_warn("cparse", "make", NULL, "variable not found");
 			return 1;
 		}
-		str_cat(buf, STRV("$("));
+		str_cat(buf, args == MAKE_END ? STRV("$(") :  STRV("$$(") );
 		str_cat(buf, strbuf_get(&make->strs, data->id));
 		str_cat(buf, STRV(")"));
 		break;

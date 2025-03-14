@@ -80,8 +80,8 @@ make_rule_t make_create_rule(make_t *make, make_create_rule_t target, int file);
 make_rule_t make_create_phony(make_t *make);
 make_cmd_t make_create_cmd(make_t *make, make_create_cmd_t cmd);
 make_if_t make_create_if(make_t *make, make_create_str_t l, make_create_str_t r);
-make_if_t make_create_def(make_t *make, strv_t name);
-make_if_t make_create_eval_def(make_t *make, make_def_t def);
+make_def_t make_create_def(make_t *make, strv_t name);
+make_eval_def_t make_create_eval_def(make_t *make, make_def_t def);
 
 make_act_t make_add_act(make_t *make, make_act_t act);
 make_var_t make_var_add_val(make_t *make, make_var_t var, make_create_str_t val);
