@@ -997,6 +997,35 @@ TEST(make_vars_eval_var_type)
 	END;
 }
 
+TEST(make_vars_eval_ext_not_set)
+{
+	START;
+
+	make_t make = {0};
+	make_init(&make, 1, 1, 1, 1, ALLOC_STD);
+
+	make_add_act(&make, make_create_var_ext(&make, STRV("EXT"), NULL));
+
+	make_vars_t vars = {0};
+	make_vars_init(&make, &vars, ALLOC_STD);
+
+	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
+
+	uint id;
+	strv_t exp, res;
+
+	strbuf_get_index(&vars.names, STRV("EXT"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "", res.len);
+
+	make_vars_free(&vars);
+	make_free(&make);
+
+	END;
+}
+
 TEST(make_vars_get_expanded)
 {
 	START;
@@ -1117,7 +1146,7 @@ TEST(make_eval_print_var_inst_empty)
 	EXPECT_EQ(make_print(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 7);
 	EXPECT_STR(buf, "VAR :=\n");
 
-	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 37);
+	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 36);
 
 	make_vars_free(&vars);
 	make_free(&make);
@@ -1183,6 +1212,40 @@ TEST(make_eval_print_var_inst2)
 	END;
 }
 
+TEST(make_eval_print_var_inst_out)
+{
+	START;
+
+	make_t make = {0};
+	make_init(&make, 1, 1, 1, 4, ALLOC_STD);
+
+	make_var_add_val(&make, make_add_act(&make, make_create_var(&make, STRV("A"), MAKE_VAR_INST, NULL)), MSTR(STRV("V")));
+	make_var_add_val(&make, make_add_act(&make, make_create_var(&make, STRV("B"), MAKE_VAR_INST, NULL)), MSTR(STRV("$$(A)")));
+
+	make_vars_t vars = {0};
+	make_vars_init(&make, &vars, ALLOC_STD);
+
+	uint var;
+	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
+	strbuf_get_index(&vars.names, STRV("B"), &var);
+	strv_t var_exp = make_vars_get_expanded(&vars, var);
+	EXPECT_STRN(var_exp.data, "$$(A)", var_exp.len);
+
+	strv_t var_res = make_vars_get_resolved(&vars, var);
+	EXPECT_STRN(var_res.data, "$(A)", var_res.len);
+
+	char buf[32] = {0};
+	EXPECT_EQ(make_print(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 18);
+	EXPECT_STR(buf,
+		   "A := V\n"
+		   "B := $$(A)\n");
+
+	make_vars_free(&vars);
+	make_free(&make);
+
+	END;
+}
+
 TEST(make_eval_print_var_ref)
 {
 	START;
@@ -1237,7 +1300,7 @@ TEST(make_eval_print_var_app)
 		   "VAR := VAL1\n"
 		   "VAR += VAL2\n");
 
-	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 100);
+	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 98);
 
 	make_vars_free(&vars);
 	make_free(&make);
@@ -1439,7 +1502,7 @@ TEST(make_eval_print_var_if_true)
 		   "VAR := VAL\n"
 		   "endif\n");
 
-	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 133);
+	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 132);
 	EXPECT_STR(buf,
 		   "VAR\n"
 		   "    NAME    : COND (ext)\n"
@@ -1449,7 +1512,7 @@ TEST(make_eval_print_var_if_true)
 		   "    L: '$(COND)'\n"
 		   "    R: 'A'\n"
 		   "VAR\n"
-		   "    NAME    : VAR \n"
+		   "    NAME    : VAR\n"
 		   "    VALUES  :\n"
 		   "        VAL\n");
 
@@ -1501,7 +1564,7 @@ TEST(make_eval_print_var_if_false)
 		   "VAR := VAL2\n"
 		   "endif\n");
 
-	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 184);
+	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 182);
 	EXPECT_STR(buf,
 		   "VAR\n"
 		   "    NAME    : COND (ext)\n"
@@ -1511,11 +1574,11 @@ TEST(make_eval_print_var_if_false)
 		   "    L: '$(COND)'\n"
 		   "    R: 'A'\n"
 		   "VAR\n"
-		   "    NAME    : VAR \n"
+		   "    NAME    : VAR\n"
 		   "    VALUES  :\n"
 		   "        VAL1\n"
 		   "VAR\n"
-		   "    NAME    : VAR \n"
+		   "    NAME    : VAR\n"
 		   "    VALUES  :\n"
 		   "        VAL2\n")
 
@@ -1581,12 +1644,12 @@ TEST(make_eval_print_def)
 		   "$(1) := VAL\n"
 		   "endef\n");
 
-	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 70);
+	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 69);
 	EXPECT_STR(buf,
 		   "DEF\n"
 		   "    NAME: 'def'\n"
 		   "VAR\n"
-		   "    NAME    : $(1) \n"
+		   "    NAME    : $(1)\n"
 		   "    VALUES  :\n"
 		   "        VAL\n");
 
@@ -1629,12 +1692,12 @@ TEST(make_eval_print_def_no_arg)
 		   "endef\n"
 		   "$(eval $(call def))\n");
 
-	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 116);
+	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 115);
 	EXPECT_STR(buf,
 		   "DEF\n"
 		   "    NAME: 'def'\n"
 		   "VAR\n"
-		   "    NAME    : $(1) \n"
+		   "    NAME    : $(1)\n"
 		   "    VALUES  :\n"
 		   "        VAL\n"
 		   "EVAL DEF\n"
@@ -1687,12 +1750,12 @@ TEST(make_eval_print_def_args)
 		   "endef\n"
 		   "$(eval $(call def,VAR))\n");
 
-	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 181);
+	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 180);
 	EXPECT_STR(buf,
 		   "DEF\n"
 		   "    NAME: 'def'\n"
 		   "VAR\n"
-		   "    NAME    : $(1) \n"
+		   "    NAME    : $(1)\n"
 		   "    VALUES  :\n"
 		   "        $(0)\n"
 		   "        $(1)\n"
@@ -1704,6 +1767,180 @@ TEST(make_eval_print_def_args)
 		   "    ARGS:\n"
 		   "        def\n"
 		   "        VAR\n");
+
+	make_vars_free(&vars);
+	make_free(&make);
+
+	END;
+}
+
+TEST(make_eval_print_def_var_invalid)
+{
+	START;
+
+	make_t make = {0};
+	make_init(&make, 4, 4, 1, 8, ALLOC_STD);
+
+	const make_def_t def = make_add_act(&make, make_create_def(&make, STRV("def")));
+
+	make_var_add_val(&make, make_def_add_act(&make, def, make_create_var(&make, STRV("A"), MAKE_VAR_INST, NULL)), MSTR(STRV("V")));
+	make_var_add_val(&make, make_def_add_act(&make, def, make_create_var(&make, STRV("B"), MAKE_VAR_INST, NULL)), MSTR(STRV("$(A)")));
+
+	make_vars_t vars = {0};
+	make_vars_init(&make, &vars, ALLOC_STD);
+
+	uint b_id = ARR_END;
+
+	make_add_act(&make, make_create_eval_def(&make, def));
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(make_vars_eval(&make, &vars), 1);
+	log_set_quiet(0, 0);
+
+	strbuf_get_index(&vars.names, STRV("B"), &b_id);
+	strv_t var_exp_a = make_vars_get_expanded(&vars, b_id);
+	EXPECT_STRN(var_exp_a.data, "", var_exp_a.len);
+
+	char buf[512] = {0};
+	EXPECT_EQ(make_print(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 54);
+	EXPECT_STR(buf,
+		   "define def\n"
+		   "A := V\n"
+		   "B := $(A)\n"
+		   "endef\n"
+		   "$(eval $(call def))\n");
+
+	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 157);
+	EXPECT_STR(buf,
+		   "DEF\n"
+		   "    NAME: 'def'\n"
+		   "VAR\n"
+		   "    NAME    : A\n"
+		   "    VALUES  :\n"
+		   "        V\n"
+		   "VAR\n"
+		   "    NAME    : B\n"
+		   "    VALUES  :\n"
+		   "        $(A)\n"
+		   "EVAL DEF\n"
+		   "    DEF: 'def'\n"
+		   "    ARGS:\n"
+		   "        def\n");
+
+	make_vars_free(&vars);
+	make_free(&make);
+
+	END;
+}
+
+TEST(make_eval_print_def_var_imm)
+{
+	START;
+
+	make_t make = {0};
+	make_init(&make, 4, 4, 1, 8, ALLOC_STD);
+
+	make_var_add_val(&make, make_add_act(&make, make_create_var(&make, STRV("A"), MAKE_VAR_INST, NULL)), MSTR(STRV("V")));
+
+	const make_def_t def = make_add_act(&make, make_create_def(&make, STRV("def")));
+	make_var_add_val(&make, make_def_add_act(&make, def, make_create_var(&make, STRV("B"), MAKE_VAR_INST, NULL)), MSTR(STRV("$(A)")));
+
+	make_vars_t vars = {0};
+	make_vars_init(&make, &vars, ALLOC_STD);
+
+	make_add_act(&make, make_create_eval_def(&make, def));
+
+	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
+
+	uint id = ARR_END;
+	strv_t exp, res;
+
+	strbuf_get_index(&vars.names, STRV("B"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "V", exp.len);
+	res = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(res.data, "V", res.len);
+
+	make_vars_free(&vars);
+	make_free(&make);
+
+	END;
+}
+
+TEST(make_eval_print_def_var)
+{
+	START;
+
+	make_t make = {0};
+	make_init(&make, 4, 4, 1, 8, ALLOC_STD);
+
+	const make_def_t def = make_add_act(&make, make_create_def(&make, STRV("def")));
+
+	make_var_t a = make_var_add_val(
+		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("A"), MAKE_VAR_INST, NULL)), MSTR(STRV("V")));
+
+	make_var_add_val(&make, make_def_add_act(&make, def, make_create_var(&make, STRV("B"), MAKE_VAR_INST, NULL)), MVAR(a));
+	make_var_add_val(&make, make_def_add_act(&make, def, make_create_var(&make, STRV("C"), MAKE_VAR_INST, NULL)), MSTR(STRV("$$(A)")));
+
+	make_def_add_act(&make, def, make_create_rule(&make, MRULE(MVAR(a)), 1));
+
+	make_vars_t vars = {0};
+	make_vars_init(&make, &vars, ALLOC_STD);
+
+	make_add_act(&make, make_create_eval_def(&make, def));
+
+	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
+
+	uint id = ARR_END;
+	strv_t val;
+
+	strbuf_get_index(&vars.names, STRV("B"), &id);
+	val = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(val.data, "$(A)", val.len);
+	val = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(val.data, "V", val.len);
+
+	strbuf_get_index(&vars.names, STRV("B"), &id);
+	val = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(val.data, "$(A)", val.len);
+	val = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(val.data, "V", val.len);
+
+	char buf[512] = {0};
+	EXPECT_EQ(make_print(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 74);
+	EXPECT_STR(buf,
+		   "define def\n"
+		   "A := V\n"
+		   "B := $$(A)\n"
+		   "C := $$(A)\n"
+		   "$$(A):\n"
+		   "\n"
+		   "endef\n"
+		   "$(eval $(call def))\n");
+
+	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 240);
+	EXPECT_STR(buf,
+		   "DEF\n"
+		   "    NAME: 'def'\n"
+		   "VAR\n"
+		   "    NAME    : A\n"
+		   "    VALUES  :\n"
+		   "        V\n"
+		   "VAR\n"
+		   "    NAME    : B\n"
+		   "    VALUES  :\n"
+		   "        $(A)\n"
+		   "VAR\n"
+		   "    NAME    : C\n"
+		   "    VALUES  :\n"
+		   "        $$(A)\n"
+		   "RULE\n"
+		   "    TARGET: $(A)\n"
+		   "    DEPENDS:\n"
+		   "EVAL DEF\n"
+		   "    DEF: 'def'\n"
+		   "    ARGS:\n"
+		   "        def\n");
 
 	make_vars_free(&vars);
 	make_free(&make);
@@ -2167,6 +2404,7 @@ TEST(make_eval_print)
 	RUN(make_vars_eval_oom_if);
 	RUN(make_vars_eval_invalid_eval_def);
 	RUN(make_vars_eval_var_type);
+	RUN(make_vars_eval_ext_not_set);
 	RUN(make_vars_get_expanded);
 	RUN(make_vars_get_resolved);
 	RUN(make_print);
@@ -2175,6 +2413,7 @@ TEST(make_eval_print)
 	RUN(make_eval_print_var_inst_empty);
 	RUN(make_eval_print_var_inst);
 	RUN(make_eval_print_var_inst2);
+	RUN(make_eval_print_var_inst_out);
 	RUN(make_eval_print_var_ref);
 	RUN(make_eval_print_var_app);
 	RUN(make_eval_print_var_ext_inst);
@@ -2187,6 +2426,9 @@ TEST(make_eval_print)
 	RUN(make_eval_print_def);
 	RUN(make_eval_print_def_no_arg);
 	RUN(make_eval_print_def_args);
+	RUN(make_eval_print_def_var_invalid);
+	RUN(make_eval_print_def_var_imm);
+	RUN(make_eval_print_def_var);
 	RUN(make_eval_print_var_not_found);
 	RUN(make_eval_ext_override);
 	RUN(make_eval_inst_app);
@@ -2204,6 +2446,354 @@ TEST(make_eval_print)
 	SEND;
 }
 
+TEST(make_vars)
+{
+	START;
+
+	make_t make = {0};
+	make_init(&make, 5, 5, 1, 8, ALLOC_STD);
+
+	uint ext_empty = ARR_END, ext_set = ARR_END, ext_var = ARR_END;
+	make_add_act(&make, make_create_var_ext(&make, STRV("EXT_NOT"), NULL));
+	make_add_act(&make, make_create_var_ext(&make, STRV("EXT_EMPTY"), &ext_empty));
+	make_add_act(&make, make_create_var_ext(&make, STRV("EXT_SET"), &ext_set));
+	make_add_act(&make, make_create_var_ext(&make, STRV("EXT_VAR"), &ext_var));
+
+	uint var_ext_not = ARR_END, var_ext_empty = ARR_END, var_ext_set = ARR_END;
+	make_add_act(&make, make_create_var_ext(&make, STRV("VAR_EXT_NOT"), &var_ext_not));
+	make_add_act(&make, make_create_var_ext(&make, STRV("VAR_EXT_EMPTY"), &var_ext_empty));
+	make_add_act(&make, make_create_var_ext(&make, STRV("VAR_EXT_SET"), &var_ext_set));
+
+	uint var_id = ARR_END;
+	make_var_t var =
+		make_var_add_val(&make, make_add_act(&make, make_create_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id)), MSTR(STRV("V1")));
+	make_var_add_val(&make, make_add_act(&make, make_create_var(&make, STRV("IMM"), MAKE_VAR_INST, NULL)), MSTR(STRV("$(VAR)")));
+	make_var_add_val(&make, make_add_act(&make, make_create_var(&make, STRV("REC"), MAKE_VAR_REF, NULL)), MSTR(STRV("$(VAR)")));
+	make_var_add_val(&make, make_add_act(&make, make_create_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id)), MSTR(STRV("V2")));
+
+	uint app_imm_id = ARR_END;
+	make_var_add_val(&make, make_add_act(&make, make_create_var(&make, STRV("APP_IMM"), MAKE_VAR_INST, &app_imm_id)), MVAR(var));
+	make_var_add_val(
+		&make, make_add_act(&make, make_create_var(&make, STRV("APP_IMM"), MAKE_VAR_APP, &app_imm_id)), MSTR(STRV("$(VAR)")));
+	make_var_add_val(&make, make_add_act(&make, make_create_var(&make, STRV("APP_IMM"), MAKE_VAR_APP, &app_imm_id)), MVAR(var));
+
+	uint app_rec_id = ARR_END;
+	make_var_add_val(&make, make_add_act(&make, make_create_var(&make, STRV("APP_REC"), MAKE_VAR_REF, &app_rec_id)), MVAR(var));
+	make_var_add_val(
+		&make, make_add_act(&make, make_create_var(&make, STRV("APP_REC"), MAKE_VAR_APP, &app_rec_id)), MSTR(STRV("$(VAR)")));
+	make_var_add_val(&make, make_add_act(&make, make_create_var(&make, STRV("APP_REC"), MAKE_VAR_APP, &app_rec_id)), MVAR(var));
+
+	make_add_act(&make, make_create_empty(&make));
+
+	make_var_add_val(
+		&make, make_add_act(&make, make_create_var(&make, STRV("VAR_EXT_NOT"), MAKE_VAR_INST, &var_ext_not)), MSTR(STRV("VAR")));
+	make_var_add_val(&make,
+			 make_add_act(&make, make_create_var(&make, STRV("VAR_EXT_EMPTY"), MAKE_VAR_INST, &var_ext_empty)),
+			 MSTR(STRV("VAR")));
+	make_var_add_val(
+		&make, make_add_act(&make, make_create_var(&make, STRV("VAR_EXT_SET"), MAKE_VAR_INST, &var_ext_set)), MSTR(STRV("VAR")));
+
+	make_add_act(&make, make_create_empty(&make));
+
+	make_def_t def	   = make_add_act(&make, make_create_def(&make, STRV("def")));
+	make_var_t def_var = make_var_add_val(
+		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_VAR"), MAKE_VAR_INST, NULL)), MSTR(STRV("D")));
+	make_var_add_val(&make,
+			 make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_VAR_IMM"), MAKE_VAR_INST, NULL)),
+			 MSTR(STRV("$$(DEF_VAR)")));
+	make_var_add_val(
+		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_VAR_IMM_VAR"), MAKE_VAR_INST, NULL)), MVAR(def_var));
+	make_var_add_val(
+		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_IMM"), MAKE_VAR_INST, NULL)), MSTR(STRV("$(VAR)")));
+	make_var_add_val(&make,
+			 make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_IMM_ESC"), MAKE_VAR_INST, NULL)),
+			 MSTR(STRV("$$(VAR)")));
+	make_var_add_val(
+		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_IMM_ESC_VAR"), MAKE_VAR_INST, NULL)), MVAR(var));
+	make_var_add_val(
+		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_REC"), MAKE_VAR_REF, NULL)), MSTR(STRV("$(VAR)")));
+	make_var_add_val(&make,
+			 make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_REC_ESC"), MAKE_VAR_REF, NULL)),
+			 MSTR(STRV("$$(VAR)")));
+	make_var_add_val(
+		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_REC_ESC_VAR"), MAKE_VAR_REF, NULL)), MVAR(var));
+	make_var_add_val(
+		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("$(0)"), MAKE_VAR_INST, NULL)), MSTR(STRV("$$($(1))")));
+
+	make_add_act(&make, make_create_empty(&make));
+
+	make_eval_def_add_arg(&make, make_add_act(&make, make_create_eval_def(&make, def)), MSTR(STRV("VAR")));
+
+	make_add_act(&make, make_create_empty(&make));
+
+	make_var_add_val(&make, make_add_act(&make, make_create_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id)), MSTR(STRV("V3")));
+
+	make_add_act(&make, make_create_empty(&make));
+
+	make_rule_t all = make_add_act(&make, make_create_rule(&make, MRULE(MSTR(STRV("all"))), 1));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo VAR             = $(VAR)           #V3"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo IMM             = $(IMM)           #V1"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo REC             = $(REC)           #V3"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo APP_IMM         = $(APP_IMM)       #V2 V2 V2"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo APP_REC         = $(APP_REC)       #V3 V3 V3"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo EXT_NOT         = $(EXT_NOT)       #"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo EXT_EMPTY       = $(EXT_EMPTY)     #"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo EXT_SET         = $(EXT_SET)       #EXT"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo EXT_VAR         = $(EXT_VAR)       #V3"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo VAR_EXT_NOT     = $(VAR_EXT_NOT)   #VAR"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo VAR_EXT_EMPTY   = $(VAR_EXT_EMPTY) #"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo VAR_EXT_SET     = $(VAR_EXT_SET)   #EXT"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_VAR         = $(DEF_VAR)       #D"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_VAR_IMM     = $(DEF_VAR_IMM)   #D"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_VAR_IMM_VAR = $(DEF_VAR_IMM_VAR) #D"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_IMM         = $(DEF_IMM)       #V2"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_IMM_ESC     = $(DEF_IMM_ESC)   #V2"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_IMM_ESC_VAR = $(DEF_IMM_ESC)   #V2"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_REC         = $(DEF_REC)       #V2"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_REC_ESC     = $(DEF_REC_ESC)   #V3"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_REC_ESC_VAR = $(DEF_REC_ESC)   #V3"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo def             = $(def)           #V2"))));
+
+	make_ext_set_val(&make, ext_empty, MSTR(STRV("")));
+	make_ext_set_val(&make, ext_set, MSTR(STRV("EXT")));
+	make_ext_set_val(&make, ext_var, MSTR(STRV("$(VAR)")));
+
+	make_ext_set_val(&make, var_ext_empty, MSTR(STRV("")));
+	make_ext_set_val(&make, var_ext_set, MSTR(STRV("EXT")));
+
+	char buf[2048] = {0};
+	EXPECT_EQ(make_print(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1516);
+	EXPECT_STR(buf,
+		   "VAR := V1\n"
+		   "IMM := $(VAR)\n"
+		   "REC = $(VAR)\n"
+		   "VAR := V2\n"
+		   "APP_IMM := $(VAR)\n"
+		   "APP_IMM += $(VAR)\n"
+		   "APP_IMM += $(VAR)\n"
+		   "APP_REC = $(VAR)\n"
+		   "APP_REC += $(VAR)\n"
+		   "APP_REC += $(VAR)\n"
+		   "\n"
+		   "VAR_EXT_NOT := VAR\n"
+		   "VAR_EXT_EMPTY := VAR\n"
+		   "VAR_EXT_SET := VAR\n"
+		   "\n"
+		   "define def\n"
+		   "DEF_VAR := D\n"
+		   "DEF_VAR_IMM := $$(DEF_VAR)\n"
+		   "DEF_VAR_IMM_VAR := $$(DEF_VAR)\n"
+		   "DEF_IMM := $(VAR)\n"
+		   "DEF_IMM_ESC := $$(VAR)\n"
+		   "DEF_IMM_ESC_VAR := $$(VAR)\n"
+		   "DEF_REC = $(VAR)\n"
+		   "DEF_REC_ESC = $$(VAR)\n"
+		   "DEF_REC_ESC_VAR = $$(VAR)\n"
+		   "$(0) := $$($(1))\n"
+		   "endef\n"
+		   "\n"
+		   "$(eval $(call def,VAR))\n"
+		   "\n"
+		   "VAR := V3\n"
+		   "\n"
+		   "all:\n"
+		   "	@echo VAR             = $(VAR)           #V3\n"
+		   "	@echo IMM             = $(IMM)           #V1\n"
+		   "	@echo REC             = $(REC)           #V3\n"
+		   "	@echo APP_IMM         = $(APP_IMM)       #V2 V2 V2\n"
+		   "	@echo APP_REC         = $(APP_REC)       #V3 V3 V3\n"
+		   "	@echo EXT_NOT         = $(EXT_NOT)       #\n"
+		   "	@echo EXT_EMPTY       = $(EXT_EMPTY)     #\n"
+		   "	@echo EXT_SET         = $(EXT_SET)       #EXT\n"
+		   "	@echo EXT_VAR         = $(EXT_VAR)       #V3\n"
+		   "	@echo VAR_EXT_NOT     = $(VAR_EXT_NOT)   #VAR\n"
+		   "	@echo VAR_EXT_EMPTY   = $(VAR_EXT_EMPTY) #\n"
+		   "	@echo VAR_EXT_SET     = $(VAR_EXT_SET)   #EXT\n"
+		   "	@echo DEF_VAR         = $(DEF_VAR)       #D\n"
+		   "	@echo DEF_VAR_IMM     = $(DEF_VAR_IMM)   #D\n"
+		   "	@echo DEF_VAR_IMM_VAR = $(DEF_VAR_IMM_VAR) #D\n"
+		   "	@echo DEF_IMM         = $(DEF_IMM)       #V2\n"
+		   "	@echo DEF_IMM_ESC     = $(DEF_IMM_ESC)   #V2\n"
+		   "	@echo DEF_IMM_ESC_VAR = $(DEF_IMM_ESC)   #V2\n"
+		   "	@echo DEF_REC         = $(DEF_REC)       #V2\n"
+		   "	@echo DEF_REC_ESC     = $(DEF_REC_ESC)   #V3\n"
+		   "	@echo DEF_REC_ESC_VAR = $(DEF_REC_ESC)   #V3\n"
+		   "	@echo def             = $(def)           #V2\n"
+		   "\n");
+
+	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 2035);
+
+	make_vars_t vars = {0};
+	make_vars_init(&make, &vars, ALLOC_STD);
+
+	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
+
+	make_vars_print(&vars, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	EXPECT_STR(buf,
+		   "EXT_NOT                                                                           \n"
+		   "EXT_EMPTY                                                                         \n"
+		   "EXT_SET          EXT                                                              EXT\n"
+		   "EXT_VAR          $(VAR)                                                           $(VAR)\n"
+		   "VAR_EXT_NOT      VAR                                                              VAR\n"
+		   "VAR_EXT_EMPTY                                                                     \n"
+		   "VAR_EXT_SET      EXT                                                              EXT\n"
+		   "VAR              V3                                                               V3\n"
+		   "IMM              $(VAR)                                                           V1\n"
+		   "REC              $(VAR)                                                           $(VAR)\n"
+		   "APP_IMM          $(VAR) $(VAR) $(VAR)                                             V2 V2 V2\n"
+		   "APP_REC          $(VAR) $(VAR) $(VAR)                                             $(VAR) $(VAR) $(VAR)\n"
+		   "DEF_VAR          D                                                                D\n"
+		   "DEF_VAR_IMM      $(DEF_VAR)                                                       D\n"
+		   "DEF_VAR_IMM_VAR  $(DEF_VAR)                                                       D\n"
+		   "DEF_IMM          V2                                                               V2\n"
+		   "DEF_IMM_ESC      $(VAR)                                                           V2\n"
+		   "DEF_IMM_ESC_VAR  $(VAR)                                                           V2\n"
+		   "DEF_REC          V2                                                               V2\n"
+		   "DEF_REC_ESC      $(VAR)                                                           $(VAR)\n"
+		   "DEF_REC_ESC_VAR  $(VAR)                                                           $(VAR)\n"
+		   "def              $(VAR)                                                           V2\n")
+
+	uint id;
+	strv_t exp, res;
+
+	strbuf_get_index(&vars.names, STRV("VAR"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "V3", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "V3", res.len);
+
+	strbuf_get_index(&vars.names, STRV("IMM"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "V1", res.len);
+
+	strbuf_get_index(&vars.names, STRV("REC"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "V3", res.len);
+
+	strbuf_get_index(&vars.names, STRV("APP_IMM"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "$(VAR) $(VAR) $(VAR)", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "V2 V2 V2", res.len);
+
+	strbuf_get_index(&vars.names, STRV("APP_REC"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "$(VAR) $(VAR) $(VAR)", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "V3 V3 V3", res.len);
+
+	strbuf_get_index(&vars.names, STRV("EXT_NOT"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "", res.len);
+
+	strbuf_get_index(&vars.names, STRV("EXT_EMPTY"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "", res.len);
+
+	strbuf_get_index(&vars.names, STRV("EXT_SET"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "EXT", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "EXT", res.len);
+
+	strbuf_get_index(&vars.names, STRV("EXT_VAR"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "V3", res.len);
+
+	strbuf_get_index(&vars.names, STRV("VAR_EXT_NOT"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "VAR", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "VAR", res.len);
+
+	strbuf_get_index(&vars.names, STRV("VAR_EXT_EMPTY"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "", res.len);
+
+	strbuf_get_index(&vars.names, STRV("VAR_EXT_SET"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "EXT", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "EXT", res.len);
+
+	strbuf_get_index(&vars.names, STRV("DEF_VAR"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "D", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "D", res.len);
+
+	strbuf_get_index(&vars.names, STRV("DEF_VAR_IMM"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "$(DEF_VAR)", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "D", res.len);
+
+	strbuf_get_index(&vars.names, STRV("DEF_VAR_IMM_VAR"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "$(DEF_VAR)", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "D", res.len);
+
+	strbuf_get_index(&vars.names, STRV("DEF_IMM"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "V2", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "V2", res.len);
+
+	strbuf_get_index(&vars.names, STRV("DEF_IMM_ESC"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "V2", res.len);
+
+	strbuf_get_index(&vars.names, STRV("DEF_IMM_ESC_VAR"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "V2", res.len);
+
+	strbuf_get_index(&vars.names, STRV("DEF_REC"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "V2", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "V2", res.len);
+
+	strbuf_get_index(&vars.names, STRV("DEF_REC_ESC"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "V3", res.len);
+
+	strbuf_get_index(&vars.names, STRV("DEF_REC_ESC_VAR"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "V3", res.len);
+
+	strbuf_get_index(&vars.names, STRV("def"), &id);
+	exp = make_vars_get_expanded(&vars, id);
+	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
+	res = make_vars_get_resolved(&vars, id);
+	EXPECT_STRN(res.data, "V2", res.len);
+
+	make_vars_free(&vars);
+	make_free(&make);
+
+	END;
+}
+
 STEST(make)
 {
 	SSTART;
@@ -2213,6 +2803,7 @@ STEST(make)
 	RUN(make_add);
 	RUN(make_rule_get_target);
 	RUN(make_eval_print);
+	RUN(make_vars);
 
 	SEND;
 }
