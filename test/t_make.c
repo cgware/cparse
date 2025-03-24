@@ -1918,7 +1918,7 @@ TEST(make_eval_print_def_var)
 		   "endef\n"
 		   "$(eval $(call def))\n");
 
-	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 240);
+	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 242);
 	EXPECT_STR(buf,
 		   "DEF\n"
 		   "    NAME: 'def'\n"
@@ -1929,13 +1929,13 @@ TEST(make_eval_print_def_var)
 		   "VAR\n"
 		   "    NAME    : B\n"
 		   "    VALUES  :\n"
-		   "        $(A)\n"
+		   "        $$(A)\n"
 		   "VAR\n"
 		   "    NAME    : C\n"
 		   "    VALUES  :\n"
 		   "        $$(A)\n"
 		   "RULE\n"
-		   "    TARGET: $(A)\n"
+		   "    TARGET: $$(A)\n"
 		   "    DEPENDS:\n"
 		   "EVAL DEF\n"
 		   "    DEF: 'def'\n"
@@ -2505,18 +2505,16 @@ TEST(make_vars)
 		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_VAR_IMM_VAR"), MAKE_VAR_INST, NULL)), MVAR(def_var));
 	make_var_add_val(
 		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_IMM"), MAKE_VAR_INST, NULL)), MSTR(STRV("$(VAR)")));
+	make_var_add_val(&make, make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_IMM_VAR"), MAKE_VAR_INST, NULL)), MVAR(var));
 	make_var_add_val(&make,
 			 make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_IMM_ESC"), MAKE_VAR_INST, NULL)),
 			 MSTR(STRV("$$(VAR)")));
 	make_var_add_val(
-		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_IMM_ESC_VAR"), MAKE_VAR_INST, NULL)), MVAR(var));
-	make_var_add_val(
 		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_REC"), MAKE_VAR_REF, NULL)), MSTR(STRV("$(VAR)")));
+	make_var_add_val(&make, make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_REC_VAR"), MAKE_VAR_REF, NULL)), MVAR(var));
 	make_var_add_val(&make,
 			 make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_REC_ESC"), MAKE_VAR_REF, NULL)),
 			 MSTR(STRV("$$(VAR)")));
-	make_var_add_val(
-		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("DEF_REC_ESC_VAR"), MAKE_VAR_REF, NULL)), MVAR(var));
 	make_var_add_val(
 		&make, make_def_add_act(&make, def, make_create_var(&make, STRV("$(0)"), MAKE_VAR_INST, NULL)), MSTR(STRV("$$($(1))")));
 
@@ -2547,11 +2545,11 @@ TEST(make_vars)
 	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_VAR_IMM     = $(DEF_VAR_IMM)   #D"))));
 	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_VAR_IMM_VAR = $(DEF_VAR_IMM_VAR) #D"))));
 	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_IMM         = $(DEF_IMM)       #V2"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_IMM_VAR     = $(DEF_IMM_VAR)   #V2"))));
 	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_IMM_ESC     = $(DEF_IMM_ESC)   #V2"))));
-	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_IMM_ESC_VAR = $(DEF_IMM_ESC)   #V2"))));
 	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_REC         = $(DEF_REC)       #V2"))));
+	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_REC_VAR     = $(DEF_REC_VAR)   #V3"))));
 	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_REC_ESC     = $(DEF_REC_ESC)   #V3"))));
-	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo DEF_REC_ESC_VAR = $(DEF_REC_ESC)   #V3"))));
 	make_rule_add_act(&make, all, make_create_cmd(&make, MCMD(STRV("@echo def             = $(def)           #V2"))));
 
 	make_ext_set_val(&make, ext_empty, MSTR(STRV("")));
@@ -2562,7 +2560,7 @@ TEST(make_vars)
 	make_ext_set_val(&make, var_ext_set, MSTR(STRV("EXT")));
 
 	char buf[2048] = {0};
-	EXPECT_EQ(make_print(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1516);
+	EXPECT_EQ(make_print(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1506);
 	EXPECT_STR(buf,
 		   "VAR := V1\n"
 		   "IMM := $(VAR)\n"
@@ -2584,11 +2582,11 @@ TEST(make_vars)
 		   "DEF_VAR_IMM := $$(DEF_VAR)\n"
 		   "DEF_VAR_IMM_VAR := $$(DEF_VAR)\n"
 		   "DEF_IMM := $(VAR)\n"
+		   "DEF_IMM_VAR := $(VAR)\n"
 		   "DEF_IMM_ESC := $$(VAR)\n"
-		   "DEF_IMM_ESC_VAR := $$(VAR)\n"
 		   "DEF_REC = $(VAR)\n"
+		   "DEF_REC_VAR = $(VAR)\n"
 		   "DEF_REC_ESC = $$(VAR)\n"
-		   "DEF_REC_ESC_VAR = $$(VAR)\n"
 		   "$(0) := $$($(1))\n"
 		   "endef\n"
 		   "\n"
@@ -2613,15 +2611,15 @@ TEST(make_vars)
 		   "	@echo DEF_VAR_IMM     = $(DEF_VAR_IMM)   #D\n"
 		   "	@echo DEF_VAR_IMM_VAR = $(DEF_VAR_IMM_VAR) #D\n"
 		   "	@echo DEF_IMM         = $(DEF_IMM)       #V2\n"
+		   "	@echo DEF_IMM_VAR     = $(DEF_IMM_VAR)   #V2\n"
 		   "	@echo DEF_IMM_ESC     = $(DEF_IMM_ESC)   #V2\n"
-		   "	@echo DEF_IMM_ESC_VAR = $(DEF_IMM_ESC)   #V2\n"
 		   "	@echo DEF_REC         = $(DEF_REC)       #V2\n"
+		   "	@echo DEF_REC_VAR     = $(DEF_REC_VAR)   #V3\n"
 		   "	@echo DEF_REC_ESC     = $(DEF_REC_ESC)   #V3\n"
-		   "	@echo DEF_REC_ESC_VAR = $(DEF_REC_ESC)   #V3\n"
 		   "	@echo def             = $(def)           #V2\n"
 		   "\n");
 
-	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 2035);
+	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 2028);
 
 	make_vars_t vars = {0};
 	make_vars_init(&make, &vars, ALLOC_STD);
@@ -2646,11 +2644,11 @@ TEST(make_vars)
 		   "DEF_VAR_IMM      $(DEF_VAR)                                                       D\n"
 		   "DEF_VAR_IMM_VAR  $(DEF_VAR)                                                       D\n"
 		   "DEF_IMM          V2                                                               V2\n"
+		   "DEF_IMM_VAR      V2                                                               V2\n"
 		   "DEF_IMM_ESC      $(VAR)                                                           V2\n"
-		   "DEF_IMM_ESC_VAR  $(VAR)                                                           V2\n"
 		   "DEF_REC          V2                                                               V2\n"
+		   "DEF_REC_VAR      V2                                                               V2\n"
 		   "DEF_REC_ESC      $(VAR)                                                           $(VAR)\n"
-		   "DEF_REC_ESC_VAR  $(VAR)                                                           $(VAR)\n"
 		   "def              $(VAR)                                                           V2\n")
 
 	uint id;
