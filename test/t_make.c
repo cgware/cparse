@@ -624,9 +624,7 @@ TEST(make_def_add_act)
 	EXPECT_EQ(make_def_add_act(NULL, MAKE_END, MAKE_END), MAKE_END);
 	log_set_quiet(0, 1);
 	EXPECT_EQ(make_def_add_act(&make, MAKE_END, MAKE_END), MAKE_END);
-	log_set_quiet(0, 0);
 	EXPECT_EQ(make_def_add_act(&make, empty, MAKE_END), MAKE_END);
-	log_set_quiet(0, 1);
 	EXPECT_EQ(make_def_add_act(&make, def, MAKE_END), MAKE_END);
 	log_set_quiet(0, 0);
 	EXPECT_EQ(make_def_add_act(&make, def, empty), 0);
@@ -2559,7 +2557,7 @@ TEST(make_vars)
 	make_ext_set_val(&make, var_ext_empty, MSTR(STRV("")));
 	make_ext_set_val(&make, var_ext_set, MSTR(STRV("EXT")));
 
-	char buf[2048] = {0};
+	char buf[4096] = {0};
 	EXPECT_EQ(make_print(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 1506);
 	EXPECT_STR(buf,
 		   "VAR := V1\n"
@@ -2619,7 +2617,7 @@ TEST(make_vars)
 		   "	@echo def             = $(def)           #V2\n"
 		   "\n");
 
-	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 2028);
+	EXPECT_EQ(make_dbg(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 3676);
 
 	make_vars_t vars = {0};
 	make_vars_init(&make, &vars, ALLOC_STD);
