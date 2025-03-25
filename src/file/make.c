@@ -56,6 +56,11 @@ typedef struct make_eval_def_data_s {
 	lnode_t args;
 } make_eval_def_data_t;
 
+typedef struct make_include_data_s {
+	uint path;
+	make_act_t acts;
+} make_include_data_t;
+
 typedef enum make_act_type_e {
 	MAKE_ACT_EMPTY,
 	MAKE_ACT_VAR,
@@ -64,6 +69,7 @@ typedef enum make_act_type_e {
 	MAKE_ACT_IF,
 	MAKE_ACT_DEF,
 	MAKE_ACT_EVAL_DEF,
+	MAKE_ACT_INCLUDE,
 } make_act_type_t;
 
 typedef struct make_act_data_s {
@@ -75,6 +81,7 @@ typedef struct make_act_data_s {
 		make_if_data_t mif;
 		make_def_data_t def;
 		make_eval_def_data_t eval_def;
+		make_include_data_t include;
 	} val;
 } make_act_data_t;
 
@@ -428,6 +435,34 @@ make_var_t make_create_eval_def(make_t *make, make_def_t def)
 	return eval_def_add_arg(make, act, (make_str_data_t){.type = MAKE_STR_STR, .val.id = def_data->name});
 }
 
+make_include_t make_create_include(make_t *make, strv_t path)
+{
+	if (make == NULL) {
+		return MAKE_END;
+	}
+
+	const make_act_t act  = list_add(&make->acts);
+	make_act_data_t *data = make_act_get(make, act);
+
+	if (data == NULL) {
+		return MAKE_END;
+	}
+
+	*data = (make_act_data_t){
+		.type = MAKE_ACT_INCLUDE,
+		.val.include =
+			{
+				.acts = MAKE_END,
+			},
+	};
+
+	if (strbuf_add(&make->strs, path, &data->val.include.path)) {
+		return MAKE_END;
+	}
+
+	return act;
+}
+
 static make_str_t rule_add_depend(make_t *make, make_rule_t rule, make_rule_target_data_t depend)
 {
 	make_rule_data_t *data = make_act_get_type(make, rule, MAKE_ACT_RULE);
@@ -469,10 +504,6 @@ make_act_t make_add_act(make_t *make, make_act_t act)
 
 make_var_t make_var_add_val(make_t *make, make_var_t var, make_create_str_t val)
 {
-	if (make == NULL) {
-		return MAKE_END;
-	}
-
 	make_var_data_t *data = make_act_get_type(make, var, MAKE_ACT_VAR);
 
 	if (data == NULL || data->ext) {
@@ -515,10 +546,6 @@ make_str_t make_rule_add_depend(make_t *make, make_rule_t rule, make_create_rule
 
 make_act_t make_rule_add_act(make_t *make, make_rule_t rule, make_act_t act)
 {
-	if (make == NULL) {
-		return MAKE_END;
-	}
-
 	make_rule_data_t *data = make_act_get_type(make, rule, MAKE_ACT_RULE);
 
 	if (data == NULL || make_act_get(make, act) == NULL) {
@@ -530,10 +557,6 @@ make_act_t make_rule_add_act(make_t *make, make_rule_t rule, make_act_t act)
 
 static make_act_t make_if_add_act(make_t *make, make_if_t mif, int true_acts, make_act_t act)
 {
-	if (make == NULL) {
-		return MAKE_END;
-	}
-
 	make_if_data_t *data = make_act_get_type(make, mif, MAKE_ACT_IF);
 
 	if (data == NULL || make_act_get(make, act) == NULL) {
@@ -556,10 +579,6 @@ make_act_t make_if_add_false_act(make_t *make, make_if_t mif, make_act_t act)
 
 make_act_t make_def_add_act(make_t *make, make_def_t def, make_act_t act)
 {
-	if (make == NULL) {
-		return MAKE_END;
-	}
-
 	make_def_data_t *def_data = make_act_get_type(make, def, MAKE_ACT_DEF);
 	make_act_data_t *act_data = make_act_get(make, act);
 
@@ -586,6 +605,17 @@ make_var_t make_eval_def_add_arg(make_t *make, make_eval_def_t def, make_create_
 	}
 
 	return eval_def_add_arg(make, def, str);
+}
+
+make_act_t make_include_add_act(make_t *make, make_include_t include, make_act_t act)
+{
+	make_include_data_t *data = make_act_get_type(make, include, MAKE_ACT_INCLUDE);
+
+	if (data == NULL || make_act_get(make, act) == NULL) {
+		return MAKE_END;
+	}
+
+	return list_set_next_node(&make->acts, data->acts, act);
 }
 
 make_str_t make_ext_set_val(make_t *make, uint id, make_create_str_t val)
@@ -1020,6 +1050,10 @@ static int make_vars_eval_act(const make_t *make, make_vars_t *vars, make_act_t 
 
 			break;
 		}
+		case MAKE_ACT_INCLUDE: {
+			ret |= make_vars_eval_act(make, vars, act->val.include.acts, args, def, buf);
+			break;
+		}
 		default: break;
 		}
 	}
@@ -1252,10 +1286,32 @@ static int make_acts_print(const make_t *make, make_act_t acts, print_dst_t dst,
 			dst.off += c_dprintf(dst, "))\n");
 			break;
 		}
+		case MAKE_ACT_INCLUDE: {
+			strv_t path = strbuf_get(&make->strs, act->val.include.path);
+			dst.off += c_dprintf(dst, "include %.*s\n", path.len, path.data);
+			break;
+		}
 		}
 	}
 
 	return dst.off - off;
+}
+
+int make_include_print(const make_t *make, make_include_t include, print_dst_t dst)
+{
+	if (make == NULL) {
+		return 0;
+	}
+
+	make_include_data_t *data = make_act_get_type(make, include, MAKE_ACT_INCLUDE);
+	if (data == NULL) {
+		return 0;
+	}
+
+	char buf[256] = {0};
+	str_t buf_str = strb(buf, sizeof(buf), 0);
+
+	return make_acts_print(make, data->acts, dst, 0, &buf_str);
 }
 
 int make_print(const make_t *make, print_dst_t dst)
@@ -1379,6 +1435,15 @@ int make_dbg(const make_t *make, print_dst_t dst)
 				make_str_expand(make, arg, &buf);
 				dst.off += c_dprintf(dst, "        %.*s\n", buf.len, buf.data);
 			}
+			break;
+		}
+		case MAKE_ACT_INCLUDE: {
+			strv_t path = strbuf_get(&make->strs, act->val.include.path);
+			dst.off += c_dprintf(dst,
+					     "INCLUDE\n"
+					     "    PATH: '%.*s'\n",
+					     path.len,
+					     path.data);
 			break;
 		}
 		}

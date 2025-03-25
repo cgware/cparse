@@ -17,6 +17,7 @@ typedef make_act_t make_cmd_t;
 typedef make_act_t make_if_t;
 typedef make_act_t make_def_t;
 typedef make_act_t make_eval_def_t;
+typedef make_act_t make_include_t;
 
 typedef enum make_var_type_e {
 	MAKE_VAR_INST, //:=
@@ -82,6 +83,7 @@ make_cmd_t make_create_cmd(make_t *make, make_create_cmd_t cmd);
 make_if_t make_create_if(make_t *make, make_create_str_t l, make_create_str_t r);
 make_def_t make_create_def(make_t *make, strv_t name);
 make_eval_def_t make_create_eval_def(make_t *make, make_def_t def);
+make_include_t make_create_include(make_t *make, strv_t path);
 
 make_act_t make_add_act(make_t *make, make_act_t act);
 make_var_t make_var_add_val(make_t *make, make_var_t var, make_create_str_t val);
@@ -91,6 +93,7 @@ make_act_t make_if_add_true_act(make_t *make, make_if_t mif, make_act_t act);
 make_act_t make_if_add_false_act(make_t *make, make_if_t mif, make_act_t act);
 make_act_t make_def_add_act(make_t *make, make_def_t def, make_act_t act);
 make_var_t make_eval_def_add_arg(make_t *make, make_eval_def_t def, make_create_str_t arg);
+make_act_t make_include_add_act(make_t *make, make_include_t include, make_act_t act);
 
 make_str_t make_ext_set_val(make_t *make, uint id, make_create_str_t val);
 
@@ -106,6 +109,7 @@ strv_t make_vars_get_resolved(const make_vars_t *vars, uint id);
 
 int make_vars_print(const make_vars_t *vars, print_dst_t dst);
 
+int make_include_print(const make_t *make, make_include_t include, print_dst_t dst);
 int make_print(const make_t *make, print_dst_t dst);
 
 int make_dbg(const make_t *make, print_dst_t dst);
