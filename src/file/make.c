@@ -56,10 +56,10 @@ typedef struct make_eval_def_data_s {
 	lnode_t args;
 } make_eval_def_data_t;
 
-typedef struct make_include_data_s {
+typedef struct make_inc_data_s {
 	uint path;
 	make_act_t acts;
-} make_include_data_t;
+} make_inc_data_t;
 
 typedef enum make_act_type_e {
 	MAKE_ACT_EMPTY,
@@ -81,7 +81,7 @@ typedef struct make_act_data_s {
 		make_if_data_t mif;
 		make_def_data_t def;
 		make_eval_def_data_t eval_def;
-		make_include_data_t include;
+		make_inc_data_t inc;
 	} val;
 } make_act_data_t;
 
@@ -435,7 +435,7 @@ make_var_t make_create_eval_def(make_t *make, make_def_t def)
 	return eval_def_add_arg(make, act, (make_str_data_t){.type = MAKE_STR_STR, .val.id = def_data->name});
 }
 
-make_include_t make_create_include(make_t *make, strv_t path)
+make_inc_t make_create_inc(make_t *make, strv_t path)
 {
 	if (make == NULL) {
 		return MAKE_END;
@@ -450,13 +450,13 @@ make_include_t make_create_include(make_t *make, strv_t path)
 
 	*data = (make_act_data_t){
 		.type = MAKE_ACT_INCLUDE,
-		.val.include =
+		.val.inc =
 			{
 				.acts = MAKE_END,
 			},
 	};
 
-	if (strbuf_add(&make->strs, path, &data->val.include.path)) {
+	if (strbuf_add(&make->strs, path, &data->val.inc.path)) {
 		return MAKE_END;
 	}
 
@@ -607,9 +607,9 @@ make_var_t make_eval_def_add_arg(make_t *make, make_eval_def_t def, make_create_
 	return eval_def_add_arg(make, def, str);
 }
 
-make_act_t make_include_add_act(make_t *make, make_include_t include, make_act_t act)
+make_act_t make_inc_add_act(make_t *make, make_inc_t inc, make_act_t act)
 {
-	make_include_data_t *data = make_act_get_type(make, include, MAKE_ACT_INCLUDE);
+	make_inc_data_t *data = make_act_get_type(make, inc, MAKE_ACT_INCLUDE);
 
 	if (data == NULL || make_act_get(make, act) == NULL) {
 		return MAKE_END;
@@ -742,30 +742,37 @@ typedef struct replace_args_priv_s {
 static int replace_args(const void *priv, strv_t name, strv_t *val)
 {
 	const replace_args_priv_t *p = priv;
-	uint id;
-	if (strv_eq(name, STRV("0"))) {
-		id = 0;
-	} else if (strv_eq(name, STRV("1"))) {
-		id = 1;
-	} else if (strv_eq(name, STRV("2"))) {
-		id = 2;
-	} else if (strv_eq(name, STRV("3"))) {
-		id = 3;
-	} else if (p->vars && replace_vars(p->vars, name, val) == 0) {
+
+	if (p->args < p->make->arrs.cnt) {
+		uint id = LIST_END;
+		if (strv_eq(name, STRV("0"))) {
+			id = 0;
+		} else if (strv_eq(name, STRV("1"))) {
+			id = 1;
+		} else if (strv_eq(name, STRV("2"))) {
+			id = 2;
+		} else if (strv_eq(name, STRV("3"))) {
+			id = 3;
+		}
+
+		if (id < p->make->arrs.cnt) {
+			make_str_t index = list_get_at(&p->make->arrs, p->args, id);
+
+			const make_str_data_t *data = list_get_data(&p->make->arrs, index);
+			if (data == NULL) {
+				return 1;
+			}
+
+			*val = strbuf_get(&p->make->strs, data->val.id);
+			return 0;
+		}
+	}
+
+	if (p->vars && replace_vars(p->vars, name, val) == 0) {
 		return 0;
-	} else {
-		id = LIST_END;
 	}
 
-	make_str_t index = list_get_at(&p->make->arrs, p->args, id);
-
-	const make_str_data_t *data = list_get_data(&p->make->arrs, index);
-	if (data == NULL) {
-		return 1;
-	}
-
-	*val = strbuf_get(&p->make->strs, data->val.id);
-	return 0;
+	return 1;
 }
 
 typedef int (*replace_fn)(const void *priv, strv_t name, strv_t *val);
@@ -826,6 +833,22 @@ static int eval_args(const make_t *make, const make_vars_t *vars, lnode_t args, 
 	};
 
 	return args == MAKE_END ? 0 : make_replace(buf, 1, replace_args, &args_priv);
+}
+
+static int eval_name(const make_t *make, const make_vars_t *vars, lnode_t args, str_t *buf)
+{
+	replace_vars_priv_t vars_priv = vars? (replace_vars_priv_t){
+		.vars = vars,
+		.resolve = 0,
+	} : (replace_vars_priv_t){0};
+
+	replace_args_priv_t args_priv = {
+		.make = make,
+		.args = args,
+		.vars = vars ? &vars_priv : NULL,
+	};
+
+	return make_replace(buf, 1, replace_args, &args_priv);
 }
 
 static int make_str_expand(const make_t *make, const make_str_data_t *str, str_t *buf)
@@ -961,7 +984,7 @@ static int make_vars_eval_act(const make_t *make, make_vars_t *vars, make_act_t 
 
 			buf->len = 0;
 			str_cat(buf, name);
-			ret |= eval_args(make, vars, args, buf);
+			ret |= eval_name(make, vars, args, buf);
 			if (make_vars_add_var(vars, STRV_STR(*buf), 0, &id)) {
 				ret = 1;
 				break;
@@ -1051,7 +1074,7 @@ static int make_vars_eval_act(const make_t *make, make_vars_t *vars, make_act_t 
 			break;
 		}
 		case MAKE_ACT_INCLUDE: {
-			ret |= make_vars_eval_act(make, vars, act->val.include.acts, args, def, buf);
+			ret |= make_vars_eval_act(make, vars, act->val.inc.acts, args, def, buf);
 			break;
 		}
 		default: break;
@@ -1287,7 +1310,7 @@ static int make_acts_print(const make_t *make, make_act_t acts, print_dst_t dst,
 			break;
 		}
 		case MAKE_ACT_INCLUDE: {
-			strv_t path = strbuf_get(&make->strs, act->val.include.path);
+			strv_t path = strbuf_get(&make->strs, act->val.inc.path);
 			dst.off += c_dprintf(dst, "include %.*s\n", path.len, path.data);
 			break;
 		}
@@ -1297,13 +1320,13 @@ static int make_acts_print(const make_t *make, make_act_t acts, print_dst_t dst,
 	return dst.off - off;
 }
 
-int make_include_print(const make_t *make, make_include_t include, print_dst_t dst)
+int make_inc_print(const make_t *make, make_inc_t inc, print_dst_t dst)
 {
 	if (make == NULL) {
 		return 0;
 	}
 
-	make_include_data_t *data = make_act_get_type(make, include, MAKE_ACT_INCLUDE);
+	make_inc_data_t *data = make_act_get_type(make, inc, MAKE_ACT_INCLUDE);
 	if (data == NULL) {
 		return 0;
 	}
@@ -1438,7 +1461,7 @@ int make_dbg(const make_t *make, print_dst_t dst)
 			break;
 		}
 		case MAKE_ACT_INCLUDE: {
-			strv_t path = strbuf_get(&make->strs, act->val.include.path);
+			strv_t path = strbuf_get(&make->strs, act->val.inc.path);
 			dst.off += c_dprintf(dst,
 					     "INCLUDE\n"
 					     "    PATH: '%.*s'\n",
