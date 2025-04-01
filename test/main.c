@@ -4,6 +4,8 @@
 #include "test.h"
 
 STEST(bnf);
+STEST(cfg);
+STEST(cfg_parse);
 STEST(ebnf);
 STEST(eparser);
 STEST(esyntax);
@@ -12,13 +14,13 @@ STEST(make);
 STEST(parser);
 STEST(syntax);
 STEST(token);
-STEST(toml);
-STEST(toml_parse);
 
 TEST(cparse)
 {
 	SSTART;
 	RUN(bnf);
+	RUN(cfg);
+	RUN(cfg_parse);
 	RUN(ebnf);
 	RUN(eparser);
 	RUN(esyntax);
@@ -27,8 +29,6 @@ TEST(cparse)
 	RUN(parser);
 	RUN(syntax);
 	RUN(token);
-	RUN(toml);
-	RUN(toml_parse);
 	SEND;
 }
 
