@@ -91,7 +91,7 @@ TEST(toml_parse_test)
 			  "\n"
 			  "[tbll]\n");
 
-	toml_val_t root = toml_prs_parse(&prs, str, &toml, ALLOC_STD, PRINT_DST_NONE());
+	toml_var_t root = toml_prs_parse(&prs, str, &toml, ALLOC_STD, PRINT_DST_NONE());
 	EXPECT_EQ(root, 0);
 
 	char buf[1024] = {0};

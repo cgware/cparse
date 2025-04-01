@@ -23,6 +23,6 @@ typedef struct toml_prs_s {
 toml_prs_t *toml_prs_init(toml_prs_t *toml_prs, alloc_t alloc);
 void toml_prs_free(toml_prs_t *toml_prs);
 
-toml_val_t toml_prs_parse(const toml_prs_t *toml_prs, strv_t str, toml_t *toml, alloc_t alloc, print_dst_t dst);
+toml_var_t toml_prs_parse(const toml_prs_t *toml_prs, strv_t str, toml_t *toml, alloc_t alloc, print_dst_t dst);
 
 #endif
