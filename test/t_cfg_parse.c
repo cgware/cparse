@@ -34,11 +34,11 @@ TEST(cfg_parse_null)
 
 	strv_t str = STRV("");
 
-	EXPECT_EQ(cfg_prs_parse(NULL, STRV_NULL, NULL, ALLOC_STD, PRINT_DST_NONE()), CFG_VAL_END);
-	EXPECT_EQ(cfg_prs_parse(&prs, STRV_NULL, NULL, ALLOC_STD, PRINT_DST_NONE()), CFG_VAL_END);
-	EXPECT_EQ(cfg_prs_parse(&prs, str, NULL, ALLOC_STD, PRINT_DST_NONE()), CFG_VAL_END);
+	EXPECT_EQ(cfg_prs_parse(NULL, STRV_NULL, NULL, ALLOC_STD, PRINT_DST_NONE()), CFG_VAR_END);
+	EXPECT_EQ(cfg_prs_parse(&prs, STRV_NULL, NULL, ALLOC_STD, PRINT_DST_NONE()), CFG_VAR_END);
+	EXPECT_EQ(cfg_prs_parse(&prs, str, NULL, ALLOC_STD, PRINT_DST_NONE()), CFG_VAR_END);
 	mem_oom(1);
-	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, PRINT_DST_NONE()), CFG_VAL_END);
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, PRINT_DST_NONE()), CFG_VAR_END);
 	mem_oom(0);
 	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, PRINT_DST_NONE()), 0);
 
@@ -60,7 +60,7 @@ TEST(cfg_parse_fail)
 
 	strv_t str = STRV("int0 = 1\n");
 
-	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, PRINT_DST_NONE()), CFG_VAL_END);
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, PRINT_DST_NONE()), CFG_VAR_END);
 
 	cfg_free(&cfg);
 	cfg_prs_free(&prs);

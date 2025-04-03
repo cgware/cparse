@@ -5,7 +5,7 @@
 #include "strbuf.h"
 #include "strv.h"
 
-#define CFG_VAL_END LIST_END
+#define CFG_VAR_END LIST_END
 
 typedef lnode_t cfg_var_t;
 
@@ -48,7 +48,7 @@ int cfg_get_arr(const cfg_t *cfg, cfg_var_t arr, cfg_var_t *var);
 int cfg_print(const cfg_t *cfg, cfg_var_t var, print_dst_t dst);
 
 #define CFG_NULL		  ((cfg_val_t){0})
-#define CFG_NONE(_cfg, _key)	  CFG_VAL_END
+#define CFG_NONE(_cfg, _key)	  CFG_VAR_END
 #define CFG_ROOT(_cfg)		  cfg_var_init(_cfg, STRV_NULL, (cfg_val_t){.type = CFG_VAL_ROOT})
 #define CFG_LIT(_cfg, _key, _str) cfg_var_init(_cfg, _key, (cfg_val_t){.type = CFG_VAL_LIT, .val.str = _str})
 #define CFG_STR(_cfg, _key, _str) cfg_var_init(_cfg, _key, (cfg_val_t){.type = CFG_VAL_STR, .val.str = _str})
