@@ -85,7 +85,7 @@ static cfg_var_t cfg_parse_kv(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_
 static cfg_var_t cfg_parse_value(const cfg_prs_t *cfg_prs, eprs_t *eprs, strv_t key, eprs_node_t value, cfg_t *cfg)
 {
 	eprs_node_t node;
-	cfg_var_t ret = CFG_VAL_END;
+	cfg_var_t ret = CFG_VAR_END;
 	if ((node = eprs_get_rule(eprs, value, cfg_prs->i)) < eprs->nodes.cnt) {
 		token_t val = {0};
 		eprs_get_str(eprs, node, &val);
@@ -196,13 +196,13 @@ cfg_var_t cfg_parse_file(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t fil
 cfg_var_t cfg_prs_parse(const cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, alloc_t alloc, print_dst_t dst)
 {
 	if (cfg_prs == NULL || cfg == NULL || str.data == NULL) {
-		return CFG_VAL_END;
+		return CFG_VAR_END;
 	}
 
 	lex_t lex = {0};
 	if (lex_init(&lex, 0, 100, alloc) == NULL) {
 		log_error("cparse", "bnf", NULL, "failed to intialize lexer");
-		return CFG_VAL_END;
+		return CFG_VAR_END;
 	}
 
 	str_t sstr = strc(str.data, str.len);
@@ -215,7 +215,7 @@ cfg_var_t cfg_prs_parse(const cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, alloc_
 	if (eprs_parse(&eprs, &lex, &cfg_prs->estx, cfg_prs->file, &prs_root, dst)) {
 		eprs_free(&eprs);
 		lex_free(&lex);
-		return CFG_VAL_END;
+		return CFG_VAR_END;
 	}
 
 	cfg_var_t root = cfg_parse_file(cfg_prs, &eprs, prs_root, cfg);

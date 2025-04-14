@@ -44,14 +44,14 @@ void cfg_free(cfg_t *cfg)
 cfg_var_t cfg_var_init(cfg_t *cfg, strv_t key, cfg_val_t val)
 {
 	if (cfg == NULL) {
-		return CFG_VAL_END;
+		return CFG_VAR_END;
 	}
 
 	uint key_id = -1;
 	if (key.data) {
 		if (strbuf_add(&cfg->strs, key, &key_id)) {
 			log_error("cparse", "cfg", NULL, "failed to add key");
-			return CFG_VAL_END;
+			return CFG_VAR_END;
 		}
 	}
 
@@ -59,7 +59,7 @@ cfg_var_t cfg_var_init(cfg_t *cfg, strv_t key, cfg_val_t val)
 	var_data_t *data = list_get_data(&cfg->vars, var_id);
 	if (data == NULL) {
 		log_error("cparse", "cfg", NULL, "failed to add value");
-		return CFG_VAL_END;
+		return CFG_VAR_END;
 	}
 
 	switch (val.type) {
@@ -68,7 +68,7 @@ cfg_var_t cfg_var_init(cfg_t *cfg, strv_t key, cfg_val_t val)
 		uint str_id;
 		if (strbuf_add(&cfg->strs, val.val.str, &str_id)) {
 			log_error("cparse", "cfg", NULL, "failed to add string");
-			return CFG_VAL_END;
+			return CFG_VAR_END;
 		}
 
 		*data = (var_data_t){
@@ -102,7 +102,7 @@ cfg_var_t cfg_var_init(cfg_t *cfg, strv_t key, cfg_val_t val)
 	}
 	default: {
 		log_error("cparse", "cfg", NULL, "unknown val type: %d", val.type);
-		return CFG_VAL_END;
+		return CFG_VAR_END;
 	}
 	}
 
@@ -112,12 +112,12 @@ cfg_var_t cfg_var_init(cfg_t *cfg, strv_t key, cfg_val_t val)
 cfg_var_t cfg_add_var(cfg_t *cfg, cfg_var_t parent, cfg_var_t var)
 {
 	if (cfg == NULL) {
-		return CFG_VAL_END;
+		return CFG_VAR_END;
 	}
 
 	var_data_t *data = list_get_data(&cfg->vars, parent);
 	if (data == NULL) {
-		return CFG_VAL_END;
+		return CFG_VAR_END;
 	}
 
 	switch (data->type) {
@@ -125,7 +125,7 @@ cfg_var_t cfg_add_var(cfg_t *cfg, cfg_var_t parent, cfg_var_t var)
 	case CFG_VAL_ARR:
 	case CFG_VAL_OBJ:
 	case CFG_VAL_TBL: break;
-	default: return CFG_VAL_END;
+	default: return CFG_VAR_END;
 	}
 
 	return list_set_next_node(&cfg->vars, data->val.child, var);
