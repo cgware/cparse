@@ -158,7 +158,7 @@ int cfg_get_var(const cfg_t *cfg, cfg_var_t parent, strv_t key, cfg_var_t *var)
 	}
 
 	uint index;
-	if (strbuf_get_index(&cfg->strs, key, &index)) {
+	if (strbuf_find(&cfg->strs, key, &index)) {
 		return 1;
 	}
 

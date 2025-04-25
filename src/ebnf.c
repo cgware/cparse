@@ -33,31 +33,31 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, print_dst_t dst)
 		return NULL;
 	}
 
-	uint line  = __LINE__ + 1;
-	str_t sbnf = STR("<file>    ::= <ebnf> EOF\n"
-			 "<ebnf>    ::= <rules>\n"
-			 "<rules>   ::= <rule> <rules> | <rule>\n"
-			 "<rule>    ::= <rname> <spaces> '=' <space> <alt> NL\n"
-			 "<rname>   ::= LOWER <rchars> | LOWER\n"
-			 "<rchars>  ::= <rchar> <rchars> | <rchar>\n"
-			 "<rchar>   ::= LOWER | '_'\n"
-			 "<alt>     ::= <concat> <space> '|' <space> <alt> | <concat>\n"
-			 "<concat>  ::= <factor> <space> <concat> | <factor>\n"
-			 "<factor>  ::= <term> <opt> | <term> <rep> | <term> <opt-rep> | <term>\n"
-			 "<opt>     ::= '?'\n"
-			 "<rep>     ::= '+'\n"
-			 "<opt-rep> ::= '*'\n"
-			 "<term>    ::= <literal> | <token> | <rname> | <group>\n"
-			 "<literal> ::= \"'\" <tdouble> \"'\" | '\"' <tsingle> '\"'\n"
-			 "<token>   ::= UPPER <token> | UPPER\n"
-			 "<group>   ::= '(' <alt> ')'\n"
-			 "<tdouble> ::= <cdouble> <tdouble> | <cdouble>\n"
-			 "<tsingle> ::= <csingle> <tsingle> | <csingle>\n"
-			 "<cdouble> ::= <char> | '\"'\n"
-			 "<csingle> ::= <char> | \"'\"\n"
-			 "<char>    ::= ALPHA | DIGIT | SYMBOL | ' '\n"
-			 "<spaces>  ::= <space> <spaces> | <space>\n"
-			 "<space>   ::= ' '\n");
+	uint line   = __LINE__ + 1;
+	strv_t sbnf = STRV("<file>    ::= <ebnf> EOF\n"
+			   "<ebnf>    ::= <rules>\n"
+			   "<rules>   ::= <rule> <rules> | <rule>\n"
+			   "<rule>    ::= <rname> <spaces> '=' <space> <alt> NL\n"
+			   "<rname>   ::= LOWER <rchars> | LOWER\n"
+			   "<rchars>  ::= <rchar> <rchars> | <rchar>\n"
+			   "<rchar>   ::= LOWER | '_'\n"
+			   "<alt>     ::= <concat> <space> '|' <space> <alt> | <concat>\n"
+			   "<concat>  ::= <factor> <space> <concat> | <factor>\n"
+			   "<factor>  ::= <term> <opt> | <term> <rep> | <term> <opt-rep> | <term>\n"
+			   "<opt>     ::= '?'\n"
+			   "<rep>     ::= '+'\n"
+			   "<opt-rep> ::= '*'\n"
+			   "<term>    ::= <literal> | <token> | <rname> | <group>\n"
+			   "<literal> ::= \"'\" <tdouble> \"'\" | '\"' <tsingle> '\"'\n"
+			   "<token>   ::= UPPER <token> | UPPER\n"
+			   "<group>   ::= '(' <alt> ')'\n"
+			   "<tdouble> ::= <cdouble> <tdouble> | <cdouble>\n"
+			   "<tsingle> ::= <csingle> <tsingle> | <csingle>\n"
+			   "<cdouble> ::= <char> | '\"'\n"
+			   "<csingle> ::= <char> | \"'\"\n"
+			   "<char>    ::= ALPHA | DIGIT | SYMBOL | ' '\n"
+			   "<spaces>  ::= <space> <spaces> | <space>\n"
+			   "<space>   ::= ' '\n");
 
 	lex_t lex = {0};
 	if (lex_init(&lex, 0, 100, alloc) == NULL) {
@@ -65,7 +65,7 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, print_dst_t dst)
 		return NULL;
 	}
 
-	lex_tokenize(&lex, &sbnf, STR(__FILE__), line);
+	lex_tokenize(&lex, sbnf, STRV(__FILE__), line);
 
 	bnf_t bnf = {0};
 	bnf_init(&bnf, alloc);
@@ -84,23 +84,23 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, print_dst_t dst)
 
 	stx_from_bnf(&bnf, &prs, prs_root, &ebnf->stx, &names);
 
-	strbuf_get_index(&names, STRV("file"), &ebnf->file);
-	strbuf_get_index(&names, STRV("ebnf"), &ebnf->ebnf);
-	strbuf_get_index(&names, STRV("rules"), &ebnf->rules);
-	strbuf_get_index(&names, STRV("rule"), &ebnf->rule);
-	strbuf_get_index(&names, STRV("rname"), &ebnf->rname);
-	strbuf_get_index(&names, STRV("alt"), &ebnf->alt);
-	strbuf_get_index(&names, STRV("concat"), &ebnf->concat);
-	strbuf_get_index(&names, STRV("factor"), &ebnf->factor);
-	strbuf_get_index(&names, STRV("term"), &ebnf->term);
-	strbuf_get_index(&names, STRV("literal"), &ebnf->literal);
-	strbuf_get_index(&names, STRV("tdouble"), &ebnf->tdouble);
-	strbuf_get_index(&names, STRV("tsingle"), &ebnf->tsingle);
-	strbuf_get_index(&names, STRV("token"), &ebnf->token);
-	strbuf_get_index(&names, STRV("group"), &ebnf->group);
-	strbuf_get_index(&names, STRV("opt"), &ebnf->opt);
-	strbuf_get_index(&names, STRV("rep"), &ebnf->rep);
-	strbuf_get_index(&names, STRV("opt-rep"), &ebnf->opt_rep);
+	strbuf_find(&names, STRV("file"), &ebnf->file);
+	strbuf_find(&names, STRV("ebnf"), &ebnf->ebnf);
+	strbuf_find(&names, STRV("rules"), &ebnf->rules);
+	strbuf_find(&names, STRV("rule"), &ebnf->rule);
+	strbuf_find(&names, STRV("rname"), &ebnf->rname);
+	strbuf_find(&names, STRV("alt"), &ebnf->alt);
+	strbuf_find(&names, STRV("concat"), &ebnf->concat);
+	strbuf_find(&names, STRV("factor"), &ebnf->factor);
+	strbuf_find(&names, STRV("term"), &ebnf->term);
+	strbuf_find(&names, STRV("literal"), &ebnf->literal);
+	strbuf_find(&names, STRV("tdouble"), &ebnf->tdouble);
+	strbuf_find(&names, STRV("tsingle"), &ebnf->tsingle);
+	strbuf_find(&names, STRV("token"), &ebnf->token);
+	strbuf_find(&names, STRV("group"), &ebnf->group);
+	strbuf_find(&names, STRV("opt"), &ebnf->opt);
+	strbuf_find(&names, STRV("rep"), &ebnf->rep);
+	strbuf_find(&names, STRV("opt-rep"), &ebnf->opt_rep);
 
 	strbuf_free(&names);
 
@@ -123,7 +123,7 @@ static void term_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 		strv_t name = lex_get_token_val(prs->lex, str);
 
 		estx_rule_t new_rule;
-		if (strbuf_get_index(names, name, &new_rule)) {
+		if (strbuf_find(names, name, &new_rule)) {
 			strbuf_add(names, name, &new_rule);
 			estx_add_rule(estx);
 		}
@@ -258,7 +258,7 @@ static estx_rule_t rules_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_nod
 	strv_t name = lex_get_token_val(prs->lex, str);
 
 	estx_rule_t rule;
-	if (strbuf_get_index(names, name, &rule)) {
+	if (strbuf_find(names, name, &rule)) {
 		strbuf_add(names, name, &rule);
 		estx_add_rule(estx);
 	}

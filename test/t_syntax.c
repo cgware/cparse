@@ -1,6 +1,5 @@
 #include "syntax.h"
 
-#include "cstr.h"
 #include "log.h"
 #include "mem.h"
 #include "test.h"

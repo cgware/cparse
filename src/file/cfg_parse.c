@@ -13,20 +13,20 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 		return NULL;
 	}
 
-	uint line     = __LINE__ + 1;
-	str_t cfg_bnf = STR("file = cfg EOF\n"
-			    "cfg  = (kv NL)* tbl? (NL tbl)*\n"
-			    "kv   = key ' = ' val\n"
-			    "key  = (ALPHA | '.')+\n"
-			    "val  = int | '\"' str '\"' | lit | '[' arr? ']' | '{' obj? '}'\n"
-			    "int  = DIGIT+\n"
-			    "str  = c*\n"
-			    "lit  = (ALPHA | DIGIT | '_')+\n"
-			    "arr  = val (', ' val)*\n"
-			    "obj  = kv (', ' kv)*\n"
-			    "c    = ALPHA | DIGIT | SYMBOL | ' '\n"
-			    "tbl  = '[' key ']' NL ent\n"
-			    "ent  = (kv NL)*\n");
+	uint line      = __LINE__ + 1;
+	strv_t cfg_bnf = STRV("file = cfg EOF\n"
+			      "cfg  = (kv NL)* tbl? (NL tbl)*\n"
+			      "kv   = key ' = ' val\n"
+			      "key  = (ALPHA | '.')+\n"
+			      "val  = int | '\"' str '\"' | lit | '[' arr? ']' | '{' obj? '}'\n"
+			      "int  = DIGIT+\n"
+			      "str  = c*\n"
+			      "lit  = (ALPHA | DIGIT | '_')+\n"
+			      "arr  = val (', ' val)*\n"
+			      "obj  = kv (', ' kv)*\n"
+			      "c    = ALPHA | DIGIT | SYMBOL | ' '\n"
+			      "tbl  = '[' key ']' NL ent\n"
+			      "ent  = (kv NL)*\n");
 
 	lex_t lex = {0};
 	if (lex_init(&lex, 0, 100, alloc) == NULL) {
@@ -34,7 +34,7 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 		return NULL;
 	}
 
-	lex_tokenize(&lex, &cfg_bnf, STR(__FILE__), line);
+	lex_tokenize(&lex, cfg_bnf, STRV(__FILE__), line);
 
 	ebnf_t ebnf = {0};
 	ebnf_init(&ebnf, alloc);
@@ -55,18 +55,18 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 	estx_rule_t estx_root = estx_from_ebnf(&ebnf, &prs, prs_root, &cfg_prs->estx, &names);
 	(void)estx_root;
 
-	strbuf_get_index(&names, STRV("file"), &cfg_prs->file);
-	strbuf_get_index(&names, STRV("cfg"), &cfg_prs->cfg);
-	strbuf_get_index(&names, STRV("kv"), &cfg_prs->kv);
-	strbuf_get_index(&names, STRV("key"), &cfg_prs->key);
-	strbuf_get_index(&names, STRV("val"), &cfg_prs->val);
-	strbuf_get_index(&names, STRV("int"), &cfg_prs->i);
-	strbuf_get_index(&names, STRV("str"), &cfg_prs->str);
-	strbuf_get_index(&names, STRV("lit"), &cfg_prs->lit);
-	strbuf_get_index(&names, STRV("arr"), &cfg_prs->arr);
-	strbuf_get_index(&names, STRV("obj"), &cfg_prs->obj);
-	strbuf_get_index(&names, STRV("tbl"), &cfg_prs->tbl);
-	strbuf_get_index(&names, STRV("ent"), &cfg_prs->ent);
+	strbuf_find(&names, STRV("file"), &cfg_prs->file);
+	strbuf_find(&names, STRV("cfg"), &cfg_prs->cfg);
+	strbuf_find(&names, STRV("kv"), &cfg_prs->kv);
+	strbuf_find(&names, STRV("key"), &cfg_prs->key);
+	strbuf_find(&names, STRV("val"), &cfg_prs->val);
+	strbuf_find(&names, STRV("int"), &cfg_prs->i);
+	strbuf_find(&names, STRV("str"), &cfg_prs->str);
+	strbuf_find(&names, STRV("lit"), &cfg_prs->lit);
+	strbuf_find(&names, STRV("arr"), &cfg_prs->arr);
+	strbuf_find(&names, STRV("obj"), &cfg_prs->obj);
+	strbuf_find(&names, STRV("tbl"), &cfg_prs->tbl);
+	strbuf_find(&names, STRV("ent"), &cfg_prs->ent);
 
 	strbuf_free(&names);
 	prs_free(&prs);
@@ -205,8 +205,8 @@ cfg_var_t cfg_prs_parse(const cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, alloc_
 		return CFG_VAR_END;
 	}
 
-	str_t sstr = strc(str.data, str.len);
-	lex_tokenize(&lex, &sstr, STR(__FILE__), __LINE__ - 1);
+	strv_t sstr = STRVN(str.data, str.len);
+	lex_tokenize(&lex, sstr, STRV(__FILE__), __LINE__ - 1);
 
 	eprs_t eprs = {0};
 	eprs_init(&eprs, 100, alloc);

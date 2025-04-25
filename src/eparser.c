@@ -286,8 +286,8 @@ static int eprs_parse_terms(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id,
 		return ret;
 	}
 
-	bool opt = (term->occ & ESTX_TERM_OCC_OPT) && !(term->occ & ESTX_TERM_OCC_REP);
-	bool rep = !(term->occ & ESTX_TERM_OCC_OPT) && (term->occ & ESTX_TERM_OCC_REP);
+	int opt = (term->occ & ESTX_TERM_OCC_OPT) && !(term->occ & ESTX_TERM_OCC_REP);
+	int rep = !(term->occ & ESTX_TERM_OCC_OPT) && (term->occ & ESTX_TERM_OCC_REP);
 
 	if (ret && opt) {
 		*off = cur;

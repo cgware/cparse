@@ -145,57 +145,25 @@ void lex_free(lex_t *lex)
 	strbuf_free(&lex->words);
 }
 
-int lex_add_token(lex_t *lex, token_type_t type, strv_t val, uint *index)
-{
-	if (lex == NULL || lex->src == NULL) {
-		return 1;
-	}
-
-	token_t token = {
-		.type  = type,
-		.start = lex->src->len,
-		.len   = (uint)val.len,
-	};
-
-	size_t len = lex->src->len;
-
-	if (str_cat(lex->src, val) == NULL) {
-		return 1;
-	}
-
-	if (index) {
-		*index = lex->tokens.cnt;
-	}
-
-	token_t *ptr = arr_add(&lex->tokens);
-	if (ptr == NULL) {
-		lex->src->len = len;
-		return 1;
-	}
-
-	*ptr = token;
-	return 0;
-}
-
 strv_t lex_get_token_val(const lex_t *lex, token_t token)
 {
-	if (lex == NULL || lex->src == NULL || lex->src->data == NULL) {
+	if (lex == NULL || lex->src.data == NULL) {
 		return STRV_NULL;
 	}
 
-	return STRVN(&lex->src->data[token.start], token.len);
+	return STRVN(&lex->src.data[token.start], token.len);
 }
 
 token_loc_t lex_get_token_loc(const lex_t *lex, uint index)
 {
-	if (lex == NULL || lex->src == NULL) {
+	if (lex == NULL || lex->src.data == NULL) {
 		return (token_loc_t){0};
 	}
 
 	token_loc_t loc = {0};
 
-	for (uint i = 0; i < index && i < (uint)lex->src->len; i++) {
-		if (lex->src->data[i] == '\n') {
+	for (uint i = 0; i < index && i < (uint)lex->src.len; i++) {
+		if (lex->src.data[i] == '\n') {
 			loc.line_off = i + 1;
 			loc.line_nr++;
 			loc.col = 0;
@@ -204,14 +172,14 @@ token_loc_t lex_get_token_loc(const lex_t *lex, uint index)
 		}
 	}
 
-	for (size_t i = loc.line_off; i < lex->src->len && lex->src->data[i] != '\n'; i++) {
+	for (size_t i = loc.line_off; i < lex->src.len && lex->src.data[i] != '\n'; i++) {
 		loc.line_len++;
 	}
 
 	return loc;
 }
 
-void lex_set_src(lex_t *lex, str_t *src, str_t file, uint line_off)
+void lex_set_src(lex_t *lex, strv_t src, strv_t file, uint line_off)
 {
 	if (lex == NULL) {
 		return;
@@ -223,7 +191,7 @@ void lex_set_src(lex_t *lex, str_t *src, str_t file, uint line_off)
 	lex->tokens.cnt = 0;
 }
 
-int lex_tokenize(lex_t *lex, str_t *src, str_t file, uint line_off)
+int lex_tokenize(lex_t *lex, strv_t src, strv_t file, uint line_off)
 {
 	if (lex == NULL) {
 		return 1;
@@ -233,7 +201,7 @@ int lex_tokenize(lex_t *lex, str_t *src, str_t file, uint line_off)
 
 	strv_t word;
 
-	for (size_t i = 0; i < lex->src->len;) {
+	for (size_t i = 0; i < lex->src.len;) {
 		token_t *token = arr_add(&lex->tokens);
 		if (token == NULL) {
 			return 1;
@@ -243,11 +211,11 @@ int lex_tokenize(lex_t *lex, str_t *src, str_t file, uint line_off)
 		int found = 0;
 		strbuf_foreach(&lex->words, j, word)
 		{
-			if (i + word.len > lex->src->len) {
+			if (i + word.len > lex->src.len) {
 				continue;
 			}
 
-			if (memcmp(&lex->src->data[i], word.data, word.len) != 0) {
+			if (memcmp(&lex->src.data[i], word.data, word.len) != 0) {
 				continue;
 			}
 
@@ -265,7 +233,7 @@ int lex_tokenize(lex_t *lex, str_t *src, str_t file, uint line_off)
 			continue;
 		}
 
-		uint c = (uint)lex->src->data[i];
+		uint c = (uint)lex->src.data[i];
 		*token = (token_t){
 			.type  = c < lex->chars_len ? lex->chars[c] : TOKEN_UNKNOWN,
 			.start = i,
@@ -328,13 +296,13 @@ int lex_token_loc_print_loc(const lex_t *lex, token_loc_t loc, print_dst_t dst)
 
 int lex_token_loc_print_src(const lex_t *lex, token_loc_t loc, print_dst_t dst)
 {
-	if (lex == NULL || lex->src == NULL) {
+	if (lex == NULL || lex->src.data == NULL) {
 		return 0;
 	}
 
 	int off = dst.off;
 
-	dst.off += c_dprintf(dst, "%.*s\n", loc.line_len, &lex->src->data[loc.line_off]);
+	dst.off += c_dprintf(dst, "%.*s\n", loc.line_len, &lex->src.data[loc.line_off]);
 	dst.off += c_dprintf(dst, "%*s^\n", loc.col, "");
 
 	return dst.off - off;

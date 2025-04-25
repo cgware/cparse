@@ -76,27 +76,27 @@ TEST(stx_from_ebnf)
 	ebnf_init(&ebnf, ALLOC_STD);
 	ebnf_get_stx(&ebnf, ALLOC_STD, PRINT_DST_NONE());
 
-	uint line  = __LINE__ + 1;
-	str_t sbnf = STR("file    = ebnf EOF\n"
-			 "ebnf    = rule+\n"
-			 "rule    = rname spaces '= ' alt NL\n"
-			 "rname   = LOWER (LOWER | '_')*\n"
-			 "alt     = concat (' | ' concat)*\n"
-			 "concat  = factor (' ' factor)*\n"
-			 "factor  = term (opt | rep | opt_rep)?\n"
-			 "opt     = '?'\n"
-			 "rep     = '+'\n"
-			 "opt_rep = '*'\n"
-			 "term    = literal | token | rname | group\n"
-			 "literal = \"'\" (char | '\"')+ \"'\" | '\"' (char | \"'\")+ '\"'\n"
-			 "token   = UPPER+\n"
-			 "group   = '(' alt ')'\n"
-			 "char    = ALPHA | DIGIT | SYMBOL | ' '\n"
-			 "spaces  = ' '+\n");
+	uint line   = __LINE__ + 1;
+	strv_t sbnf = STRV("file    = ebnf EOF\n"
+			   "ebnf    = rule+\n"
+			   "rule    = rname spaces '= ' alt NL\n"
+			   "rname   = LOWER (LOWER | '_')*\n"
+			   "alt     = concat (' | ' concat)*\n"
+			   "concat  = factor (' ' factor)*\n"
+			   "factor  = term (opt | rep | opt_rep)?\n"
+			   "opt     = '?'\n"
+			   "rep     = '+'\n"
+			   "opt_rep = '*'\n"
+			   "term    = literal | token | rname | group\n"
+			   "literal = \"'\" (char | '\"')+ \"'\" | '\"' (char | \"'\")+ '\"'\n"
+			   "token   = UPPER+\n"
+			   "group   = '(' alt ')'\n"
+			   "char    = ALPHA | DIGIT | SYMBOL | ' '\n"
+			   "spaces  = ' '+\n");
 
 	lex_t lex = {0};
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &sbnf, STR(__FILE__), line);
+	lex_tokenize(&lex, sbnf, STRV(__FILE__), line);
 
 	prs_t prs = {0};
 	prs_init(&prs, 100, ALLOC_STD);

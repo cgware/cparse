@@ -146,10 +146,10 @@ TEST(eprs_parse_gen)
 
 	EXPECT_EQ(eprs_parse(NULL, NULL, NULL, ESTX_RULE_END, NULL, PRINT_DST_NONE()), 1);
 
-	lex_t lex = {0};
-	str_t src = STR("<");
+	lex_t lex  = {0};
+	strv_t src = STRV("<");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -175,10 +175,10 @@ TEST(eprs_parse_rule_invalid)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("");
+	lex_t lex  = {0};
+	strv_t src = STRV("");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -204,10 +204,10 @@ TEST(eprs_parse_rule)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR(" ");
+	lex_t lex  = {0};
+	strv_t src = STRV(" ");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -234,10 +234,10 @@ TEST(eprs_parse_token_unexpected)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("1");
+	lex_t lex  = {0};
+	strv_t src = STRV("1");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -267,10 +267,10 @@ TEST(eprs_parse_token)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("A");
+	lex_t lex  = {0};
+	strv_t src = STRV("A");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -294,10 +294,10 @@ TEST(eprs_parse_literal_unexpected_end)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("1");
+	lex_t lex  = {0};
+	strv_t src = STRV("1");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -327,10 +327,10 @@ TEST(eprs_parse_literal_unexpected)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("13");
+	lex_t lex  = {0};
+	strv_t src = STRV("13");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -360,10 +360,10 @@ TEST(eprs_parse_literal)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("1");
+	lex_t lex  = {0};
+	strv_t src = STRV("1");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -387,10 +387,10 @@ TEST(eprs_parse_alt_failed)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("c");
+	lex_t lex  = {0};
+	strv_t src = STRV("c");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -422,10 +422,10 @@ TEST(eprs_parse_alt)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("a");
+	lex_t lex  = {0};
+	strv_t src = STRV("a");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -451,10 +451,10 @@ TEST(eprs_parse_con_failed)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("c");
+	lex_t lex  = {0};
+	strv_t src = STRV("c");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -486,10 +486,10 @@ TEST(eprs_parse_con)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("ab");
+	lex_t lex  = {0};
+	strv_t src = STRV("ab");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -515,10 +515,10 @@ TEST(eprs_parse_group_failed)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("c");
+	lex_t lex  = {0};
+	strv_t src = STRV("c");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -550,10 +550,10 @@ TEST(eprs_parse_group)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("ab");
+	lex_t lex  = {0};
+	strv_t src = STRV("ab");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -579,10 +579,10 @@ TEST(eprs_parse_opt)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("");
+	lex_t lex  = {0};
+	strv_t src = STRV("");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -606,10 +606,10 @@ TEST(eprs_parse_rep_failed)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("");
+	lex_t lex  = {0};
+	strv_t src = STRV("");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -639,10 +639,10 @@ TEST(eprs_parse_rep_loop)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t bnf = STR("a");
+	lex_t lex  = {0};
+	strv_t bnf = STRV("a");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &bnf, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, bnf, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 10, 10, ALLOC_STD);
@@ -676,10 +676,10 @@ TEST(eprs_parse_rep)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t src = STR("a");
+	lex_t lex  = {0};
+	strv_t src = STRV("a");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &src, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
@@ -703,10 +703,10 @@ TEST(eprs_parse_name)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t bnf = STR("b");
+	lex_t lex  = {0};
+	strv_t bnf = STRV("b");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &bnf, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, bnf, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 10, 10, ALLOC_STD);
@@ -746,10 +746,10 @@ TEST(eprs_parse_cache)
 {
 	START;
 
-	lex_t lex = {0};
-	str_t bnf = STR("a");
+	lex_t lex  = {0};
+	strv_t bnf = STRV("a");
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &bnf, STR(__FILE__), __LINE__ - 2);
+	lex_tokenize(&lex, bnf, STRV(__FILE__), __LINE__ - 2);
 
 	estx_t estx = {0};
 	estx_init(&estx, 10, 10, ALLOC_STD);
@@ -795,8 +795,8 @@ TEST(eprs_parse_ebnf)
 	eprs_init(&eprs, 1, ALLOC_STD);
 
 	{
-		str_t bnf = STR("<file> ::= <");
-		lex_tokenize(&lex, &bnf, STR(__FILE__), __LINE__ - 1);
+		strv_t bnf = STRV("<file> ::= <");
+		lex_tokenize(&lex, bnf, STRV(__FILE__), __LINE__ - 1);
 
 		estx_t estx = {0};
 		estx_init(&estx, 1, 1, ALLOC_STD);
@@ -812,8 +812,8 @@ TEST(eprs_parse_ebnf)
 	}
 
 	{
-		str_t bnf = STR("<file> ::= <");
-		lex_tokenize(&lex, &bnf, STR(__FILE__), __LINE__ - 1);
+		strv_t bnf = STRV("<file> ::= <");
+		lex_tokenize(&lex, bnf, STRV(__FILE__), __LINE__ - 1);
 
 		estx_t estx = {0};
 		estx_init(&estx, 1, 1, ALLOC_STD);
@@ -829,8 +829,8 @@ TEST(eprs_parse_ebnf)
 	}
 
 	{
-		str_t bnf = STR("::");
-		lex_tokenize(&lex, &bnf, STR(__FILE__), __LINE__ - 1);
+		strv_t bnf = STRV("::");
+		lex_tokenize(&lex, bnf, STRV(__FILE__), __LINE__ - 1);
 
 		estx_t estx = {0};
 		estx_init(&estx, 1, 1, ALLOC_STD);
@@ -852,25 +852,25 @@ TEST(eprs_parse_ebnf)
 		ebnf_init(&ebnf, ALLOC_STD);
 		ebnf_get_stx(&ebnf, ALLOC_STD, PRINT_DST_NONE());
 
-		uint line  = __LINE__ + 1;
-		str_t sbnf = STR("file    = ebnf EOF\n"
-				 "ebnf    = rule+\n"
-				 "rule    = rname spaces '= ' alt NL\n"
-				 "rname   = LOWER (LOWER | '_')*\n"
-				 "alt     = concat (' | ' concat)*\n"
-				 "concat  = factor (' ' factor)*\n"
-				 "factor  = term (opt | rep | opt_rep)?\n"
-				 "opt     = '?'\n"
-				 "rep     = '+'\n"
-				 "opt_rep = '*'\n"
-				 "term    = literal | token | rname | group\n"
-				 "literal = \"'\" (char | '\"')+ \"'\" | '\"' (char | \"'\")+ '\"'\n"
-				 "token   = UPPER+\n"
-				 "group   = '(' alt ')'\n"
-				 "char    = ALPHA | DIGIT | SYMBOL | ' '\n"
-				 "spaces  = ' '+\n");
+		uint line   = __LINE__ + 1;
+		strv_t sbnf = STRV("file    = ebnf EOF\n"
+				   "ebnf    = rule+\n"
+				   "rule    = rname spaces '= ' alt NL\n"
+				   "rname   = LOWER (LOWER | '_')*\n"
+				   "alt     = concat (' | ' concat)*\n"
+				   "concat  = factor (' ' factor)*\n"
+				   "factor  = term (opt | rep | opt_rep)?\n"
+				   "opt     = '?'\n"
+				   "rep     = '+'\n"
+				   "opt_rep = '*'\n"
+				   "term    = literal | token | rname | group\n"
+				   "literal = \"'\" (char | '\"')+ \"'\" | '\"' (char | \"'\")+ '\"'\n"
+				   "token   = UPPER+\n"
+				   "group   = '(' alt ')'\n"
+				   "char    = ALPHA | DIGIT | SYMBOL | ' '\n"
+				   "spaces  = ' '+\n");
 
-		lex_tokenize(&lex, &sbnf, STR(__FILE__), line);
+		lex_tokenize(&lex, sbnf, STRV(__FILE__), line);
 
 		prs_init(&prs, 100, ALLOC_STD);
 		prs_node_t prs_root;
@@ -887,39 +887,39 @@ TEST(eprs_parse_ebnf)
 	}
 
 	{
-		str_t sbnf = STR("<file> ::= ");
-		lex_tokenize(&lex, &sbnf, STR(__FILE__), __LINE__ - 1);
+		strv_t sbnf = STRV("<file> ::= ");
+		lex_tokenize(&lex, sbnf, STRV(__FILE__), __LINE__ - 1);
 
 		EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, estx_root, NULL, PRINT_DST_NONE()), 1);
 	}
 
 	{
-		str_t sebnf = STR("");
-		lex_tokenize(&lex, &sebnf, STR(__FILE__), __LINE__ - 1);
+		strv_t sebnf = STRV("");
+		lex_tokenize(&lex, sebnf, STRV(__FILE__), __LINE__ - 1);
 
 		EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, estx_root, NULL, PRINT_DST_NONE()), 1);
 	}
 
 	{
-		uint line  = __LINE__ + 1;
-		str_t sbnf = STR("file    = ebnf EOF\n"
-				 "ebnf    = rule+\n"
-				 "rule    = rname spaces '= ' alt NL\n"
-				 "rname   = LOWER (LOWER | '_')*\n"
-				 "alt     = concat (' | ' concat)*\n"
-				 "concat  = factor (' ' factor)*\n"
-				 "factor  = term (opt | rep | opt_rep)?\n"
-				 "opt     = '?'\n"
-				 "rep     = '+'\n"
-				 "opt_rep = '*'\n"
-				 "term    = literal | token | rname | group\n"
-				 "literal = \"'\" (char | '\"')+ \"'\" | '\"' (char | \"'\")+ '\"'\n"
-				 "token   = UPPER+\n"
-				 "group   = '(' alt ')'\n"
-				 "char    = ALPHA | DIGIT | SYMBOL | ' '\n"
-				 "spaces  = ' '+\n");
+		uint line   = __LINE__ + 1;
+		strv_t sbnf = STRV("file    = ebnf EOF\n"
+				   "ebnf    = rule+\n"
+				   "rule    = rname spaces '= ' alt NL\n"
+				   "rname   = LOWER (LOWER | '_')*\n"
+				   "alt     = concat (' | ' concat)*\n"
+				   "concat  = factor (' ' factor)*\n"
+				   "factor  = term (opt | rep | opt_rep)?\n"
+				   "opt     = '?'\n"
+				   "rep     = '+'\n"
+				   "opt_rep = '*'\n"
+				   "term    = literal | token | rname | group\n"
+				   "literal = \"'\" (char | '\"')+ \"'\" | '\"' (char | \"'\")+ '\"'\n"
+				   "token   = UPPER+\n"
+				   "group   = '(' alt ')'\n"
+				   "char    = ALPHA | DIGIT | SYMBOL | ' '\n"
+				   "spaces  = ' '+\n");
 
-		lex_tokenize(&lex, &sbnf, STR(__FILE__), line);
+		lex_tokenize(&lex, sbnf, STRV(__FILE__), line);
 
 		eprs_node_t root;
 		EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, estx_root, &root, PRINT_DST_NONE()), 0);

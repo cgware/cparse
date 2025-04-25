@@ -1,6 +1,5 @@
 #include "bnf.h"
 
-#include "cstr.h"
 #include "log.h"
 #include "mem.h"
 #include "test.h"
@@ -69,30 +68,30 @@ TEST(stx_from_bnf)
 	bnf_init(&bnf, ALLOC_STD);
 	bnf_get_stx(&bnf);
 
-	uint line  = __LINE__ + 1;
-	str_t sbnf = STR("<file>        ::= <bnf> EOF\n"
-			 "<bnf>         ::= <rules>\n"
-			 "<rules>       ::= <rule> <rules> | <rule>\n"
-			 "<rule>        ::= '<' <rule-name> '>' <spaces> '::=' <space> <expression> NL\n"
-			 "<rule-name>   ::= LOWER <rule-chars> | LOWER\n"
-			 "<rule-chars>  ::= <rule-char> <rule-chars> | <rule-char>\n"
-			 "<rule-char>   ::= LOWER | '-'\n"
-			 "<expression>  ::= <terms> <space> '|' <space> <expression> | <terms>\n"
-			 "<terms>       ::= <term> <terms> | <term>\n"
-			 "<term>        ::= <literal> | <token> | '<' <rule-name> '>'\n"
-			 "<literal>     ::= \"'\" <text-double> \"'\" | '\"' <text-single> '\"'\n"
-			 "<token>       ::= UPPER <token> | UPPER\n"
-			 "<text-double> ::= <char-double> <text-double> | <char-double>\n"
-			 "<text-single> ::= <char-single> <text-single> | <char-single>\n"
-			 "<char-double> ::= <character> | '\"'\n"
-			 "<char-single> ::= <character> | \"'\"\n"
-			 "<character>   ::= ALPHA | DIGIT | SYMBOL | ' '\n"
-			 "<spaces>      ::= <space> <spaces> | <space>\n"
-			 "<space>       ::= ' '\n");
+	uint line   = __LINE__ + 1;
+	strv_t sbnf = STRV("<file>        ::= <bnf> EOF\n"
+			   "<bnf>         ::= <rules>\n"
+			   "<rules>       ::= <rule> <rules> | <rule>\n"
+			   "<rule>        ::= '<' <rule-name> '>' <spaces> '::=' <space> <expression> NL\n"
+			   "<rule-name>   ::= LOWER <rule-chars> | LOWER\n"
+			   "<rule-chars>  ::= <rule-char> <rule-chars> | <rule-char>\n"
+			   "<rule-char>   ::= LOWER | '-'\n"
+			   "<expression>  ::= <terms> <space> '|' <space> <expression> | <terms>\n"
+			   "<terms>       ::= <term> <terms> | <term>\n"
+			   "<term>        ::= <literal> | <token> | '<' <rule-name> '>'\n"
+			   "<literal>     ::= \"'\" <text-double> \"'\" | '\"' <text-single> '\"'\n"
+			   "<token>       ::= UPPER <token> | UPPER\n"
+			   "<text-double> ::= <char-double> <text-double> | <char-double>\n"
+			   "<text-single> ::= <char-single> <text-single> | <char-single>\n"
+			   "<char-double> ::= <character> | '\"'\n"
+			   "<char-single> ::= <character> | \"'\"\n"
+			   "<character>   ::= ALPHA | DIGIT | SYMBOL | ' '\n"
+			   "<spaces>      ::= <space> <spaces> | <space>\n"
+			   "<space>       ::= ' '\n");
 
 	lex_t lex = {0};
 	lex_init(&lex, 0, 1, ALLOC_STD);
-	lex_tokenize(&lex, &sbnf, STR(__FILE__), line);
+	lex_tokenize(&lex, sbnf, STRV(__FILE__), line);
 
 	prs_t prs = {0};
 	prs_init(&prs, 100, ALLOC_STD);
@@ -107,9 +106,9 @@ TEST(stx_from_bnf)
 	EXPECT_EQ(stx_from_bnf(&bnf, &prs, prs_root, &new_stx, &names), 0);
 
 	uint file, bnfr, rules;
-	strbuf_get_index(&names, STRV("file"), &file);
-	strbuf_get_index(&names, STRV("bnf"), &bnfr);
-	strbuf_get_index(&names, STRV("rules"), &rules);
+	strbuf_find(&names, STRV("file"), &file);
+	strbuf_find(&names, STRV("bnf"), &bnfr);
+	strbuf_find(&names, STRV("rules"), &rules);
 
 	EXPECT_EQ(file, 0);
 	EXPECT_EQ(bnfr, 1);

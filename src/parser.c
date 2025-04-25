@@ -294,7 +294,7 @@ int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_rule_t rule, p
 
 	prs_node_t tmp = prs_add_node(prs, PRS_NODE_END, PRS_NODE_RULE(prs, rule));
 	uint parsed    = 0;
-	if (prs_parse_rule(prs, rule, &parsed, tmp, &err) || parsed != prs->lex->src->len) {
+	if (prs_parse_rule(prs, rule, &parsed, tmp, &err) || parsed != prs->lex->src.len) {
 		if (err.exp == STX_TERM_END) {
 			log_error("cparse", "parser", NULL, "wrong syntax");
 			return 1;

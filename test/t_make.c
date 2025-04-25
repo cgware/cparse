@@ -1076,7 +1076,7 @@ TEST(make_vars_eval_ext_not_set)
 	uint id;
 	strv_t exp, res;
 
-	strbuf_get_index(&vars.names, STRV("EXT"), &id);
+	strbuf_find(&vars.names, STRV("EXT"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "", exp.len);
 	res = make_vars_get_resolved(&vars, id);
@@ -1225,7 +1225,7 @@ TEST(make_eval_print_var_inst_empty)
 
 	uint var;
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
-	strbuf_get_index(&vars.names, STRV("VAR"), &var);
+	strbuf_find(&vars.names, STRV("VAR"), &var);
 	strv_t var_exp = make_vars_get_expanded(&vars, var);
 	EXPECT_STRN(var_exp.data, "", var_exp.len);
 
@@ -1255,7 +1255,7 @@ TEST(make_eval_print_var_inst)
 
 	uint var;
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
-	strbuf_get_index(&vars.names, STRV("VAR"), &var);
+	strbuf_find(&vars.names, STRV("VAR"), &var);
 	strv_t var_exp = make_vars_get_expanded(&vars, var);
 	EXPECT_STRN(var_exp.data, "VAL", var_exp.len);
 
@@ -1285,7 +1285,7 @@ TEST(make_eval_print_var_inst2)
 
 	uint id;
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
-	strbuf_get_index(&vars.names, STRV("VAR"), &id);
+	strbuf_find(&vars.names, STRV("VAR"), &id);
 	strv_t var_exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(var_exp.data, "VAL1 VAL2", var_exp.len);
 
@@ -1314,7 +1314,7 @@ TEST(make_eval_print_var_inst_out)
 
 	uint var;
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
-	strbuf_get_index(&vars.names, STRV("B"), &var);
+	strbuf_find(&vars.names, STRV("B"), &var);
 	strv_t var_exp = make_vars_get_expanded(&vars, var);
 	EXPECT_STRN(var_exp.data, "$$(A)", var_exp.len);
 
@@ -1347,7 +1347,7 @@ TEST(make_eval_print_var_ref)
 
 	uint var = ARR_END;
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
-	strbuf_get_index(&vars.names, STRV("VAR"), &var);
+	strbuf_find(&vars.names, STRV("VAR"), &var);
 	strv_t var_exp = make_vars_get_expanded(&vars, var);
 	EXPECT_STRN(var_exp.data, "VAL", var_exp.len);
 
@@ -1377,7 +1377,7 @@ TEST(make_eval_print_var_app)
 
 	uint id;
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
-	strbuf_get_index(&vars.names, STRV("VAR"), &id);
+	strbuf_find(&vars.names, STRV("VAR"), &id);
 	strv_t var_exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(var_exp.data, "VAL1 VAL2", var_exp.len);
 
@@ -1412,7 +1412,7 @@ TEST(make_eval_print_var_ext_inst)
 
 	uint id;
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
-	strbuf_get_index(&vars.names, STRV("VAR"), &id);
+	strbuf_find(&vars.names, STRV("VAR"), &id);
 	strv_t var_exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(var_exp.data, "VAL", var_exp.len);
 
@@ -1466,7 +1466,7 @@ TEST(make_eval_print_var_ext)
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
 
 	uint out_id = ARR_END;
-	strbuf_get_index(&vars.names, STRV("OUT"), &out_id);
+	strbuf_find(&vars.names, STRV("OUT"), &out_id);
 
 	strv_t out_exp = make_vars_get_expanded(&vars, out_id);
 	EXPECT_STRN(out_exp.data, "$(VAR)", out_exp.len);
@@ -1574,13 +1574,13 @@ TEST(make_eval_print_var_if_true)
 
 	make_ext_set_val(&make, cond_id, MSTR(STRV("A")));
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
-	strbuf_get_index(&vars.names, STRV("VAR"), &var_id);
+	strbuf_find(&vars.names, STRV("VAR"), &var_id);
 	strv_t var_exp_a = make_vars_get_expanded(&vars, var_id);
 	EXPECT_STRN(var_exp_a.data, "VAL", var_exp_a.len);
 
 	make_ext_set_val(&make, cond_id, MSTR(STRV("B")));
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
-	EXPECT_EQ(strbuf_get_index(&vars.names, STRV("VAR"), &var_id), 1);
+	EXPECT_EQ(strbuf_find(&vars.names, STRV("VAR"), &var_id), 1);
 
 	char buf[512] = {0};
 	EXPECT_EQ(make_print(&make, PRINT_DST_BUF(buf, sizeof(buf), 0)), 34);
@@ -1632,13 +1632,13 @@ TEST(make_eval_print_var_if_false)
 
 	make_ext_set_val(&make, cond_id, MSTR(STRV("A")));
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
-	strbuf_get_index(&vars.names, STRV("VAR"), &varr);
+	strbuf_find(&vars.names, STRV("VAR"), &varr);
 	strv_t var_exp_a = make_vars_get_expanded(&vars, varr);
 	EXPECT_STRN(var_exp_a.data, "VAL1", var_exp_a.len);
 
 	make_ext_set_val(&make, cond_id, MSTR(STRV("B")));
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
-	strbuf_get_index(&vars.names, STRV("VAR"), &varr);
+	strbuf_find(&vars.names, STRV("VAR"), &varr);
 	strv_t var_exp_b = make_vars_get_expanded(&vars, varr);
 	EXPECT_STRN(var_exp_b.data, "VAL2", var_exp_b.len);
 
@@ -1766,7 +1766,7 @@ TEST(make_eval_print_def_no_arg)
 	log_set_quiet(0, 1);
 	EXPECT_EQ(make_vars_eval(&make, &vars), 1);
 	log_set_quiet(0, 0);
-	strbuf_get_index(&vars.names, STRV(""), &var_id);
+	strbuf_find(&vars.names, STRV(""), &var_id);
 
 	strv_t var_exp_a = make_vars_get_expanded(&vars, var_id);
 	EXPECT_STRN(var_exp_a.data, "VAL", var_exp_a.len);
@@ -1825,7 +1825,7 @@ TEST(make_eval_print_def_args)
 	log_set_quiet(0, 1);
 	EXPECT_EQ(make_vars_eval(&make, &vars), 1);
 	log_set_quiet(0, 0);
-	strbuf_get_index(&vars.names, STRV("VAR"), &var_id);
+	strbuf_find(&vars.names, STRV("VAR"), &var_id);
 	strv_t var_exp_a = make_vars_get_expanded(&vars, var_id);
 	EXPECT_STRN(var_exp_a.data, "def VAR   ", var_exp_a.len);
 
@@ -1884,7 +1884,7 @@ TEST(make_eval_print_def_var_invalid)
 	EXPECT_EQ(make_vars_eval(&make, &vars), 1);
 	log_set_quiet(0, 0);
 
-	strbuf_get_index(&vars.names, STRV("B"), &b_id);
+	strbuf_find(&vars.names, STRV("B"), &b_id);
 	strv_t var_exp_a = make_vars_get_expanded(&vars, b_id);
 	EXPECT_STRN(var_exp_a.data, "", var_exp_a.len);
 
@@ -1942,7 +1942,7 @@ TEST(make_eval_print_def_var_imm)
 	uint id = ARR_END;
 	strv_t exp, res;
 
-	strbuf_get_index(&vars.names, STRV("B"), &id);
+	strbuf_find(&vars.names, STRV("B"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "V", exp.len);
 	res = make_vars_get_expanded(&vars, id);
@@ -1981,13 +1981,13 @@ TEST(make_eval_print_def_var)
 	uint id = ARR_END;
 	strv_t val;
 
-	strbuf_get_index(&vars.names, STRV("B"), &id);
+	strbuf_find(&vars.names, STRV("B"), &id);
 	val = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(val.data, "$(A)", val.len);
 	val = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(val.data, "V", val.len);
 
-	strbuf_get_index(&vars.names, STRV("B"), &id);
+	strbuf_find(&vars.names, STRV("B"), &id);
 	val = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(val.data, "$(A)", val.len);
 	val = make_vars_get_resolved(&vars, id);
@@ -2077,7 +2077,7 @@ TEST(make_eval_print_inc)
 	uint id = ARR_END;
 	strv_t val;
 
-	strbuf_get_index(&vars.names, STRV("VAR"), &id);
+	strbuf_find(&vars.names, STRV("VAR"), &id);
 	val = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(val.data, "VAL", val.len);
 	val = make_vars_get_resolved(&vars, id);
@@ -2153,7 +2153,7 @@ TEST(make_eval_ext_override)
 	{
 		make_vars_eval(&make, &vars);
 		uint extr;
-		strbuf_get_index(&vars.names, STRV("EXT"), &extr);
+		strbuf_find(&vars.names, STRV("EXT"), &extr);
 		strv_t exp = make_vars_get_expanded(&vars, extr);
 		EXPECT_STRN(exp.data, "VAL VAL", exp.len);
 		strv_t res = make_vars_get_resolved(&vars, extr);
@@ -2163,7 +2163,7 @@ TEST(make_eval_ext_override)
 		make_ext_set_val(&make, ext, MSTR(STRV("EXT")));
 		make_vars_eval(&make, &vars);
 		uint extr;
-		strbuf_get_index(&vars.names, STRV("EXT"), &extr);
+		strbuf_find(&vars.names, STRV("EXT"), &extr);
 		strv_t exp = make_vars_get_expanded(&vars, extr);
 		EXPECT_STRN(exp.data, "EXT", exp.len);
 		strv_t res = make_vars_get_resolved(&vars, extr);
@@ -2197,7 +2197,7 @@ TEST(make_eval_inst_app)
 	make_vars_eval(&make, &vars);
 
 	uint tr;
-	strbuf_get_index(&vars.names, STRV("T"), &tr);
+	strbuf_find(&vars.names, STRV("T"), &tr);
 
 	strv_t exp = make_vars_get_expanded(&vars, tr);
 	EXPECT_STRN(exp.data, "$(VAR) $(VAR)", exp.len);
@@ -2232,7 +2232,7 @@ TEST(make_eval_ref_app)
 	make_vars_eval(&make, &vars);
 
 	uint tr;
-	strbuf_get_index(&vars.names, STRV("T"), &tr);
+	strbuf_find(&vars.names, STRV("T"), &tr);
 
 	strv_t exp = make_vars_get_expanded(&vars, tr);
 	EXPECT_STRN(exp.data, "$(VAR) $(VAR)", exp.len);
@@ -2272,7 +2272,7 @@ TEST(make_eval_inst_if)
 	make_vars_eval(&make, &vars);
 
 	uint rr;
-	strbuf_get_index(&vars.names, STRV("R"), &rr);
+	strbuf_find(&vars.names, STRV("R"), &rr);
 
 	strv_t exp = make_vars_get_expanded(&vars, rr);
 	EXPECT_STRN(exp.data, "C", exp.len);
@@ -2312,7 +2312,7 @@ TEST(make_eval_ref_if)
 	make_vars_eval(&make, &vars);
 
 	uint rr;
-	strbuf_get_index(&vars.names, STRV("R"), &rr);
+	strbuf_find(&vars.names, STRV("R"), &rr);
 
 	strv_t exp = make_vars_get_expanded(&vars, rr);
 	EXPECT_STRN(exp.data, "D", exp.len);
@@ -2341,7 +2341,7 @@ TEST(make_eval_name)
 	make_vars_eval(&make, &vars);
 
 	uint var;
-	strbuf_get_index(&vars.names, STRV("A_VAR"), &var);
+	strbuf_find(&vars.names, STRV("A_VAR"), &var);
 
 	strv_t exp = make_vars_get_expanded(&vars, var);
 	EXPECT_STRN(exp.data, "VAL", exp.len);
@@ -2376,7 +2376,7 @@ TEST(make_eval_def_name)
 	make_vars_eval(&make, &vars);
 
 	uint var;
-	strbuf_get_index(&vars.names, STRV("A_VAR"), &var);
+	strbuf_find(&vars.names, STRV("A_VAR"), &var);
 
 	strv_t exp = make_vars_get_expanded(&vars, var);
 	EXPECT_STRN(exp.data, "VAL", exp.len);
@@ -2885,133 +2885,133 @@ TEST(make_vars)
 	uint id;
 	strv_t exp, res;
 
-	strbuf_get_index(&vars.names, STRV("VAR"), &id);
+	strbuf_find(&vars.names, STRV("VAR"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "V3", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "V3", res.len);
 
-	strbuf_get_index(&vars.names, STRV("IMM"), &id);
+	strbuf_find(&vars.names, STRV("IMM"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "V1", res.len);
 
-	strbuf_get_index(&vars.names, STRV("REC"), &id);
+	strbuf_find(&vars.names, STRV("REC"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "V3", res.len);
 
-	strbuf_get_index(&vars.names, STRV("APP_IMM"), &id);
+	strbuf_find(&vars.names, STRV("APP_IMM"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "$(VAR) $(VAR) $(VAR)", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "V2 V2 V2", res.len);
 
-	strbuf_get_index(&vars.names, STRV("APP_REC"), &id);
+	strbuf_find(&vars.names, STRV("APP_REC"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "$(VAR) $(VAR) $(VAR)", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "V3 V3 V3", res.len);
 
-	strbuf_get_index(&vars.names, STRV("EXT_NOT"), &id);
+	strbuf_find(&vars.names, STRV("EXT_NOT"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "", res.len);
 
-	strbuf_get_index(&vars.names, STRV("EXT_EMPTY"), &id);
+	strbuf_find(&vars.names, STRV("EXT_EMPTY"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "", res.len);
 
-	strbuf_get_index(&vars.names, STRV("EXT_SET"), &id);
+	strbuf_find(&vars.names, STRV("EXT_SET"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "EXT", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "EXT", res.len);
 
-	strbuf_get_index(&vars.names, STRV("EXT_VAR"), &id);
+	strbuf_find(&vars.names, STRV("EXT_VAR"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "V3", res.len);
 
-	strbuf_get_index(&vars.names, STRV("VAR_EXT_NOT"), &id);
+	strbuf_find(&vars.names, STRV("VAR_EXT_NOT"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "VAR", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "VAR", res.len);
 
-	strbuf_get_index(&vars.names, STRV("VAR_EXT_EMPTY"), &id);
+	strbuf_find(&vars.names, STRV("VAR_EXT_EMPTY"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "", res.len);
 
-	strbuf_get_index(&vars.names, STRV("VAR_EXT_SET"), &id);
+	strbuf_find(&vars.names, STRV("VAR_EXT_SET"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "EXT", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "EXT", res.len);
 
-	strbuf_get_index(&vars.names, STRV("DEF_VAR"), &id);
+	strbuf_find(&vars.names, STRV("DEF_VAR"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "D", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "D", res.len);
 
-	strbuf_get_index(&vars.names, STRV("DEF_VAR_IMM"), &id);
+	strbuf_find(&vars.names, STRV("DEF_VAR_IMM"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "$(DEF_VAR)", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "D", res.len);
 
-	strbuf_get_index(&vars.names, STRV("DEF_VAR_IMM_VAR"), &id);
+	strbuf_find(&vars.names, STRV("DEF_VAR_IMM_VAR"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "$(DEF_VAR)", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "D", res.len);
 
-	strbuf_get_index(&vars.names, STRV("DEF_IMM"), &id);
+	strbuf_find(&vars.names, STRV("DEF_IMM"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "V2", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "V2", res.len);
 
-	strbuf_get_index(&vars.names, STRV("DEF_IMM_ESC"), &id);
+	strbuf_find(&vars.names, STRV("DEF_IMM_ESC"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "V2", res.len);
 
-	strbuf_get_index(&vars.names, STRV("DEF_IMM_ESC_VAR"), &id);
+	strbuf_find(&vars.names, STRV("DEF_IMM_ESC_VAR"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "V2", res.len);
 
-	strbuf_get_index(&vars.names, STRV("DEF_REC"), &id);
+	strbuf_find(&vars.names, STRV("DEF_REC"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "V2", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "V2", res.len);
 
-	strbuf_get_index(&vars.names, STRV("DEF_REC_ESC"), &id);
+	strbuf_find(&vars.names, STRV("DEF_REC_ESC"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "V3", res.len);
 
-	strbuf_get_index(&vars.names, STRV("DEF_REC_ESC_VAR"), &id);
+	strbuf_find(&vars.names, STRV("DEF_REC_ESC_VAR"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
 	res = make_vars_get_resolved(&vars, id);
 	EXPECT_STRN(res.data, "V3", res.len);
 
-	strbuf_get_index(&vars.names, STRV("def"), &id);
+	strbuf_find(&vars.names, STRV("def"), &id);
 	exp = make_vars_get_expanded(&vars, id);
 	EXPECT_STRN(exp.data, "$(VAR)", exp.len);
 	res = make_vars_get_resolved(&vars, id);

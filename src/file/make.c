@@ -720,7 +720,7 @@ static int replace_vars(const void *priv, strv_t name, strv_t *val)
 {
 	const replace_vars_priv_t *p = priv;
 	uint index;
-	if (strbuf_get_index(&p->vars->names, name, &index)) {
+	if (strbuf_find(&p->vars->names, name, &index)) {
 		return 1;
 	}
 
@@ -779,6 +779,10 @@ typedef int (*replace_fn)(const void *priv, strv_t name, strv_t *val);
 
 static int make_replace(str_t *str, size_t min_len, replace_fn replace, const void *priv)
 {
+	if (str->data == NULL) {
+		return 1;
+	}
+
 	int ret = 0;
 
 	for (size_t s = 0; str->len >= min_len + 3 && s <= str->len - min_len - 3; s++) {
@@ -808,9 +812,11 @@ static int make_replace(str_t *str, size_t min_len, replace_fn replace, const vo
 		}
 
 		if (str_subreplace(str, s, e + 1, val)) {
+			// LCOV_EXCL_START
 			log_warn("build", "var", NULL, "failed to replace '%.*s' with: '%.*s'", name.len, name.data, val.len, val.data);
 			ret = 1;
 			continue;
+			// LCOV_EXCL_STOP
 		}
 		s--;
 	}
@@ -886,14 +892,12 @@ static int make_var_app(make_vars_t *vars, uint id, int app, str_t *buf)
 	}
 
 	if (app) {
-		if (strbuf_app(&vars->expanded, STRV_STR(*buf), id)) {
-			log_error("cparse", "make", NULL, "failed to append variable");
-			ret = 1;
+		if (strbuf_app(&vars->expanded, STRVS(*buf), id)) {
+			log_error("cparse", "make", NULL, "failed to append variable"), ret = 1; // LCOV_EXCL_LINE
 		}
 	} else {
-		if (strbuf_set(&vars->expanded, STRV_STR(*buf), id)) {
-			log_error("cparse", "make", NULL, "failed to set variable");
-			ret = 1;
+		if (strbuf_set(&vars->expanded, STRVS(*buf), id)) {
+			log_error("cparse", "make", NULL, "failed to set variable"), ret = 1; // LCOV_EXCL_LINE
 		}
 	}
 
@@ -911,14 +915,12 @@ static int make_var_app(make_vars_t *vars, uint id, int app, str_t *buf)
 	}
 
 	if (app) {
-		if (strbuf_app(&vars->resolved, STRV_STR(*buf), id)) {
-			log_error("cparse", "make", NULL, "failed to append variable");
-			ret = 1;
+		if (strbuf_app(&vars->resolved, STRVS(*buf), id)) {
+			log_error("cparse", "make", NULL, "failed to append variable"), ret = 1; // LCOV_EXCL_LINE
 		}
 	} else {
-		if (strbuf_set(&vars->resolved, STRV_STR(*buf), id)) {
-			log_error("cparse", "make", NULL, "failed to set variable");
-			ret = 1;
+		if (strbuf_set(&vars->resolved, STRVS(*buf), id)) {
+			log_error("cparse", "make", NULL, "failed to set variable"), ret = 1; // LCOV_EXCL_LINE
 		}
 	}
 
@@ -952,7 +954,7 @@ static int make_var_eval(const make_t *make, make_vars_t *vars, const make_var_d
 
 static int make_vars_add_var(make_vars_t *vars, strv_t name, int force, uint *index)
 {
-	if (strbuf_get_index(&vars->names, name, index) == 0 && !force) {
+	if (strbuf_find(&vars->names, name, index) == 0 && !force) {
 		return 0;
 	}
 
@@ -985,7 +987,7 @@ static int make_vars_eval_act(const make_t *make, make_vars_t *vars, make_act_t 
 			buf->len = 0;
 			str_cat(buf, name);
 			ret |= eval_name(make, vars, args, buf);
-			if (make_vars_add_var(vars, STRV_STR(*buf), 0, &id)) {
+			if (make_vars_add_var(vars, STRVS(*buf), 0, &id)) {
 				ret = 1;
 				break;
 			}
@@ -1095,10 +1097,10 @@ int make_vars_eval(const make_t *make, make_vars_t *vars)
 	strbuf_reset(&vars->expanded, 0);
 	strbuf_reset(&vars->resolved, 0);
 
-	char buf[256] = {0};
-	str_t buf_str = strb(buf, sizeof(buf), 0);
-
-	return make_vars_eval_act(make, vars, make->root, MAKE_END, 0, &buf_str);
+	str_t buf = strz(16);
+	int ret	  = make_vars_eval_act(make, vars, make->root, MAKE_END, 0, &buf);
+	str_free(&buf);
+	return ret;
 }
 
 strv_t make_vars_get_expanded(const make_vars_t *vars, uint id)
@@ -1122,19 +1124,20 @@ strv_t make_vars_get_resolved(const make_vars_t *vars, uint id)
 	}
 
 	if (flags->ref) {
-		char buf[256] = {0};
-		str_t strbuf  = strb(buf, sizeof(buf), 0);
+		str_t buf = strz(16);
 
 		strv_t expanded = strbuf_get(&vars->expanded, id);
-		str_cat(&strbuf, expanded);
+		str_cat(&buf, expanded);
 
 		replace_vars_priv_t priv = {
 			.vars = vars,
 		};
 
-		make_replace(&strbuf, 1, replace_vars, &priv);
+		make_replace(&buf, 1, replace_vars, &priv);
 		make_vars_t *v = (make_vars_t *)vars;
-		strbuf_set(&v->resolved, STRV_STR(strbuf), id);
+		strbuf_set(&v->resolved, STRVS(buf), id);
+
+		str_free(&buf);
 	}
 
 	return strbuf_get(&vars->resolved, id);
@@ -1331,10 +1334,10 @@ int make_inc_print(const make_t *make, make_inc_t inc, print_dst_t dst)
 		return 0;
 	}
 
-	char buf[256] = {0};
-	str_t buf_str = strb(buf, sizeof(buf), 0);
-
-	return make_acts_print(make, data->acts, dst, 0, &buf_str);
+	str_t buf = strz(16);
+	int ret	  = make_acts_print(make, data->acts, dst, 0, &buf);
+	str_free(&buf);
+	return ret;
 }
 
 int make_print(const make_t *make, print_dst_t dst)
@@ -1343,10 +1346,11 @@ int make_print(const make_t *make, print_dst_t dst)
 		return 0;
 	}
 
-	char buf[256] = {0};
-	str_t buf_str = strb(buf, sizeof(buf), 0);
+	str_t buf = strz(16);
+	int ret	  = make_acts_print(make, make->root, dst, 0, &buf);
+	str_free(&buf);
 
-	return make_acts_print(make, make->root, dst, 0, &buf_str);
+	return ret;
 }
 
 int make_dbg(const make_t *make, print_dst_t dst)
@@ -1355,8 +1359,7 @@ int make_dbg(const make_t *make, print_dst_t dst)
 		return 0;
 	}
 
-	char buff[256] = {0};
-	str_t buf      = strb(buff, sizeof(buff), 0);
+	str_t buf = strz(16);
 
 	int off = dst.off;
 	const make_act_data_t *act;
@@ -1471,6 +1474,8 @@ int make_dbg(const make_t *make, print_dst_t dst)
 		}
 		}
 	}
+
+	str_free(&buf);
 
 	return dst.off - off;
 }
