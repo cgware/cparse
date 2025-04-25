@@ -5,8 +5,6 @@
 #include "log.h"
 #include "str.h"
 
-#include <stdlib.h>
-
 cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 {
 	if (cfg_prs == NULL) {
@@ -91,7 +89,8 @@ static cfg_var_t cfg_parse_value(const cfg_prs_t *cfg_prs, eprs_t *eprs, strv_t 
 		eprs_get_str(eprs, node, &val);
 
 		strv_t val_str = lex_get_token_val(eprs->lex, val);
-		int val_int    = strtol(val_str.data, NULL, 10);
+		int val_int;
+		strv_to_int(val_str, &val_int);
 
 		ret = CFG_INT(cfg, key, val_int);
 	} else if ((node = eprs_get_rule(eprs, value, cfg_prs->str)) < eprs->nodes.cnt) {

@@ -2,8 +2,6 @@
 
 #include "log.h"
 
-#include <stdarg.h>
-
 estx_t *estx_init(estx_t *estx, uint rules_cap, uint terms_cap, alloc_t alloc)
 {
 	if (estx == NULL) {

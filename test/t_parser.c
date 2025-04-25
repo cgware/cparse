@@ -5,8 +5,6 @@
 #include "mem.h"
 #include "test.h"
 
-#include <stdlib.h>
-
 TEST(prs_init_free)
 {
 	START;
@@ -586,9 +584,9 @@ TEST(prs_parse_bnf)
 		prs_node_t root;
 		prs_parse(&prs, &lex, &bnf.stx, bnf.file, &root, PRINT_DST_STD());
 		EXPECT_EQ(root, 0);
-		char *buf = malloc(160000);
+		char *buf = mem_alloc(160000);
 		EXPECT_EQ(prs_print(&prs, root, PRINT_DST_BUF(buf, 160000, 0)), 89752);
-		free(buf);
+		mem_free(buf, 160000);
 	}
 
 	prs_free(&prs);

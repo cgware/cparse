@@ -5,9 +5,6 @@
 #include "mem.h"
 #include "test.h"
 
-#include <memory.h>
-#include <stdlib.h>
-
 TEST(eprs_init_free)
 {
 	START;
@@ -924,9 +921,9 @@ TEST(eprs_parse_ebnf)
 		eprs_node_t root;
 		EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, estx_root, &root, PRINT_DST_NONE()), 0);
 
-		char *buf = malloc(30000);
+		char *buf = mem_alloc(30000);
 		EXPECT_EQ(eprs_print(&eprs, root, PRINT_DST_BUF(buf, 30000, 0)), 19851);
-		free(buf);
+		mem_free(buf, 30000);
 	}
 
 	eprs_free(&eprs);

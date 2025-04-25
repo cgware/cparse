@@ -1,8 +1,7 @@
 #include "lexer.h"
 
+#include "mem.h"
 #include "token.h"
-
-#include <memory.h>
 
 typedef struct word_s {
 	uint start;
@@ -125,7 +124,7 @@ lex_t *lex_init(lex_t *lex, uint words_cap, uint tokens_cap, alloc_t alloc)
 			return NULL;
 		}
 	} else {
-		memset(&lex->words, 0, sizeof(strbuf_t));
+		mem_set(&lex->words, 0, sizeof(strbuf_t));
 	}
 
 	if (arr_init(&lex->tokens, tokens_cap, sizeof(token_t), alloc) == NULL) {
@@ -207,7 +206,7 @@ int lex_tokenize(lex_t *lex, strv_t src, strv_t file, uint line_off)
 			return 1;
 		}
 
-		uint j  = 0;
+		uint j	  = 0;
 		int found = 0;
 		strbuf_foreach(&lex->words, j, word)
 		{
@@ -215,7 +214,7 @@ int lex_tokenize(lex_t *lex, strv_t src, strv_t file, uint line_off)
 				continue;
 			}
 
-			if (memcmp(&lex->src.data[i], word.data, word.len) != 0) {
+			if (!strv_eq(STRVN(&lex->src.data[i], word.len), word)) {
 				continue;
 			}
 

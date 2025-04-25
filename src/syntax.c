@@ -2,8 +2,6 @@
 
 #include "log.h"
 
-#include <stdarg.h>
-
 stx_t *stx_init(stx_t *stx, uint rules_cap, uint terms_cap, alloc_t alloc)
 {
 	if (stx == NULL) {
