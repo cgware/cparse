@@ -28,7 +28,7 @@ typedef struct ebnf_s {
 ebnf_t *ebnf_init(ebnf_t *ebnf, alloc_t alloc);
 void ebnf_free(ebnf_t *ebnf);
 
-const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, print_dst_t dst);
+const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, dst_t dst);
 
 estx_rule_t estx_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t root, estx_t *estx, strbuf_t *names);
 

@@ -7,8 +7,8 @@
 #include "token.h"
 #include "tree.h"
 
-#define ESTX_RULE_END ARR_END
-#define ESTX_TERM_END TREE_END
+#define ESTX_RULE_END ((uint)-1)
+#define ESTX_TERM_END ((uint)-1)
 
 typedef uint estx_rule_t;
 typedef tnode_t estx_term_t;
@@ -63,8 +63,8 @@ estx_term_data_t estx_create_literal(estx_t *estx, strv_t str, estx_term_occ_t o
 estx_term_t estx_rule_set_term(estx_t *estx, estx_rule_t rule, estx_term_t term);
 estx_term_t estx_term_add_term(estx_t *estx, estx_term_t term, estx_term_t child);
 
-int estx_print(const estx_t *estx, print_dst_t dst);
-int estx_print_tree(const estx_t *estx, print_dst_t dst);
+size_t estx_print(const estx_t *estx, dst_t dst);
+size_t estx_print_tree(const estx_t *estx, dst_t dst);
 
 #define ESTX_TERM_NONE(_estx) ESTX_TERM_END
 #define ESTX_TERM_RULE(_estx, _rule, _occ)                                                                                                 \

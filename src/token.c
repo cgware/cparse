@@ -19,18 +19,21 @@ static strv_t token_type_str[] = {
 	[TOKEN_EOF]	= STRVT("EOF"),
 };
 
-int token_type_print(uint type, print_dst_t dst)
+size_t token_type_print(uint type, dst_t dst)
 {
-	int off = dst.off;
+	size_t off = dst.off;
 
 	for (token_type_t i = TOKEN_UNKNOWN; i < __TOKEN_MAX; i++) {
 		if (type & (1 << i)) {
-			dst.off += c_dprintf(dst, off == dst.off ? "%.*s" : "|%.*s", token_type_str[i].len, token_type_str[i].data);
+			if (dst.off > off) {
+				dst.off += dputs(dst, STRV("|"));
+			}
+			dst.off += dputs(dst, token_type_str[i]);
 		}
 	}
 
 	if (dst.off == off) {
-		dst.off += c_dprintf(dst, "%.*s", token_type_str[TOKEN_UNKNOWN].len, token_type_str[TOKEN_UNKNOWN].data);
+		dst.off += dputs(dst, token_type_str[TOKEN_UNKNOWN]);
 	}
 
 	return dst.off - off;

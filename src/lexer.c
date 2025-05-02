@@ -201,7 +201,7 @@ int lex_tokenize(lex_t *lex, strv_t src, strv_t file, uint line_off)
 	strv_t word;
 
 	for (size_t i = 0; i < lex->src.len;) {
-		token_t *token = arr_add(&lex->tokens);
+		token_t *token = arr_add(&lex->tokens, NULL);
 		if (token == NULL) {
 			return 1;
 		}
@@ -245,42 +245,45 @@ int lex_tokenize(lex_t *lex, strv_t src, strv_t file, uint line_off)
 	return 0;
 }
 
-int lex_print_token(const lex_t *lex, token_t token, print_dst_t dst)
+size_t lex_print_token(const lex_t *lex, token_t token, dst_t dst)
 {
 	if (lex == NULL) {
 		return 0;
 	}
 
-	int off = dst.off;
+	size_t off = dst.off;
 
 	dst.off += token_type_print(token.type, dst);
 	strv_t val   = lex_get_token_val(lex, token);
 	char buf[32] = {0};
-	int len	     = strv_print(val, PRINT_DST_BUF(buf, sizeof(buf), 0));
-	dst.off += c_dprintf(dst, "(%.*s)", len, buf);
+	size_t len   = strv_print(val, DST_BUF(buf));
+	dst.off += dputs(dst, STRV("("));
+	dst.off += dputs(dst, STRVN(buf, len));
+	dst.off += dputs(dst, STRV(")"));
 
 	return dst.off - off;
 }
 
-int lex_print(const lex_t *lex, print_dst_t dst)
+size_t lex_print(const lex_t *lex, dst_t dst)
 {
 	if (lex == NULL) {
 		return 0;
 	}
 
-	int off = dst.off;
+	size_t off = dst.off;
 
 	token_t *token;
-	arr_foreach(&lex->tokens, token)
+	uint i = 0;
+	arr_foreach(&lex->tokens, i, token)
 	{
 		dst.off += lex_print_token(lex, *token, dst);
-		dst.off += c_dprintf(dst, "\n");
+		dst.off += dputs(dst, STRV("\n"));
 	}
 
 	return dst.off - off;
 }
 
-int lex_token_loc_print_loc(const lex_t *lex, token_loc_t loc, print_dst_t dst)
+int lex_token_loc_print_loc(const lex_t *lex, token_loc_t loc, dst_t dst)
 {
 	if (lex == NULL || lex->file.data == NULL) {
 		return 0;
@@ -288,12 +291,12 @@ int lex_token_loc_print_loc(const lex_t *lex, token_loc_t loc, print_dst_t dst)
 
 	int off = dst.off;
 
-	dst.off += c_dprintf(dst, "%.*s:%d:%d: ", lex->file.len, lex->file.data, lex->line_off + loc.line_nr, loc.col);
+	dst.off += dputf(dst, "%.*s:%d:%d: ", lex->file.len, lex->file.data, lex->line_off + loc.line_nr, loc.col);
 
 	return dst.off - off;
 }
 
-int lex_token_loc_print_src(const lex_t *lex, token_loc_t loc, print_dst_t dst)
+int lex_token_loc_print_src(const lex_t *lex, token_loc_t loc, dst_t dst)
 {
 	if (lex == NULL || lex->src.data == NULL) {
 		return 0;
@@ -301,8 +304,8 @@ int lex_token_loc_print_src(const lex_t *lex, token_loc_t loc, print_dst_t dst)
 
 	int off = dst.off;
 
-	dst.off += c_dprintf(dst, "%.*s\n", loc.line_len, &lex->src.data[loc.line_off]);
-	dst.off += c_dprintf(dst, "%*s^\n", loc.col, "");
+	dst.off += dputs(dst, STRVN(&lex->src.data[loc.line_off], loc.line_len));
+	dst.off += dputf(dst, "\n%*s^\n", loc.col, "");
 
 	return dst.off - off;
 }

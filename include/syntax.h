@@ -7,8 +7,8 @@
 #include "strv.h"
 #include "token.h"
 
-#define STX_RULE_END ARR_END
-#define STX_TERM_END LIST_END
+#define STX_RULE_END ((uint)-1)
+#define STX_TERM_END ((uint)-1)
 
 typedef uint stx_rule_t;
 typedef lnode_t stx_term_t;
@@ -63,8 +63,8 @@ stx_term_t stx_term_add_term(stx_t *stx, stx_term_t term, stx_term_t next);
 stx_term_t stx_rule_add_or(stx_t *stx, stx_rule_t rule, size_t n, ...);
 stx_term_t stx_rule_add_arr(stx_t *stx, stx_rule_t rule, stx_term_t term, stx_term_t sep);
 
-int stx_print(const stx_t *stx, print_dst_t dst);
-int stx_print_tree(const stx_t *stx, print_dst_t dst);
+size_t stx_print(const stx_t *stx, dst_t dst);
+size_t stx_print_tree(const stx_t *stx, dst_t dst);
 
 #define STX_TERM_NONE(_stx)		 STX_TERM_END
 #define STX_TERM_RULE(_stx, _rule)	 stx_create_term(_stx, (stx_term_data_t){.type = STX_TERM_RULE, .val.rule = _rule})

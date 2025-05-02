@@ -219,10 +219,10 @@ TEST(stx_print)
 	stx_rule_add_term(&stx, line, STX_TERM_OR(&stx, a, b));
 
 	char buf[64] = {0};
-	EXPECT_EQ(stx_print(NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
+	EXPECT_EQ(stx_print(NULL, DST_BUF(buf)), 0);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(stx_print(&stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 52);
+	EXPECT_EQ(stx_print(&stx, DST_BUF(buf)), 52);
 	log_set_quiet(0, 0);
 	EXPECT_STR(buf,
 		   "<0> ::= <1>\n"
@@ -232,7 +232,7 @@ TEST(stx_print)
 	// stx_rule_add_term(&stx, line, STX_TERM_OR(-1, -1)); //TODO
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(stx_print(&stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 52);
+	EXPECT_EQ(stx_print(&stx, DST_BUF(buf)), 52);
 	log_set_quiet(0, 0);
 	EXPECT_STR(buf,
 		   "<0> ::= <1>\n"
@@ -276,9 +276,9 @@ TEST(stx_print_tree)
 
 	char buf[256] = {0};
 
-	EXPECT_EQ(stx_print_tree(NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
+	EXPECT_EQ(stx_print_tree(NULL, DST_BUF(buf)), 0);
 
-	EXPECT_EQ(stx_print_tree(&stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 212);
+	EXPECT_EQ(stx_print_tree(&stx, DST_BUF(buf)), 212);
 	EXPECT_STR(buf,
 		   "<0>\n"
 		   "├─<1>\n"
@@ -305,7 +305,7 @@ TEST(stx_print_tree)
 
 	stx_rule_add_term(&stx, file, stx_create_term(&stx, (stx_term_data_t){.type = -1}));
 	log_set_quiet(0, 1);
-	EXPECT_EQ(stx_print_tree(&stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 212);
+	EXPECT_EQ(stx_print_tree(&stx, DST_BUF(buf)), 212);
 	log_set_quiet(0, 0);
 
 	stx_free(&stx);

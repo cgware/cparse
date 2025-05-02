@@ -34,13 +34,13 @@ TEST(cfg_parse_null)
 
 	strv_t str = STRV("");
 
-	EXPECT_EQ(cfg_prs_parse(NULL, STRV_NULL, NULL, ALLOC_STD, PRINT_DST_NONE()), CFG_VAR_END);
-	EXPECT_EQ(cfg_prs_parse(&prs, STRV_NULL, NULL, ALLOC_STD, PRINT_DST_NONE()), CFG_VAR_END);
-	EXPECT_EQ(cfg_prs_parse(&prs, str, NULL, ALLOC_STD, PRINT_DST_NONE()), CFG_VAR_END);
+	EXPECT_EQ(cfg_prs_parse(NULL, STRV_NULL, NULL, ALLOC_STD, DST_NONE()), CFG_VAR_END);
+	EXPECT_EQ(cfg_prs_parse(&prs, STRV_NULL, NULL, ALLOC_STD, DST_NONE()), CFG_VAR_END);
+	EXPECT_EQ(cfg_prs_parse(&prs, str, NULL, ALLOC_STD, DST_NONE()), CFG_VAR_END);
 	mem_oom(1);
-	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, PRINT_DST_NONE()), CFG_VAR_END);
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, DST_NONE()), CFG_VAR_END);
 	mem_oom(0);
-	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, PRINT_DST_NONE()), 0);
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, DST_NONE()), 0);
 
 	cfg_free(&cfg);
 	cfg_prs_free(&prs);
@@ -60,7 +60,7 @@ TEST(cfg_parse_fail)
 
 	strv_t str = STRV("int0 = 1\n");
 
-	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, PRINT_DST_NONE()), CFG_VAR_END);
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, DST_NONE()), CFG_VAR_END);
 
 	cfg_free(&cfg);
 	cfg_prs_free(&prs);
@@ -84,11 +84,11 @@ TEST(cfg_parse_root)
 			  "arr = [\"str\", 1]\n"
 			  "obj = {str = \"str\", int = 1}\n");
 
-	cfg_var_t root = cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, PRINT_DST_NONE());
+	cfg_var_t root = cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, DST_NONE());
 	EXPECT_EQ(root, 0);
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, root, DST_BUF(buf));
 	EXPECT_STR(buf,
 		   "int = 1\n"
 		   "str = \"str\"\n"
@@ -116,11 +116,11 @@ TEST(cfg_parse_tbl)
 			  "int = 1\n"
 			  "str = \"str\"\n");
 
-	cfg_var_t root = cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, PRINT_DST_STD());
+	cfg_var_t root = cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, DST_STD());
 	EXPECT_EQ(root, 0);
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, root, DST_BUF(buf));
 	EXPECT_STR(buf,
 		   "[tbl]\n"
 		   "int = 1\n"
@@ -153,11 +153,11 @@ TEST(cfg_parse_test)
 			  "\n"
 			  "[tbll]\n");
 
-	cfg_var_t root = cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, PRINT_DST_STD());
+	cfg_var_t root = cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, DST_STD());
 	EXPECT_EQ(root, 0);
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, root, DST_BUF(buf));
 	EXPECT_STR(buf,
 		   "int = 1\n"
 		   "str = \"str\"\n"

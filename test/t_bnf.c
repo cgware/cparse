@@ -33,7 +33,7 @@ TEST(bnf_get_stx)
 	EXPECT_NE(bnf_get_stx(&bnf), NULL);
 
 	char buf[512] = {0};
-	EXPECT_EQ(stx_print(&bnf.stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 493);
+	EXPECT_EQ(stx_print(&bnf.stx, DST_BUF(buf)), 493);
 	EXPECT_STR(buf,
 		   "<0> ::= <1> EOF\n"
 		   "<1> ::= <2>\n"
@@ -96,7 +96,7 @@ TEST(stx_from_bnf)
 	prs_t prs = {0};
 	prs_init(&prs, 100, ALLOC_STD);
 	prs_node_t prs_root;
-	prs_parse(&prs, &lex, &bnf.stx, bnf.file, &prs_root, PRINT_DST_STD());
+	prs_parse(&prs, &lex, &bnf.stx, bnf.file, &prs_root, DST_STD());
 
 	strbuf_t names = {0};
 	strbuf_init(&names, 16, 16, ALLOC_STD);

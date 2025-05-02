@@ -396,13 +396,13 @@ TEST(cfg_print)
 	cfg_add_var(&cfg, root, CFG_OBJ(&cfg, STRV("obj")));
 	cfg_add_var(&cfg, root, CFG_TBL(&cfg, STRV("tbl")));
 
-	EXPECT_EQ(cfg_print(NULL, root, PRINT_DST_NONE()), 0);
+	EXPECT_EQ(cfg_print(NULL, root, DST_NONE()), 0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_print(&cfg, CFG_VAR_END, PRINT_DST_NONE()), 0);
+	EXPECT_EQ(cfg_print(&cfg, CFG_VAR_END, DST_NONE()), 0);
 	log_set_quiet(0, 0);
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, root, DST_BUF(buf));
 
 	EXPECT_STR(buf,
 		   "lit = val\n"
@@ -426,13 +426,13 @@ TEST(cfg_print_none)
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 	cfg_var_t root	 = CFG_ROOT(&cfg);
 	cfg_var_t none	 = cfg_add_var(&cfg, root, CFG_INT(&cfg, STRV("none"), 0));
-	var_data_t *data = list_get_data(&cfg.vars, none);
+	var_data_t *data = list_get(&cfg.vars, none);
 
 	data->type = 0;
 
 	char buf[1024] = {0};
 	log_set_quiet(0, 1);
-	cfg_print(&cfg, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, root, DST_BUF(buf));
 	log_set_quiet(0, 0);
 
 	EXPECT_STR(buf, "\n");
@@ -454,7 +454,7 @@ TEST(cfg_print_lit)
 	cfg_add_var(&cfg, root, CFG_LIT(&cfg, STRV("str"), STRV("val")));
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, root, DST_BUF(buf));
 
 	EXPECT_STR(buf, "str = val\n");
 
@@ -475,7 +475,7 @@ TEST(cfg_print_str)
 	cfg_add_var(&cfg, root, CFG_STR(&cfg, STRV("str"), STRV("val")));
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, root, DST_BUF(buf));
 
 	EXPECT_STR(buf, "str = \"val\"\n");
 
@@ -504,7 +504,7 @@ TEST(cfg_print_arr)
 	cfg_add_var(&cfg, obj, CFG_INT(&cfg, STRV("int"), 1));
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, root, DST_BUF(buf));
 
 	EXPECT_STR(buf, "arr = [\"str\", 1, [], {}, {str = \"str\", int = 1}]\n");
 
@@ -529,7 +529,7 @@ TEST(cfg_print_obj)
 	cfg_add_var(&cfg, obj_obj, CFG_INT(&cfg, STRV("int"), 1));
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, root, DST_BUF(buf));
 
 	EXPECT_STR(buf, "obj = {str = \"str\", int = 1, obj_obj = {int = 1}}\n");
 
@@ -554,7 +554,7 @@ TEST(cfg_print_tbl)
 	cfg_add_var(&cfg, tbl, CFG_OBJ(&cfg, STRV("obj")));
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, root, DST_BUF(buf));
 
 	EXPECT_STR(buf,
 		   "[tbl]\n"
@@ -581,7 +581,7 @@ TEST(cfg_print_tbl1)
 	cfg_add_var(&cfg, root, CFG_TBL(&cfg, STRV("tbl")));
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, root, DST_BUF(buf));
 
 	EXPECT_STR(buf,
 		   "int = 1\n"
@@ -611,7 +611,7 @@ TEST(cfg_print_tbl2)
 	cfg_add_var(&cfg, root, CFG_TBL(&cfg, STRV("tbll")));
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, root, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, root, DST_BUF(buf));
 
 	EXPECT_STR(buf,
 		   "[tbl]\n"
@@ -637,7 +637,7 @@ TEST(cfg_print_root_str)
 	cfg_var_t str = CFG_STR(&cfg, STRV("str"), STRV("val"));
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, str, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, str, DST_BUF(buf));
 
 	EXPECT_STR(buf, "\"val\"");
 
@@ -665,7 +665,7 @@ TEST(cfg_print_root_arr)
 	cfg_add_var(&cfg, obj, CFG_INT(&cfg, STRV("int"), 1));
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, arr, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, arr, DST_BUF(buf));
 
 	EXPECT_STR(buf, "[\"str\", 1, [], {}, {str = \"str\", int = 1}]");
 
@@ -689,7 +689,7 @@ TEST(cfg_print_root_tbl)
 	cfg_add_var(&cfg, tbl, CFG_OBJ(&cfg, STRV("obj")));
 
 	char buf[1024] = {0};
-	cfg_print(&cfg, tbl, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	cfg_print(&cfg, tbl, DST_BUF(buf));
 
 	EXPECT_STR(buf,
 		   "str = \"str\"\n"

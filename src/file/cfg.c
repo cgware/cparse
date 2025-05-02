@@ -55,8 +55,8 @@ cfg_var_t cfg_var_init(cfg_t *cfg, strv_t key, cfg_val_t val)
 		}
 	}
 
-	cfg_var_t var_id = list_add(&cfg->vars);
-	var_data_t *data = list_get_data(&cfg->vars, var_id);
+	cfg_var_t var_id;
+	var_data_t *data = list_add(&cfg->vars, &var_id);
 	if (data == NULL) {
 		log_error("cparse", "cfg", NULL, "failed to add value");
 		return CFG_VAR_END;
@@ -95,7 +95,7 @@ cfg_var_t cfg_var_init(cfg_t *cfg, strv_t key, cfg_val_t val)
 		*data = (var_data_t){
 			.key	   = key_id,
 			.type	   = val.type,
-			.val.child = LIST_END,
+			.val.child = (uint)-1,
 		};
 
 		break;
@@ -115,7 +115,7 @@ cfg_var_t cfg_add_var(cfg_t *cfg, cfg_var_t parent, cfg_var_t var)
 		return CFG_VAR_END;
 	}
 
-	var_data_t *data = list_get_data(&cfg->vars, parent);
+	var_data_t *data = list_get(&cfg->vars, parent);
 	if (data == NULL) {
 		return CFG_VAR_END;
 	}
@@ -128,7 +128,13 @@ cfg_var_t cfg_add_var(cfg_t *cfg, cfg_var_t parent, cfg_var_t var)
 	default: return CFG_VAR_END;
 	}
 
-	return list_set_next_node(&cfg->vars, data->val.child, var);
+	if (data->val.child < cfg->vars.cnt) {
+		list_set_next(&cfg->vars, data->val.child, var);
+	} else {
+		data->val.child = var;
+	}
+
+	return var;
 }
 
 static const char *val_type_str[] = {
@@ -162,7 +168,7 @@ int cfg_get_var(const cfg_t *cfg, cfg_var_t parent, strv_t key, cfg_var_t *var)
 		return 1;
 	}
 
-	const var_data_t *data = list_get_data(&cfg->vars, parent);
+	const var_data_t *data = list_get(&cfg->vars, parent);
 	switch (data->type) {
 	case CFG_VAL_ROOT:
 	case CFG_VAL_ARR:
@@ -171,14 +177,17 @@ int cfg_get_var(const cfg_t *cfg, cfg_var_t parent, strv_t key, cfg_var_t *var)
 	default: return 1;
 	}
 
-	list_foreach(&cfg->vars, data->val.child, data)
+	cfg_var_t i = data->val.child;
+	list_foreach(&cfg->vars, i, data)
 	{
-		if (data->key == index) {
-			if (var) {
-				*var = _i;
-			}
-			return 0;
+		if (data->key != index) {
+			continue;
 		}
+
+		if (var) {
+			*var = i;
+		}
+		return 0;
 	}
 
 	return 1;
@@ -190,7 +199,7 @@ const var_data_t *cfg_get_type(const cfg_t *cfg, cfg_var_t var, cfg_val_type_t t
 		return NULL;
 	}
 
-	const var_data_t *data = list_get_data(&cfg->vars, var);
+	const var_data_t *data = list_get(&cfg->vars, var);
 	if (data == NULL) {
 		return NULL;
 	}
@@ -257,12 +266,7 @@ int cfg_get_arr(const cfg_t *cfg, cfg_var_t arr, cfg_var_t *var)
 		return 0;
 	}
 
-	*var = list_get_next(&cfg->vars, *var);
-	if (*var >= cfg->vars.cnt) {
-		return 1;
-	}
-
-	return 0;
+	return list_get_next(&cfg->vars, *var, var) == NULL;
 }
 
 typedef enum val_mode_e {
@@ -271,11 +275,11 @@ typedef enum val_mode_e {
 	VAL_MODE_OBJ,
 } var_mode_t;
 
-static int cfg_print_vars(const cfg_t *cfg, cfg_var_t parent, int tbl, int print_key, print_dst_t dst);
+static size_t cfg_print_vars(const cfg_t *cfg, cfg_var_t parent, int tbl, int print_key, dst_t dst);
 
-static int cfg_print_var(const cfg_t *cfg, const var_data_t *data, int first, int print_key, print_dst_t dst)
+static size_t cfg_print_var(const cfg_t *cfg, const var_data_t *data, int first, int print_key, dst_t dst)
 {
-	int off = dst.off;
+	size_t off = dst.off;
 
 	if (print_key) {
 		switch (data->type) {
@@ -285,15 +289,15 @@ static int cfg_print_var(const cfg_t *cfg, const var_data_t *data, int first, in
 		case CFG_VAL_ARR:
 		case CFG_VAL_OBJ: {
 			strv_t key = strbuf_get(&cfg->strs, data->key);
-			dst.off += c_dprintf(dst, "%.*s = ", key.len, key.data);
+			dst.off += dputf(dst, "%.*s = ", key.len, key.data);
 			break;
 		}
 		case CFG_VAL_TBL: {
 			strv_t key = strbuf_get(&cfg->strs, data->key);
 			if (!first) {
-				dst.off += c_dprintf(dst, "\n");
+				dst.off += dputs(dst, STRV("\n"));
 			}
-			dst.off += c_dprintf(dst, "[%.*s]\n", key.len, key.data);
+			dst.off += dputf(dst, "[%.*s]\n", key.len, key.data);
 			break;
 		}
 		default: log_error("cparse", "cfg", NULL, "unknown type: %d", data->type); break;
@@ -302,29 +306,28 @@ static int cfg_print_var(const cfg_t *cfg, const var_data_t *data, int first, in
 
 	switch (data->type) {
 	case CFG_VAL_LIT: {
-		strv_t str = strbuf_get(&cfg->strs, data->val.str);
-		dst.off += c_dprintf(dst, "%.*s", str.len, str.data);
+		dst.off += dputs(dst, strbuf_get(&cfg->strs, data->val.str));
 		break;
 	}
 	case CFG_VAL_STR: {
 		strv_t str = strbuf_get(&cfg->strs, data->val.str);
-		dst.off += c_dprintf(dst, "\"%.*s\"", str.len, str.data);
+		dst.off += dputf(dst, "\"%.*s\"", str.len, str.data);
 		break;
 	}
 	case CFG_VAL_INT: {
-		dst.off += c_dprintf(dst, "%d", data->val.i);
+		dst.off += dputf(dst, "%d", data->val.i);
 		break;
 	}
 	case CFG_VAL_ARR: {
-		dst.off += c_dprintf(dst, "[");
+		dst.off += dputs(dst, STRV("["));
 		dst.off += cfg_print_vars(cfg, data->val.child, 0, 0, dst);
-		dst.off += c_dprintf(dst, "]");
+		dst.off += dputs(dst, STRV("]"));
 		break;
 	}
 	case CFG_VAL_OBJ: {
-		dst.off += c_dprintf(dst, "{");
+		dst.off += dputs(dst, STRV("{"));
 		dst.off += cfg_print_vars(cfg, data->val.child, 0, 1, dst);
-		dst.off += c_dprintf(dst, "}");
+		dst.off += dputs(dst, STRV("}"));
 		break;
 	}
 	case CFG_VAL_TBL: {
@@ -337,22 +340,22 @@ static int cfg_print_var(const cfg_t *cfg, const var_data_t *data, int first, in
 	return dst.off - off;
 }
 
-static int cfg_print_vars(const cfg_t *cfg, cfg_var_t parent, int tbl, int print_key, print_dst_t dst)
+static size_t cfg_print_vars(const cfg_t *cfg, cfg_var_t parent, int tbl, int print_key, dst_t dst)
 {
-	int off = dst.off;
+	size_t off = dst.off;
 
 	int first = 1;
 	const var_data_t *data;
 	list_foreach(&cfg->vars, parent, data)
 	{
 		if (!first && !tbl) {
-			dst.off += c_dprintf(dst, ", ");
+			dst.off += dputs(dst, STRV(", "));
 		}
 
 		dst.off += cfg_print_var(cfg, data, first, print_key, dst);
 
 		if (tbl && data->type != CFG_VAL_TBL) {
-			dst.off += c_dprintf(dst, "\n");
+			dst.off += dputs(dst, STRV("\n"));
 		}
 
 		first = 0;
@@ -361,13 +364,13 @@ static int cfg_print_vars(const cfg_t *cfg, cfg_var_t parent, int tbl, int print
 	return dst.off - off;
 }
 
-int cfg_print(const cfg_t *cfg, cfg_var_t var, print_dst_t dst)
+size_t cfg_print(const cfg_t *cfg, cfg_var_t var, dst_t dst)
 {
 	if (cfg == NULL) {
 		return 0;
 	}
 
-	const var_data_t *data = list_get_data(&cfg->vars, var);
+	const var_data_t *data = list_get(&cfg->vars, var);
 	if (data == NULL) {
 		return 0;
 	}

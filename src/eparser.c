@@ -31,9 +31,8 @@ eprs_node_t eprs_add(eprs_t *eprs, eprs_node_data_t node)
 		return EPRS_NODE_END;
 	}
 
-	eprs_node_t child = tree_add(&eprs->nodes);
-
-	eprs_node_data_t *data = tree_get_data(&eprs->nodes, child);
+	eprs_node_t child;
+	eprs_node_data_t *data = tree_add(&eprs->nodes, &child);
 	if (data == NULL) {
 		log_error("cparse", "eparser", NULL, "failed to add node");
 		return EPRS_NODE_END;
@@ -50,7 +49,11 @@ eprs_node_t eprs_add_node(eprs_t *eprs, eprs_node_t parent, eprs_node_t node)
 		return EPRS_NODE_END;
 	}
 
-	return tree_set_child_node(&eprs->nodes, parent, node);
+	if (parent < eprs->nodes.cnt && tree_set_child(&eprs->nodes, parent, node)) {
+		return (uint)-1;
+	}
+
+	return node;
 }
 
 int eprs_remove_node(eprs_t *eprs, eprs_node_t node)
@@ -68,7 +71,7 @@ eprs_node_t eprs_get_rule(const eprs_t *eprs, eprs_node_t parent, estx_rule_t ru
 		return EPRS_NODE_END;
 	}
 
-	eprs_node_data_t *data = tree_get_data(&eprs->nodes, parent);
+	eprs_node_data_t *data = tree_get(&eprs->nodes, parent);
 	if (data && data->type == EPRS_NODE_RULE && data->val.rule == rule) {
 		return parent;
 	}
@@ -76,7 +79,7 @@ eprs_node_t eprs_get_rule(const eprs_t *eprs, eprs_node_t parent, estx_rule_t ru
 	eprs_node_t child;
 	tree_foreach_child(&eprs->nodes, parent, child)
 	{
-		data = tree_get_data(&eprs->nodes, child);
+		data = tree_get(&eprs->nodes, child);
 		switch (data->type) {
 		case EPRS_NODE_RULE:
 			if (data->val.rule == rule) {
@@ -99,7 +102,7 @@ int eprs_get_str(const eprs_t *eprs, eprs_node_t parent, token_t *out)
 	eprs_node_t child;
 	tree_foreach_child(&eprs->nodes, parent, child)
 	{
-		eprs_node_data_t *data = tree_get_data(&eprs->nodes, child);
+		eprs_node_data_t *data = tree_get(&eprs->nodes, child);
 		switch (data->type) {
 		case EPRS_NODE_RULE: eprs_get_str(eprs, child, out); break;
 		case EPRS_NODE_TOKEN: {
@@ -151,7 +154,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 
 		char buf[32] = {0};
 
-		int len = token_type_print(1 << token_type, PRINT_DST_BUF(buf, sizeof(buf), 0));
+		int len = token_type_print(1 << token_type, DST_BUF(buf));
 
 		token_t token = lex_get_token(eprs->lex, *off);
 
@@ -169,7 +172,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 			err->exp  = term_id;
 		}
 		char act[32] = {0};
-		int act_len  = lex_print_token(eprs->lex, token, PRINT_DST_BUF(act, sizeof(act), 0));
+		int act_len  = lex_print_token(eprs->lex, token, DST_BUF(act));
 		log_trace("cparse", "eparser", NULL, "failed: expected %.*s, but got %.*s", len, buf, act_len, act);
 		return 1;
 	}
@@ -197,7 +200,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 				}
 
 				char buf[256] = {0};
-				const int len = strv_print(token_val, PRINT_DST_BUF(buf, sizeof(buf), 0));
+				const int len = strv_print(token_val, DST_BUF(buf));
 
 				log_trace("cparse",
 					  "eparser",
@@ -334,7 +337,7 @@ static int eprs_parse_rule(eprs_t *prs, const estx_rule_t rule_id, uint *off, ep
 	return 0;
 }
 
-int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t rule, eprs_node_t *root, print_dst_t dst)
+int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t rule, eprs_node_t *root, dst_t dst)
 {
 	if (eprs == NULL || lex == NULL || estx == NULL) {
 		return 1;
@@ -367,12 +370,12 @@ int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t r
 
 		if (term->type == ESTX_TERM_TOKEN) {
 			char buf[32] = {0};
-			int len	     = token_type_print(1 << term->val.token, PRINT_DST_BUF(buf, sizeof(buf), 0));
-			dst.off += c_dprintf(dst, "error: expected %.*s\n", len, buf);
+			int len	     = token_type_print(1 << term->val.token, DST_BUF(buf));
+			dst.off += dputf(dst, "error: expected %.*s\n", len, buf);
 
 		} else {
 			strv_t exp_str = STRVN((char *)&eprs->estx->strs.data[term->val.literal.start], term->val.literal.len);
-			dst.off += c_dprintf(dst, "error: expected \'%.*s\'\n", exp_str.len, exp_str.data);
+			dst.off += dputf(dst, "error: expected \'%.*s\'\n", exp_str.len, exp_str.data);
 		}
 
 		dst.off += lex_token_loc_print_src(eprs->lex, loc, dst);
@@ -387,30 +390,30 @@ int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t r
 	return 0;
 }
 
-static int print_nodes(void *data, print_dst_t dst, const void *priv)
+static size_t print_nodes(void *data, dst_t dst, const void *priv)
 {
 	const eprs_t *eprs = priv;
 
-	int off = dst.off;
+	size_t off = dst.off;
 
 	const eprs_node_data_t *node = data;
 	switch (node->type) {
 	case EPRS_NODE_RULE: {
-		dst.off += c_dprintf(dst, "%d\n", node->val.rule);
+		dst.off += dputf(dst, "%d\n", node->val.rule);
 		break;
 	}
 	case EPRS_NODE_TOKEN: {
 		char type[32]	  = {0};
-		int type_len	  = token_type_print(1 << node->val.token.type, PRINT_DST_BUF(type, sizeof(type), 0));
+		int type_len	  = token_type_print(1 << node->val.token.type, DST_BUF(type));
 		char val[32]	  = {0};
-		const int val_len = strv_print(lex_get_token_val(eprs->lex, node->val.token), PRINT_DST_BUF(val, sizeof(val), 0));
-		dst.off += c_dprintf(dst, "%.*s(%.*s)\n", type_len, type, val_len, val);
+		const int val_len = strv_print(lex_get_token_val(eprs->lex, node->val.token), DST_BUF(val));
+		dst.off += dputf(dst, "%.*s(%.*s)\n", type_len, type, val_len, val);
 		break;
 	}
 	case EPRS_NODE_LITERAL: {
 		char val[32]	  = {0};
-		const int val_len = strv_print(lex_get_token_val(eprs->lex, node->val.literal), PRINT_DST_BUF(val, sizeof(val), 0));
-		dst.off += c_dprintf(dst, "\'%.*s\'\n", val_len, val);
+		const int val_len = strv_print(lex_get_token_val(eprs->lex, node->val.literal), DST_BUF(val));
+		dst.off += dputf(dst, "\'%.*s\'\n", val_len, val);
 		break;
 	}
 	default: break;
@@ -419,7 +422,7 @@ static int print_nodes(void *data, print_dst_t dst, const void *priv)
 	return dst.off - off;
 }
 
-int eprs_print(const eprs_t *eprs, eprs_node_t node, print_dst_t dst)
+int eprs_print(const eprs_t *eprs, eprs_node_t node, dst_t dst)
 {
 	if (eprs == NULL) {
 		return 0;

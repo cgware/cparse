@@ -29,14 +29,14 @@ TEST(ebnf_get_stx)
 	ebnf_t ebnf = {0};
 	ebnf_init(&ebnf, ALLOC_STD);
 
-	EXPECT_EQ(ebnf_get_stx(NULL, ALLOC_STD, PRINT_DST_NONE()), NULL);
+	EXPECT_EQ(ebnf_get_stx(NULL, ALLOC_STD, DST_NONE()), NULL);
 	mem_oom(1);
-	EXPECT_EQ(ebnf_get_stx(&ebnf, ALLOC_STD, PRINT_DST_NONE()), NULL);
+	EXPECT_EQ(ebnf_get_stx(&ebnf, ALLOC_STD, DST_NONE()), NULL);
 	mem_oom(0);
-	EXPECT_NE(ebnf_get_stx(&ebnf, ALLOC_STD, PRINT_DST_NONE()), NULL);
+	EXPECT_NE(ebnf_get_stx(&ebnf, ALLOC_STD, DST_NONE()), NULL);
 
 	char buf[1024] = {0};
-	EXPECT_EQ(stx_print(&ebnf.stx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 588);
+	EXPECT_EQ(stx_print(&ebnf.stx, DST_BUF(buf)), 588);
 	EXPECT_STR(buf,
 		   "<0> ::= <1> EOF\n"
 		   "<1> ::= <2>\n"
@@ -74,7 +74,7 @@ TEST(stx_from_ebnf)
 
 	ebnf_t ebnf = {0};
 	ebnf_init(&ebnf, ALLOC_STD);
-	ebnf_get_stx(&ebnf, ALLOC_STD, PRINT_DST_NONE());
+	ebnf_get_stx(&ebnf, ALLOC_STD, DST_NONE());
 
 	uint line   = __LINE__ + 1;
 	strv_t sbnf = STRV("file    = ebnf EOF\n"
@@ -102,7 +102,7 @@ TEST(stx_from_ebnf)
 	prs_init(&prs, 100, ALLOC_STD);
 
 	prs_node_t prs_root;
-	prs_parse(&prs, &lex, &ebnf.stx, ebnf.file, &prs_root, PRINT_DST_NONE());
+	prs_parse(&prs, &lex, &ebnf.stx, ebnf.file, &prs_root, DST_NONE());
 
 	strbuf_t names = {0};
 	strbuf_init(&names, 16, 16, ALLOC_STD);
@@ -126,7 +126,7 @@ TEST(stx_from_ebnf_custom)
 
 	ebnf_t ebnf = {0};
 	ebnf_init(&ebnf, ALLOC_STD);
-	ebnf_get_stx(&ebnf, ALLOC_STD, PRINT_DST_NONE());
+	ebnf_get_stx(&ebnf, ALLOC_STD, DST_NONE());
 
 	prs_t prs = {0};
 	prs_init(&prs, 100, ALLOC_STD);

@@ -224,8 +224,8 @@ TEST(lex_print_token)
 
 	char buf[256] = {0};
 
-	EXPECT_EQ(lex_print_token(NULL, (token_t){0}, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
-	EXPECT_EQ(lex_print_token(&lex, lex_get_token(&lex, 0), PRINT_DST_BUF(buf, sizeof(buf), 0)), 14);
+	EXPECT_EQ(lex_print_token(NULL, (token_t){0}, DST_BUF(buf)), 0);
+	EXPECT_EQ(lex_print_token(&lex, lex_get_token(&lex, 0), DST_BUF(buf)), 14);
 
 	EXPECT_STR(buf, "ALPHA|UPPER(A)");
 
@@ -245,8 +245,8 @@ TEST(lex_print)
 
 	char buf[256] = {0};
 
-	EXPECT_EQ(lex_print(NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
-	EXPECT_EQ(lex_print(&lex, PRINT_DST_BUF(buf, sizeof(buf), 0)), 30);
+	EXPECT_EQ(lex_print(NULL, DST_BUF(buf)), 0);
+	EXPECT_EQ(lex_print(&lex, DST_BUF(buf)), 30);
 
 	EXPECT_STR(buf,
 		   "ALPHA|UPPER(A)\n"
@@ -270,8 +270,8 @@ TEST(lex_token_loc_print_loc)
 	token_loc_t loc = lex_get_token_loc(&lex, 7);
 
 	char buf[2048] = {0};
-	EXPECT_EQ(lex_token_loc_print_loc(NULL, loc, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
-	lex_token_loc_print_loc(&lex, loc, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	EXPECT_EQ(lex_token_loc_print_loc(NULL, loc, DST_BUF(buf)), 0);
+	lex_token_loc_print_loc(&lex, loc, DST_BUF(buf));
 
 	EXPECT_STR(buf, __FILE__ ":266:1: ");
 
@@ -292,8 +292,8 @@ TEST(lex_token_loc_print_src)
 	token_loc_t loc = lex_get_token_loc(&lex, 7);
 
 	char buf[2048] = {0};
-	EXPECT_EQ(lex_token_loc_print_src(NULL, loc, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
-	lex_token_loc_print_src(&lex, loc, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	EXPECT_EQ(lex_token_loc_print_src(NULL, loc, DST_BUF(buf)), 0);
+	lex_token_loc_print_src(&lex, loc, DST_BUF(buf));
 
 	EXPECT_STR(buf,
 		   "line2\n"

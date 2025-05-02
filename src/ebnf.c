@@ -27,7 +27,7 @@ void ebnf_free(ebnf_t *ebnf)
 	stx_free(&ebnf->stx);
 }
 
-const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, print_dst_t dst)
+const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, dst_t dst)
 {
 	if (ebnf == NULL) {
 		return NULL;

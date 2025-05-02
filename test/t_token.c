@@ -8,7 +8,7 @@ TEST(token_type_print)
 
 	char buf[32] = {0};
 
-	EXPECT_EQ(token_type_print((1 << TOKEN_ALPHA) | (1 << TOKEN_UPPER), PRINT_DST_BUF(buf, sizeof(buf), 0)), 11);
+	EXPECT_EQ(token_type_print((1 << TOKEN_ALPHA) | (1 << TOKEN_UPPER), DST_BUF(buf)), 11);
 
 	EXPECT_STR(buf, "ALPHA|UPPER");
 

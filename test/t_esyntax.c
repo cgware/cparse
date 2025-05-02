@@ -139,7 +139,7 @@ TEST(estx_print_no_term)
 
 	char buf[64] = {0};
 	log_set_quiet(0, 1);
-	EXPECT_EQ(estx_print(&estx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 4);
+	EXPECT_EQ(estx_print(&estx, DST_BUF(buf)), 4);
 	log_set_quiet(0, 0);
 	EXPECT_STR(buf, "0 =\n");
 
@@ -173,14 +173,14 @@ TEST(estx_print)
 	estx_term_add_term(&estx, alt, b);
 
 	char buf[256] = {0};
-	EXPECT_EQ(estx_print(NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
+	EXPECT_EQ(estx_print(NULL, DST_BUF(buf)), 0);
 
-	EXPECT_EQ(estx_print(&estx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 49);
+	EXPECT_EQ(estx_print(&estx, DST_BUF(buf)), 49);
 	EXPECT_STR(buf,
 		   "0 = 1\n"
 		   "1 = UNKNOWN? ALPHA+ ';'* \"'\" ( 'A' | 'B' )\n");
 
-	EXPECT_EQ(estx_print_tree(&estx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 128);
+	EXPECT_EQ(estx_print_tree(&estx, DST_BUF(buf)), 128);
 	EXPECT_STR(buf,
 		   "<0>\n"
 		   "con\n"
@@ -201,7 +201,7 @@ TEST(estx_print)
 	// estx_rule_add_term(&estx, line, ESTX_TERM_OR(-1, -1)); //TODO
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(estx_print(&estx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 49);
+	EXPECT_EQ(estx_print(&estx, DST_BUF(buf)), 49);
 	log_set_quiet(0, 0);
 	EXPECT_STR(buf,
 		   "0 = 1\n"
@@ -224,9 +224,9 @@ TEST(estx_print_tree)
 	estx_term_add_term(&estx, file, estx_create_term(&estx, (estx_term_data_t){.type = -1}));
 
 	char buf[64] = {0};
-	EXPECT_EQ(estx_print_tree(NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
+	EXPECT_EQ(estx_print_tree(NULL, DST_BUF(buf)), 0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(estx_print_tree(&estx, PRINT_DST_BUF(buf, sizeof(buf), 0)), 15);
+	EXPECT_EQ(estx_print_tree(&estx, DST_BUF(buf)), 15);
 	log_set_quiet(0, 0);
 
 	estx_free(&estx);

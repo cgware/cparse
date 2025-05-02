@@ -5,7 +5,7 @@
 #include "str.h"
 #include "strbuf.h"
 
-#define MAKE_END LIST_END
+#define MAKE_END ((uint)-1)
 
 typedef lnode_t make_str_t;
 
@@ -107,12 +107,12 @@ int make_vars_eval(const make_t *make, make_vars_t *vars);
 strv_t make_vars_get_expanded(const make_vars_t *make, uint id);
 strv_t make_vars_get_resolved(const make_vars_t *vars, uint id);
 
-int make_vars_print(const make_vars_t *vars, print_dst_t dst);
+size_t make_vars_print(const make_vars_t *vars, dst_t dst);
 
-int make_inc_print(const make_t *make, make_inc_t inc, print_dst_t dst);
-int make_print(const make_t *make, print_dst_t dst);
+size_t make_inc_print(const make_t *make, make_inc_t inc, dst_t dst);
+size_t make_print(const make_t *make, dst_t dst);
 
-int make_dbg(const make_t *make, print_dst_t dst);
+size_t make_dbg(const make_t *make, dst_t dst);
 
 #define MSTR(_str)                                                                                                                         \
 	(make_create_str_t)                                                                                                                \

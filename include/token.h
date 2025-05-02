@@ -37,7 +37,7 @@ typedef struct token_loc_s {
 	uint col;
 } token_loc_t;
 
-int token_type_print(uint type, print_dst_t dst);
+size_t token_type_print(uint type, dst_t dst);
 token_type_t token_type_enum(strv_t str);
 
 #endif

@@ -36,13 +36,13 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 
 	ebnf_t ebnf = {0};
 	ebnf_init(&ebnf, alloc);
-	ebnf_get_stx(&ebnf, alloc, PRINT_DST_NONE());
+	ebnf_get_stx(&ebnf, alloc, DST_NONE());
 
 	prs_t prs = {0};
 	prs_init(&prs, 100, ALLOC_STD);
 
 	prs_node_t prs_root;
-	prs_parse(&prs, &lex, &ebnf.stx, ebnf.file, &prs_root, PRINT_DST_NONE());
+	prs_parse(&prs, &lex, &ebnf.stx, ebnf.file, &prs_root, DST_NONE());
 
 	ebnf_free(&ebnf);
 
@@ -192,7 +192,7 @@ cfg_var_t cfg_parse_file(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t fil
 	return root;
 }
 
-cfg_var_t cfg_prs_parse(const cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, alloc_t alloc, print_dst_t dst)
+cfg_var_t cfg_prs_parse(const cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, alloc_t alloc, dst_t dst)
 {
 	if (cfg_prs == NULL || cfg == NULL || str.data == NULL) {
 		return CFG_VAR_END;
