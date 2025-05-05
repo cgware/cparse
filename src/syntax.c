@@ -50,9 +50,7 @@ int stx_add_rule(stx_t *stx, stx_rule_t *rule)
 		return 1;
 	}
 
-	*data = (stx_rule_data_t){
-		.terms = (uint)-1,
-	};
+	*data = (stx_rule_data_t){0};
 
 	if (rule) {
 		*rule = cnt;
@@ -68,7 +66,6 @@ stx_rule_data_t *stx_get_rule_data(const stx_t *stx, stx_rule_t rule)
 	}
 
 	stx_rule_data_t *data = arr_get(&stx->rules, rule);
-
 	if (data == NULL) {
 		log_warn("cparse", "syntax", NULL, "invalid rule: %d", rule);
 		return NULL;
@@ -77,23 +74,89 @@ stx_rule_data_t *stx_get_rule_data(const stx_t *stx, stx_rule_t rule)
 	return data;
 }
 
-stx_term_t stx_create_term(stx_t *stx, stx_term_data_t term)
+int stx_term_rule(stx_t *stx, stx_rule_t rule, stx_term_t *term)
 {
 	if (stx == NULL) {
-		return (uint)-1;
+		return 1;
 	}
 
-	stx_term_t child;
-	stx_term_data_t *data = list_add(&stx->terms, &child);
-
+	stx_term_data_t *data = list_add(&stx->terms, term);
 	if (data == NULL) {
-		log_error("cparse", "syntax", NULL, "failed to create term");
-		return (uint)-1;
+		log_error("cparse", "syntax", NULL, "failed to create rule term");
+		return 1;
 	}
 
-	*data = term;
+	*data = (stx_term_data_t){
+		.type	  = STX_TERM_RULE,
+		.val.rule = rule,
+	};
 
-	return child;
+	return 0;
+}
+
+int stx_term_tok(stx_t *stx, token_type_t token, stx_term_t *term)
+{
+	if (stx == NULL) {
+		return 1;
+	}
+
+	stx_term_data_t *data = list_add(&stx->terms, term);
+	if (data == NULL) {
+		log_error("cparse", "syntax", NULL, "failed to create token term");
+		return 1;
+	}
+
+	*data = (stx_term_data_t){
+		.type	   = STX_TERM_TOKEN,
+		.val.token = token,
+	};
+
+	return 0;
+}
+
+int stx_term_lit(stx_t *stx, strv_t str, stx_term_t *term)
+{
+	if (stx == NULL) {
+		return 1;
+	}
+
+	stx_term_data_t *data = list_add(&stx->terms, term);
+	if (data == NULL) {
+		log_error("cparse", "syntax", NULL, "failed to create literal term");
+		return 1;
+	}
+
+	size_t start;
+	if (buf_add(&stx->strs, str.data, str.len, &start)) {
+		return 1;
+	}
+
+	*data = (stx_term_data_t){
+		.type	     = STX_TERM_LITERAL,
+		.val.literal = {.start = start, .len = (uint)str.len},
+	};
+
+	return 0;
+}
+
+int stx_term_or(stx_t *stx, stx_term_t l, stx_term_t r, stx_term_t *term)
+{
+	if (stx == NULL) {
+		return 1;
+	}
+
+	stx_term_data_t *data = list_add(&stx->terms, term);
+	if (data == NULL) {
+		log_error("cparse", "syntax", NULL, "failed to create or term");
+		return 1;
+	}
+
+	*data = (stx_term_data_t){
+		.type	 = STX_TERM_OR,
+		.val.orv = {.l = l, .r = r},
+	};
+
+	return 0;
 }
 
 stx_term_data_t *stx_get_term_data(const stx_t *stx, stx_term_t term)
@@ -103,7 +166,6 @@ stx_term_data_t *stx_get_term_data(const stx_t *stx, stx_term_t term)
 	}
 
 	stx_term_data_t *data = list_get(&stx->terms, term);
-
 	if (data == NULL) {
 		log_warn("cparse", "syntax", NULL, "invalid term: %d", term);
 		return NULL;
@@ -112,101 +174,116 @@ stx_term_data_t *stx_get_term_data(const stx_t *stx, stx_term_t term)
 	return data;
 }
 
-stx_term_data_t stx_create_literal(stx_t *stx, strv_t str)
-{
-	if (stx == NULL) {
-		return (stx_term_data_t){0};
-	}
-
-	size_t start = stx->strs.used;
-	buf_add(&stx->strs, str.data, str.len, NULL);
-
-	return (stx_term_data_t){.type = STX_TERM_LITERAL, .val.literal = {.start = start, .len = (uint)str.len}};
-}
-
-stx_term_t stx_rule_set_term(stx_t *stx, stx_rule_t rule, stx_term_t term)
+int stx_rule_add_term(stx_t *stx, stx_rule_t rule, stx_term_t term)
 {
 	stx_rule_data_t *data = stx_get_rule_data(stx, rule);
-
 	if (data == NULL) {
 		log_error("cparse", "syntax", NULL, "failed to get rule: %d", rule);
-		return (uint)-1;
+		return 1;
 	}
 
-	return data->terms = term;
-}
-
-stx_term_t stx_rule_add_term(stx_t *stx, stx_rule_t rule, stx_term_t term)
-{
-	stx_rule_data_t *data = stx_get_rule_data(stx, rule);
-
-	if (data == NULL) {
-		log_error("cparse", "syntax", NULL, "failed to get rule: %d", rule);
-		return (uint)-1;
-	}
-
-	if (data->terms < stx->terms.cnt) {
+	if (data->has_terms) {
 		list_set_next(&stx->terms, data->terms, term);
 	} else {
-		data->terms = term;
+		data->terms	= term;
+		data->has_terms = 1;
 	}
 
-	return term;
+	return 0;
 }
 
-stx_term_t stx_term_add_term(stx_t *stx, stx_term_t term, stx_term_t next)
+int stx_term_add_term(stx_t *stx, stx_term_t term, stx_term_t next)
 {
-	if (stx_get_term_data(stx, term) == NULL) {
-		log_error("cparse", "syntax", NULL, "failed to get term: %d", term);
-		return (uint)-1;
+	if (stx == NULL) {
+		return 1;
 	}
 
-	if (term < stx->terms.cnt) {
-		list_set_next(&stx->terms, term, next);
-	}
-
-	return next;
+	return list_set_next(&stx->terms, term, next);
 }
 
-static stx_term_t stx_rule_add_orv(stx_t *stx, stx_rule_t rule, size_t n, va_list args)
+static int stx_rule_add_orv(stx_t *stx, stx_rule_t rule, size_t n, va_list args, stx_term_t *term)
 {
 	if (n < 2) {
-		return va_arg(args, stx_term_t);
+		*term = va_arg(args, stx_term_t);
+		return 0;
 	}
 
-	return STX_TERM_OR(stx, va_arg(args, stx_term_t), stx_rule_add_orv(stx, rule, n - 1, args));
+	stx_term_t l = va_arg(args, stx_term_t);
+	stx_term_t r;
+	stx_rule_add_orv(stx, rule, n - 1, args, &r);
+	return stx_term_or(stx, l, r, term);
 }
 
-stx_term_t stx_rule_add_or(stx_t *stx, stx_rule_t rule, size_t n, ...)
+int stx_rule_add_or(stx_t *stx, stx_rule_t rule, size_t n, ...)
 {
 	if (n < 1) {
-		return (uint)-1;
+		return 1;
 	}
 
 	va_list args;
 	va_start(args, n);
 
-	const stx_term_t term =
-		n < 2 ? va_arg(args, stx_term_t) : STX_TERM_OR(stx, va_arg(args, stx_term_t), stx_rule_add_orv(stx, rule, n - 1, args));
+	stx_term_t term;
+	if (n < 2) {
+		term = va_arg(args, stx_term_t);
+	} else {
+		stx_term_t l = va_arg(args, stx_term_t);
+		stx_term_t r;
+		stx_rule_add_orv(stx, rule, n - 1, args, &r);
+		stx_term_or(stx, l, r, &term);
+	}
 
 	va_end(args);
 
 	return stx_rule_add_term(stx, rule, term);
 }
 
-stx_term_t stx_rule_add_arr(stx_t *stx, stx_rule_t rule, stx_term_t term, stx_term_t sep)
+int stx_rule_add_arr(stx_t *stx, stx_rule_t rule, stx_term_t term)
 {
 	stx_term_data_t *data = stx_get_term_data(stx, term);
 	if (data == NULL) {
-		return (uint)-1;
+		return 1;
 	}
 
-	stx_term_t l = stx_create_term(stx, *data);
-	if (sep < (uint)-1) {
-		stx_term_add_term(stx, l, sep);
+	stx_term_t l;
+	stx_term_data_t *copy = list_add(&stx->terms, &l);
+	if (copy == NULL) {
+		log_error("cparse", "syntax", NULL, "failed to copy term");
+		return 1;
 	}
-	stx_term_add_term(stx, l, STX_TERM_RULE(stx, rule));
-	return stx_rule_add_term(stx, rule, STX_TERM_OR(stx, l, term));
+
+	*copy = *data;
+
+	stx_term_t tmp;
+	stx_term_rule(stx, rule, &tmp);
+	stx_term_add_term(stx, l, tmp);
+	stx_term_or(stx, l, term, &tmp);
+	return stx_rule_add_term(stx, rule, tmp);
+}
+
+int stx_rule_add_arr_sep(stx_t *stx, stx_rule_t rule, stx_term_t term, stx_term_t sep)
+{
+	stx_term_data_t *data = stx_get_term_data(stx, term);
+	if (data == NULL) {
+		return 1;
+	}
+
+	stx_term_t l;
+	stx_term_data_t *copy = list_add(&stx->terms, &l);
+	if (copy == NULL) {
+		log_error("cparse", "syntax", NULL, "failed to copy term");
+		return 1;
+	}
+
+	*copy = *data;
+
+	stx_term_add_term(stx, l, sep);
+
+	stx_term_t tmp;
+	stx_term_rule(stx, rule, &tmp);
+	stx_term_add_term(stx, l, tmp);
+	stx_term_or(stx, l, term, &tmp);
+	return stx_rule_add_term(stx, rule, tmp);
 }
 
 static size_t stx_terms_print(const stx_t *stx, stx_term_t terms, dst_t dst)

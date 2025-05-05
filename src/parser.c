@@ -122,6 +122,7 @@ typedef struct prs_parse_err_s {
 	stx_rule_t rule;
 	uint tok;
 	stx_term_t exp;
+	byte has_exp : 1;
 } prs_parse_err_t;
 
 static int prs_parse_rule(prs_t *prs, stx_rule_t rule_id, uint *off, prs_node_t node, prs_parse_err_t *err);
@@ -163,9 +164,10 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 		}
 
 		if (err->tok == LEX_TOKEN_END || *off >= err->tok) {
-			err->rule = rule;
-			err->tok  = *off;
-			err->exp  = term_id;
+			err->rule    = rule;
+			err->tok     = *off;
+			err->exp     = term_id;
+			err->has_exp = 1;
 		}
 		char act[32]   = {0};
 		size_t act_len = lex_print_token(prs->lex, token, DST_BUF(act));
@@ -179,9 +181,10 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 			token_t token = lex_get_token(prs->lex, *off + i);
 
 			if (token.type & (1 << TOKEN_EOF)) {
-				err->rule = rule;
-				err->tok  = *off + i;
-				err->exp  = term_id;
+				err->rule    = rule;
+				err->tok     = *off + i;
+				err->exp     = term_id;
+				err->has_exp = 1;
 				log_trace("cparse", "parser", NULL, "\'%*s\': failed: end of tokens", literal.len, literal.data);
 				return 1;
 			}
@@ -190,9 +193,10 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 			strv_t token_val = lex_get_token_val(prs->lex, token);
 			if (!strv_eq(token_val, c)) {
 				if (err->tok == LEX_TOKEN_END || *off + i >= err->tok) {
-					err->rule = rule;
-					err->tok  = *off + i;
-					err->exp  = term_id;
+					err->rule    = rule;
+					err->tok     = *off + i;
+					err->exp     = term_id;
+					err->has_exp = 1;
 				}
 
 				char buf[256] = {0};
@@ -298,7 +302,7 @@ int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_rule_t rule, p
 	prs_node_t tmp = prs_add_node(prs, PRS_NODE_END, PRS_NODE_RULE(prs, rule));
 	uint parsed    = 0;
 	if (prs_parse_rule(prs, rule, &parsed, tmp, &err) || parsed != prs->lex->src.len) {
-		if (err.exp == (uint)-1) {
+		if (!err.has_exp) {
 			log_error("cparse", "parser", NULL, "wrong syntax");
 			return 1;
 		}
