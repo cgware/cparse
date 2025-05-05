@@ -7,9 +7,6 @@
 #include "strv.h"
 #include "token.h"
 
-#define STX_RULE_END ((uint)-1)
-#define STX_TERM_END ((uint)-1)
-
 typedef uint stx_rule_t;
 typedef lnode_t stx_term_t;
 
@@ -48,7 +45,7 @@ typedef struct stx_s {
 stx_t *stx_init(stx_t *stx, uint rules_cap, uint terms_cap, alloc_t alloc);
 void stx_free(stx_t *stx);
 
-stx_rule_t stx_add_rule(stx_t *stx);
+int stx_add_rule(stx_t *stx, stx_rule_t *rule);
 stx_rule_data_t *stx_get_rule_data(const stx_t *stx, stx_rule_t rule);
 
 stx_term_t stx_create_term(stx_t *stx, stx_term_data_t term);
@@ -66,7 +63,7 @@ stx_term_t stx_rule_add_arr(stx_t *stx, stx_rule_t rule, stx_term_t term, stx_te
 size_t stx_print(const stx_t *stx, dst_t dst);
 size_t stx_print_tree(const stx_t *stx, dst_t dst);
 
-#define STX_TERM_NONE(_stx)		 STX_TERM_END
+#define STX_TERM_NONE(_stx)		 (uint)-1
 #define STX_TERM_RULE(_stx, _rule)	 stx_create_term(_stx, (stx_term_data_t){.type = STX_TERM_RULE, .val.rule = _rule})
 #define STX_TERM_TOKEN(_stx, _token)	 stx_create_term(_stx, (stx_term_data_t){.type = STX_TERM_TOKEN, .val.token = _token})
 #define STX_TERM_LITERAL(_stx, _literal) stx_create_term(_stx, stx_create_literal(_stx, _literal))

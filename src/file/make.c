@@ -9,8 +9,8 @@ typedef struct make_var_data_s {
 	uint id;
 	make_var_type_t type;
 	lnode_t values;
-	int ext : 1;
-	int def : 1;
+	byte ext : 1;
+	byte def : 1;
 } make_var_data_t;
 
 typedef struct make_str_data_s {
@@ -24,19 +24,20 @@ typedef struct make_str_data_s {
 typedef struct make_rule_target_data_s {
 	make_str_data_t target;
 	uint action;
+	byte has_action : 1;
 } make_rule_target_data_t;
 
 typedef struct make_rule_data_s {
 	make_rule_target_data_t target;
 	lnode_t depends;
 	make_act_t acts;
-	int file : 1;
+	byte file : 1;
 } make_rule_data_t;
 
 typedef struct make_cmd_data_s {
 	make_cmd_type_t type;
-	uint arg1;
-	uint arg2;
+	uint args;
+	uint arg[2];
 } make_cmd_data_t;
 
 typedef struct make_if_data_s {
@@ -267,10 +268,9 @@ make_rule_t make_create_rule(make_t *make, make_create_rule_t target, int file)
 		.type = MAKE_ACT_RULE,
 		.val.rule =
 			{
-				.target.action = (uint)-1,
-				.depends       = MAKE_END,
-				.acts	       = MAKE_END,
-				.file	       = file,
+				.depends = MAKE_END,
+				.acts	 = MAKE_END,
+				.file	 = file,
 			},
 	};
 
@@ -278,8 +278,11 @@ make_rule_t make_create_rule(make_t *make, make_create_rule_t target, int file)
 		return MAKE_END;
 	}
 
-	if (target.action.data != NULL && strbuf_add(&make->strs, target.action, &data->val.rule.target.action)) {
-		return MAKE_END;
+	if (target.action.data) {
+		if (strbuf_add(&make->strs, target.action, &data->val.rule.target.action)) {
+			return MAKE_END;
+		}
+		data->val.rule.target.has_action = 1;
 	}
 
 	return act;
@@ -304,21 +307,22 @@ make_cmd_t make_create_cmd(make_t *make, make_create_cmd_t cmd)
 	}
 
 	*data = (make_act_data_t){
-		.type = MAKE_ACT_CMD,
-		.val.cmd =
-			{
-				.type = cmd.type,
-				.arg1 = (uint)-1,
-				.arg2 = (uint)-1,
-			},
+		.type	 = MAKE_ACT_CMD,
+		.val.cmd = {.type = cmd.type},
 	};
 
-	if (cmd.arg1.data != NULL && strbuf_add(&make->strs, cmd.arg1, &data->val.cmd.arg1)) {
-		return MAKE_END;
+	if (cmd.arg1.data) {
+		if (strbuf_add(&make->strs, cmd.arg1, &data->val.cmd.arg[0])) {
+			return MAKE_END;
+		}
+		data->val.cmd.args = 1;
 	}
 
-	if (cmd.arg2.data != NULL && strbuf_add(&make->strs, cmd.arg2, &data->val.cmd.arg2)) {
-		return MAKE_END;
+	if (cmd.arg2.data) {
+		if (strbuf_add(&make->strs, cmd.arg2, &data->val.cmd.arg[1])) {
+			return MAKE_END;
+		}
+		data->val.cmd.args = 2;
 	}
 
 	return act;
@@ -549,14 +553,17 @@ make_str_t make_rule_add_depend(make_t *make, make_rule_t rule, make_create_rule
 		return MAKE_END;
 	}
 
-	make_rule_target_data_t target = {.action = (uint)-1};
+	make_rule_target_data_t target = {0};
 
 	if (create_str(make, depend.target, &target.target)) {
 		return MAKE_END;
 	}
 
-	if (depend.action.data != NULL && strbuf_add(&make->strs, depend.action, &target.action)) {
-		return MAKE_END;
+	if (depend.action.data) {
+		if (strbuf_add(&make->strs, depend.action, &target.action)) {
+			return MAKE_END;
+		}
+		target.has_action = 1;
 	}
 
 	return rule_add_depend(make, rule, target);
@@ -704,7 +711,7 @@ static int make_rule_target_eq(const make_t *make, make_rule_target_data_t targe
 		return 0;
 	}
 
-	if (!strv_eq(target1.action < make->strs.off.cnt ? strbuf_get(&make->strs, target1.action) : STRV_NULL, target2.action)) {
+	if (!strv_eq(target1.has_action ? strbuf_get(&make->strs, target1.action) : STRV_NULL, target2.action)) {
 		return 0;
 	}
 
@@ -1229,7 +1236,7 @@ static size_t make_rule_target_print(const make_t *make, const make_rule_target_
 	buf->len = 0;
 	make_str_expand(make, &target->target, buf);
 	dst.off += dputs(dst, STRVS(*buf));
-	if (target->action != (uint)-1) {
+	if (target->has_action) {
 		dst.off += dputs(dst, strbuf_get(&make->strs, target->action));
 	}
 
@@ -1292,19 +1299,15 @@ static size_t make_acts_print(const make_t *make, make_act_t acts, dst_t dst, in
 		case MAKE_ACT_CMD: {
 			switch (act->val.cmd.type) {
 			case MAKE_CMD_CHILD: {
-				if (act->val.cmd.arg2 < make->strs.off.cnt) {
-					strv_t arg1 = strbuf_get(&make->strs, act->val.cmd.arg1);
-					strv_t arg2 = strbuf_get(&make->strs, act->val.cmd.arg2);
-					dst.off += dputf(dst, "\t@$(MAKE) -C %.*s %.*s", arg1.len, arg1.data, arg2.len, arg2.data);
-
-				} else {
-					strv_t arg1 = strbuf_get(&make->strs, act->val.cmd.arg1);
-					dst.off += dputf(dst, "\t@$(MAKE) -C %.*s", arg1.len, arg1.data);
+				dst.off += dputs(dst, STRV("\t@$(MAKE) -C"));
+				for (uint i = 0; i < act->val.cmd.args; i++) {
+					dst.off += dputs(dst, STRV(" "));
+					dst.off += dputs(dst, strbuf_get(&make->strs, act->val.cmd.arg[i]));
 				}
 				break;
 			}
 			case MAKE_CMD_ERR: {
-				strv_t arg1 = strbuf_get(&make->strs, act->val.cmd.arg1);
+				strv_t arg1 = strbuf_get(&make->strs, act->val.cmd.arg[0]);
 				dst.off += dputf(dst, "%s$(error %.*s)", rule ? "\t" : "", arg1.len, arg1.data);
 				break;
 			}
@@ -1312,7 +1315,7 @@ static size_t make_acts_print(const make_t *make, make_act_t acts, dst_t dst, in
 				if (rule) {
 					dst.off += dputs(dst, STRV("\t"));
 				}
-				dst.off += dputs(dst, strbuf_get(&make->strs, act->val.cmd.arg1));
+				dst.off += dputs(dst, strbuf_get(&make->strs, act->val.cmd.arg[0]));
 				break;
 			}
 			}
@@ -1467,8 +1470,8 @@ size_t make_dbg(const make_t *make, dst_t dst)
 			break;
 		}
 		case MAKE_ACT_CMD: {
-			strv_t arg1 = act->val.cmd.arg1 < make->strs.off.cnt ? strbuf_get(&make->strs, act->val.cmd.arg1) : STRV("");
-			strv_t arg2 = act->val.cmd.arg2 < make->strs.off.cnt ? strbuf_get(&make->strs, act->val.cmd.arg2) : STRV("");
+			strv_t arg1 = act->val.cmd.args > 0 ? strbuf_get(&make->strs, act->val.cmd.arg[0]) : STRV("");
+			strv_t arg2 = act->val.cmd.args > 1 ? strbuf_get(&make->strs, act->val.cmd.arg[1]) : STRV("");
 			dst.off += dputf(dst,
 					 "CMD\n"
 					 "    ARG1: %.*s\n"

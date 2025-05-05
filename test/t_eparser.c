@@ -94,11 +94,11 @@ TEST(eprs_get_rule)
 	eprs_add_node(&eprs, root, EPRS_NODE_LITERAL(&eprs, 0, 0));
 	eprs_node_t node = eprs_add_node(&eprs, root, EPRS_NODE_RULE(&eprs, 0));
 
-	EXPECT_EQ(eprs_get_rule(NULL, EPRS_NODE_END, ESTX_RULE_END), EPRS_NODE_END);
+	EXPECT_EQ(eprs_get_rule(NULL, EPRS_NODE_END, eprs.nodes.cnt), EPRS_NODE_END);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(eprs_get_rule(&eprs, EPRS_NODE_END, ESTX_RULE_END), EPRS_NODE_END);
+	EXPECT_EQ(eprs_get_rule(&eprs, EPRS_NODE_END, eprs.nodes.cnt), EPRS_NODE_END);
 	log_set_quiet(0, 0);
-	EXPECT_EQ(eprs_get_rule(&eprs, root, ESTX_RULE_END), EPRS_NODE_END);
+	EXPECT_EQ(eprs_get_rule(&eprs, root, eprs.nodes.cnt), EPRS_NODE_END);
 	EXPECT_EQ(eprs_get_rule(&eprs, root, 0), node);
 	EXPECT_EQ(eprs_get_rule(&eprs, node, 0), node);
 
@@ -143,7 +143,7 @@ TEST(eprs_parse_gen)
 {
 	START;
 
-	EXPECT_EQ(eprs_parse(NULL, NULL, NULL, ESTX_RULE_END, NULL, DST_NONE()), 1);
+	EXPECT_EQ(eprs_parse(NULL, NULL, NULL, 0, NULL, DST_NONE()), 1);
 
 	lex_t lex  = {0};
 	strv_t src = STRV("<");

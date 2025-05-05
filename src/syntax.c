@@ -37,24 +37,28 @@ void stx_free(stx_t *stx)
 	buf_free(&stx->strs);
 }
 
-stx_rule_t stx_add_rule(stx_t *stx)
+int stx_add_rule(stx_t *stx, stx_rule_t *rule)
 {
 	if (stx == NULL) {
-		return STX_RULE_END;
+		return 1;
 	}
 
-	stx_rule_t rule;
-	stx_rule_data_t *data = arr_add(&stx->rules, &rule);
+	stx_rule_t cnt;
+	stx_rule_data_t *data = arr_add(&stx->rules, &cnt);
 	if (data == NULL) {
 		log_error("cparse", "syntax", NULL, "failed to add rule");
-		return STX_RULE_END;
+		return 1;
 	}
 
 	*data = (stx_rule_data_t){
-		.terms = STX_TERM_END,
+		.terms = (uint)-1,
 	};
 
-	return rule;
+	if (rule) {
+		*rule = cnt;
+	}
+
+	return 0;
 }
 
 stx_rule_data_t *stx_get_rule_data(const stx_t *stx, stx_rule_t rule)
@@ -76,7 +80,7 @@ stx_rule_data_t *stx_get_rule_data(const stx_t *stx, stx_rule_t rule)
 stx_term_t stx_create_term(stx_t *stx, stx_term_data_t term)
 {
 	if (stx == NULL) {
-		return STX_TERM_END;
+		return (uint)-1;
 	}
 
 	stx_term_t child;
@@ -84,7 +88,7 @@ stx_term_t stx_create_term(stx_t *stx, stx_term_data_t term)
 
 	if (data == NULL) {
 		log_error("cparse", "syntax", NULL, "failed to create term");
-		return STX_TERM_END;
+		return (uint)-1;
 	}
 
 	*data = term;
@@ -126,7 +130,7 @@ stx_term_t stx_rule_set_term(stx_t *stx, stx_rule_t rule, stx_term_t term)
 
 	if (data == NULL) {
 		log_error("cparse", "syntax", NULL, "failed to get rule: %d", rule);
-		return STX_TERM_END;
+		return (uint)-1;
 	}
 
 	return data->terms = term;
@@ -138,7 +142,7 @@ stx_term_t stx_rule_add_term(stx_t *stx, stx_rule_t rule, stx_term_t term)
 
 	if (data == NULL) {
 		log_error("cparse", "syntax", NULL, "failed to get rule: %d", rule);
-		return STX_TERM_END;
+		return (uint)-1;
 	}
 
 	if (data->terms < stx->terms.cnt) {
@@ -154,7 +158,7 @@ stx_term_t stx_term_add_term(stx_t *stx, stx_term_t term, stx_term_t next)
 {
 	if (stx_get_term_data(stx, term) == NULL) {
 		log_error("cparse", "syntax", NULL, "failed to get term: %d", term);
-		return STX_TERM_END;
+		return (uint)-1;
 	}
 
 	if (term < stx->terms.cnt) {
@@ -176,7 +180,7 @@ static stx_term_t stx_rule_add_orv(stx_t *stx, stx_rule_t rule, size_t n, va_lis
 stx_term_t stx_rule_add_or(stx_t *stx, stx_rule_t rule, size_t n, ...)
 {
 	if (n < 1) {
-		return STX_TERM_END;
+		return (uint)-1;
 	}
 
 	va_list args;
@@ -194,11 +198,11 @@ stx_term_t stx_rule_add_arr(stx_t *stx, stx_rule_t rule, stx_term_t term, stx_te
 {
 	stx_term_data_t *data = stx_get_term_data(stx, term);
 	if (data == NULL) {
-		return STX_TERM_END;
+		return (uint)-1;
 	}
 
 	stx_term_t l = stx_create_term(stx, *data);
-	if (sep < STX_TERM_END) {
+	if (sep < (uint)-1) {
 		stx_term_add_term(stx, l, sep);
 	}
 	stx_term_add_term(stx, l, STX_TERM_RULE(stx, rule));

@@ -35,25 +35,26 @@ const stx_t *bnf_get_stx(bnf_t *bnf)
 
 	stx_t *stx = &bnf->stx;
 
-	bnf->file		   = stx_add_rule(stx);
-	bnf->bnf		   = stx_add_rule(stx);
-	bnf->rules		   = stx_add_rule(stx);
-	bnf->rule		   = stx_add_rule(stx);
-	bnf->rname		   = stx_add_rule(stx);
-	const stx_rule_t rchars	   = stx_add_rule(stx);
-	const stx_rule_t rchar	   = stx_add_rule(stx);
-	bnf->expr		   = stx_add_rule(stx);
-	bnf->terms		   = stx_add_rule(stx);
-	bnf->term		   = stx_add_rule(stx);
-	bnf->literal		   = stx_add_rule(stx);
-	bnf->token		   = stx_add_rule(stx);
-	bnf->tdouble		   = stx_add_rule(stx);
-	bnf->tsingle		   = stx_add_rule(stx);
-	const stx_rule_t cdouble   = stx_add_rule(stx);
-	const stx_rule_t csingle   = stx_add_rule(stx);
-	const stx_rule_t character = stx_add_rule(stx);
-	const stx_rule_t spaces	   = stx_add_rule(stx);
-	const stx_rule_t space	   = stx_add_rule(stx);
+	stx_rule_t rchars, rchar, cdouble, csingle, character, spaces, space;
+	stx_add_rule(stx, &bnf->file);
+	stx_add_rule(stx, &bnf->bnf);
+	stx_add_rule(stx, &bnf->rules);
+	stx_add_rule(stx, &bnf->rule);
+	stx_add_rule(stx, &bnf->rname);
+	stx_add_rule(stx, &rchars);
+	stx_add_rule(stx, &rchar);
+	stx_add_rule(stx, &bnf->expr);
+	stx_add_rule(stx, &bnf->terms);
+	stx_add_rule(stx, &bnf->term);
+	stx_add_rule(stx, &bnf->literal);
+	stx_add_rule(stx, &bnf->token);
+	stx_add_rule(stx, &bnf->tdouble);
+	stx_add_rule(stx, &bnf->tsingle);
+	stx_add_rule(stx, &cdouble);
+	stx_add_rule(stx, &csingle);
+	stx_add_rule(stx, &character);
+	stx_add_rule(stx, &spaces);
+	stx_add_rule(stx, &space);
 
 	stx_rule_add_term(stx, bnf->file, STX_TERM_RULE(stx, bnf->bnf));
 	stx_rule_add_term(stx, bnf->file, STX_TERM_TOKEN(stx, TOKEN_EOF));
@@ -135,7 +136,7 @@ static stx_term_t term_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t p
 		stx_rule_t term_rule;
 		if (strbuf_find(names, name, &term_rule)) {
 			strbuf_add(names, name, &term_rule);
-			stx_add_rule(stx);
+			stx_add_rule(stx, NULL);
 		}
 
 		return STX_TERM_RULE(stx, term_rule);
@@ -157,7 +158,7 @@ static stx_term_t term_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t p
 			return STX_TERM_LITERAL(stx, lex_get_token_val(prs->lex, str));
 		}
 
-		return STX_TERM_END;
+		return (uint)-1;
 	}
 
 	const prs_node_t prs_token = prs_get_rule(prs, parent, bnf->token);
@@ -168,7 +169,7 @@ static stx_term_t term_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t p
 		return term;
 	}
 
-	return STX_TERM_END;
+	return (uint)-1;
 }
 
 static stx_term_t terms_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent, strbuf_t *names, stx_t *stx)
@@ -212,7 +213,7 @@ static stx_rule_t rules_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t 
 	stx_rule_t rule;
 	if (strbuf_find(names, name, &rule)) {
 		strbuf_add(names, name, &rule);
-		stx_add_rule(stx);
+		stx_add_rule(stx, NULL);
 	}
 
 	const prs_node_t prs_expr = prs_get_rule(prs, prs_rule, bnf->expr);

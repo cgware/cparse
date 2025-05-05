@@ -41,9 +41,9 @@ TEST(estx_add_rule)
 	estx_init(&estx, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(estx_add_rule(NULL), ESTX_RULE_END);
+	EXPECT_EQ(estx_add_rule(NULL), (uint)-1);
 	mem_oom(1);
-	EXPECT_EQ(estx_add_rule(&estx), ESTX_RULE_END);
+	EXPECT_EQ(estx_add_rule(&estx), (uint)-1);
 	mem_oom(0);
 	EXPECT_EQ(estx_add_rule(&estx), 0);
 
@@ -61,9 +61,9 @@ TEST(estx_create_term)
 	estx_init(&estx, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(ESTX_TERM_RULE(NULL, -1, 0), ESTX_TERM_END);
+	EXPECT_EQ(ESTX_TERM_RULE(NULL, -1, 0), (uint)-1);
 	mem_oom(1);
-	EXPECT_EQ(ESTX_TERM_RULE(&estx, -1, 0), ESTX_TERM_END);
+	EXPECT_EQ(ESTX_TERM_RULE(&estx, -1, 0), (uint)-1);
 	mem_oom(0);
 	EXPECT_EQ(ESTX_TERM_RULE(&estx, -1, 0), 0);
 
@@ -96,8 +96,8 @@ TEST(estx_rule_set_term)
 	estx_rule_t rule = estx_add_rule(&estx);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(estx_rule_set_term(NULL, ESTX_RULE_END, -1), ESTX_TERM_END);
-	EXPECT_EQ(estx_rule_set_term(&estx, ESTX_RULE_END, -1), ESTX_TERM_END);
+	EXPECT_EQ(estx_rule_set_term(NULL, 0, -1), (uint)-1);
+	EXPECT_EQ(estx_rule_set_term(&estx, estx.rules.cnt, -1), (uint)-1);
 	log_set_quiet(0, 0);
 	EXPECT_EQ(estx_rule_set_term(&estx, rule, 0), 0);
 
@@ -118,8 +118,8 @@ TEST(estx_term_add_term)
 	estx_term_t term = ESTX_TERM_RULE(&estx, -1, 0);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(estx_term_add_term(NULL, ESTX_TERM_END, ESTX_TERM_RULE(&estx, -1, 0)), ESTX_TERM_END);
-	EXPECT_EQ(estx_term_add_term(&estx, ESTX_TERM_END, ESTX_TERM_RULE(&estx, -1, 0)), ESTX_TERM_END);
+	EXPECT_EQ(estx_term_add_term(NULL, 0, ESTX_TERM_RULE(&estx, -1, 0)), (uint)-1);
+	EXPECT_EQ(estx_term_add_term(&estx, estx.terms.cnt, ESTX_TERM_RULE(&estx, -1, 0)), (uint)-1);
 	log_set_quiet(0, 0);
 	EXPECT_EQ(estx_term_add_term(&estx, term, ESTX_TERM_RULE(&estx, -1, 0)), 3);
 

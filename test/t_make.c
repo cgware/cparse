@@ -530,6 +530,7 @@ TEST(make_rule_add_depend)
 	EXPECT_EQ(make_rule_add_depend(&make, rule, MRULE(MSTR(STRV("")))), MAKE_END);
 	mem_oom(0);
 	EXPECT_EQ(make_rule_add_depend(&make, rule, MRULE(MSTR(STRV("")))), 1);
+	EXPECT_EQ(make_rule_add_depend(&make, rule, MRULEACT(MSTR(STRV("")), STRV(""))), 2);
 
 	make_free(&make);
 

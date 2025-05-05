@@ -7,9 +7,6 @@
 #include "token.h"
 #include "tree.h"
 
-#define ESTX_RULE_END ((uint)-1)
-#define ESTX_TERM_END ((uint)-1)
-
 typedef uint estx_rule_t;
 typedef tnode_t estx_term_t;
 

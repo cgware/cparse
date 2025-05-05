@@ -40,18 +40,18 @@ void estx_free(estx_t *estx)
 estx_rule_t estx_add_rule(estx_t *estx)
 {
 	if (estx == NULL) {
-		return ESTX_RULE_END;
+		return (uint)-1;
 	}
 
 	estx_rule_t rule;
 	estx_rule_data_t *data = arr_add(&estx->rules, &rule);
 	if (data == NULL) {
 		log_error("cparse", "esyntax", NULL, "failed to add rule");
-		return ESTX_RULE_END;
+		return (uint)-1;
 	}
 
 	*data = (estx_rule_data_t){
-		.terms = ESTX_TERM_END,
+		.terms = (uint)-1,
 	};
 
 	return rule;
@@ -76,7 +76,7 @@ estx_rule_data_t *estx_get_rule_data(const estx_t *estx, estx_rule_t rule)
 estx_term_t estx_create_term(estx_t *estx, estx_term_data_t term)
 {
 	if (estx == NULL) {
-		return ESTX_TERM_END;
+		return (uint)-1;
 	}
 
 	estx_term_t child;
@@ -84,7 +84,7 @@ estx_term_t estx_create_term(estx_t *estx, estx_term_data_t term)
 
 	if (data == NULL) {
 		log_error("cparse", "esyntax", NULL, "failed to create term");
-		return ESTX_TERM_END;
+		return (uint)-1;
 	}
 
 	*data = term;
@@ -126,7 +126,7 @@ estx_term_t estx_rule_set_term(estx_t *estx, estx_rule_t rule, estx_term_t term)
 
 	if (data == NULL) {
 		log_error("cparse", "esyntax", NULL, "failed to get rule: %d", rule);
-		return ESTX_TERM_END;
+		return (uint)-1;
 	}
 
 	return data->terms = term;
@@ -136,7 +136,7 @@ estx_term_t estx_term_add_term(estx_t *estx, estx_term_t term, estx_term_t child
 {
 	if (estx_get_term_data(estx, term) == NULL) {
 		log_error("cparse", "esyntax", NULL, "failed to get term: %d", term);
-		return ESTX_TERM_END;
+		return (uint)-1;
 	}
 
 	if (term < estx->terms.cnt) {

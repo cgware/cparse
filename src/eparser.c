@@ -349,15 +349,15 @@ int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t r
 	eprs->nodes.cnt = 0;
 
 	eprs_parse_err_t err = {
-		.rule = ESTX_RULE_END,
+		.rule = (uint)-1,
 		.tok  = LEX_TOKEN_END,
-		.exp  = ESTX_TERM_END,
+		.exp  = (uint)-1,
 	};
 
 	eprs_node_t tmp = eprs_add_node(eprs, EPRS_NODE_END, EPRS_NODE_RULE(eprs, rule));
 	uint parsed	= 0;
 	if (eprs_parse_rule(eprs, rule, &parsed, tmp, &err) || parsed != eprs->lex->tokens.cnt) {
-		if (err.exp == ESTX_TERM_END) {
+		if (err.exp == (uint)-1) {
 			log_error("cparse", "parser", NULL, "wrong syntax");
 			return 1;
 		}
