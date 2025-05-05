@@ -44,7 +44,7 @@ int prs_get_str(const prs_t *prs, prs_node_t parent, token_t *out);
 
 int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_rule_t rule, prs_node_t *root, dst_t dst);
 
-int prs_print(const prs_t *prs, prs_node_t node, dst_t dst);
+size_t prs_print(const prs_t *prs, prs_node_t node, dst_t dst);
 
 #define PRS_NODE_RULE(_prs, _rule)   prs_add(_prs, (prs_node_data_t){.type = PRS_NODE_RULE, .val.rule = _rule})
 #define PRS_NODE_TOKEN(_prs, _token) prs_add(_prs, (prs_node_data_t){.type = PRS_NODE_TOKEN, .val.token = _token})

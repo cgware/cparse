@@ -34,7 +34,7 @@ int lex_tokenize(lex_t *lex, strv_t src, strv_t file, uint line_off);
 size_t lex_print_token(const lex_t *lex, token_t toc, dst_t dst);
 size_t lex_print(const lex_t *lex, dst_t dst);
 
-int lex_token_loc_print_loc(const lex_t *lex, token_loc_t loc, dst_t dst);
-int lex_token_loc_print_src(const lex_t *lex, token_loc_t loc, dst_t dst);
+size_t lex_token_loc_print_loc(const lex_t *lex, token_loc_t loc, dst_t dst);
+size_t lex_token_loc_print_src(const lex_t *lex, token_loc_t loc, dst_t dst);
 
 #endif

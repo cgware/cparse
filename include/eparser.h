@@ -45,7 +45,7 @@ int eprs_get_str(const eprs_t *eprs, eprs_node_t parent, token_t *out);
 
 int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t rule, eprs_node_t *root, dst_t dst);
 
-int eprs_print(const eprs_t *eprs, eprs_node_t node, dst_t dst);
+size_t eprs_print(const eprs_t *eprs, eprs_node_t node, dst_t dst);
 
 #define EPRS_NODE_RULE(_prs, _rule)   eprs_add(_prs, (eprs_node_data_t){.type = EPRS_NODE_RULE, .val.rule = _rule})
 #define EPRS_NODE_TOKEN(_prs, _token) eprs_add(_prs, (eprs_node_data_t){.type = EPRS_NODE_TOKEN, .val.token = _token})

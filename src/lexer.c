@@ -283,26 +283,26 @@ size_t lex_print(const lex_t *lex, dst_t dst)
 	return dst.off - off;
 }
 
-int lex_token_loc_print_loc(const lex_t *lex, token_loc_t loc, dst_t dst)
+size_t lex_token_loc_print_loc(const lex_t *lex, token_loc_t loc, dst_t dst)
 {
 	if (lex == NULL || lex->file.data == NULL) {
 		return 0;
 	}
 
-	int off = dst.off;
+	size_t off = dst.off;
 
 	dst.off += dputf(dst, "%.*s:%d:%d: ", lex->file.len, lex->file.data, lex->line_off + loc.line_nr, loc.col);
 
 	return dst.off - off;
 }
 
-int lex_token_loc_print_src(const lex_t *lex, token_loc_t loc, dst_t dst)
+size_t lex_token_loc_print_src(const lex_t *lex, token_loc_t loc, dst_t dst)
 {
 	if (lex == NULL || lex->src.data == NULL) {
 		return 0;
 	}
 
-	int off = dst.off;
+	size_t off = dst.off;
 
 	dst.off += dputs(dst, STRVN(&lex->src.data[loc.line_off], loc.line_len));
 	dst.off += dputf(dst, "\n%*s^\n", loc.col, "");
