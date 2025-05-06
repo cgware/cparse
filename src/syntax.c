@@ -402,27 +402,24 @@ static size_t stx_rule_print_tree(const stx_t *stx, stx_rule_data_t *rule, uint 
 	int top		     = 1;
 
 	while (top > 0) {
-		if (stack[top - 1] >= stx->terms.cnt) {
-			top--;
-			if (top <= 0) {
-				break;
-			}
-		}
-
 		stx_term_data_t *term = stx_get_term_data(stx, stack[top - 1]);
 
 		switch (term->type) {
 		case STX_TERM_RULE: {
 			dst.off += print_header(stx, stack, state, top, dst);
 			dst.off += dputf(dst, "<%d>\n", term->val.rule);
-			list_get_next(&stx->terms, stack[top - 1], &stack[top - 1]);
+			if (list_get_next(&stx->terms, stack[top - 1], &stack[top - 1]) == NULL) {
+				top--;
+			}
 			break;
 		}
 		case STX_TERM_TOKEN: {
 			dst.off += print_header(stx, stack, state, top, dst);
 			dst.off += token_type_print(1 << term->val.token, dst);
 			dst.off += dputs(dst, STRV("\n"));
-			list_get_next(&stx->terms, stack[top - 1], &stack[top - 1]);
+			if (list_get_next(&stx->terms, stack[top - 1], &stack[top - 1]) == NULL) {
+				top--;
+			}
 			break;
 		}
 		case STX_TERM_LITERAL: {
@@ -434,7 +431,9 @@ static size_t stx_rule_print_tree(const stx_t *stx, stx_rule_data_t *rule, uint 
 				dst.off += dputf(dst, "\'%.*s\'", literal.len, literal.data);
 			}
 			dst.off += dputs(dst, STRV("\n"));
-			list_get_next(&stx->terms, stack[top - 1], &stack[top - 1]);
+			if (list_get_next(&stx->terms, stack[top - 1], &stack[top - 1]) == NULL) {
+				top--;
+			}
 			break;
 		}
 		case STX_TERM_OR:

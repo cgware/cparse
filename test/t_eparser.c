@@ -961,7 +961,7 @@ TEST(eprs_parse_ebnf)
 		strbuf_init(&names, 16, 16, ALLOC_STD);
 
 		estx_init(&estx, 10, 10, ALLOC_STD);
-		estx_root = estx_from_ebnf(&ebnf, &prs, prs_root, &estx, &names);
+		estx_from_ebnf(&ebnf, &prs, prs_root, &estx, &names, &estx_root);
 
 		strbuf_free(&names);
 		ebnf_free(&ebnf);

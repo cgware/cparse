@@ -50,8 +50,7 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 	strbuf_init(&names, 16, 16, ALLOC_STD);
 
 	estx_init(&cfg_prs->estx, 10, 10, ALLOC_STD);
-	estx_rule_t estx_root = estx_from_ebnf(&ebnf, &prs, prs_root, &cfg_prs->estx, &names);
-	(void)estx_root;
+	estx_from_ebnf(&ebnf, &prs, prs_root, &cfg_prs->estx, &names, NULL);
 
 	strbuf_find(&names, STRV("file"), &cfg_prs->file);
 	strbuf_find(&names, STRV("cfg"), &cfg_prs->cfg);

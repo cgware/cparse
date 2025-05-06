@@ -109,7 +109,10 @@ TEST(stx_from_ebnf)
 
 	estx_t new_stx = {0};
 	estx_init(&new_stx, 10, 10, ALLOC_STD);
-	EXPECT_EQ(estx_from_ebnf(&ebnf, &prs, prs_root, &new_stx, &names), 0);
+	estx_rule_t root;
+	EXPECT_EQ(estx_from_ebnf(NULL, &prs, prs_root, &new_stx, &names, &root), 0);
+	EXPECT_EQ(estx_from_ebnf(&ebnf, &prs, prs_root, &new_stx, &names, &root), 0);
+	EXPECT_EQ(root, 0);
 
 	strbuf_free(&names);
 	estx_free(&new_stx);
@@ -157,8 +160,11 @@ TEST(stx_from_ebnf_custom)
 	strbuf_t names = {0};
 	strbuf_init(&names, 16, 16, ALLOC_STD);
 
+	estx_rule_t root;
+
 	log_set_quiet(0, 1);
-	EXPECT_EQ(estx_from_ebnf(&ebnf, &prs, file, &new_stx, &names), 0);
+	EXPECT_EQ(estx_from_ebnf(&ebnf, &prs, file, &new_stx, &names, &root), 0);
+	EXPECT_EQ(root, 0);
 	log_set_quiet(0, 0);
 
 	strbuf_free(&names);

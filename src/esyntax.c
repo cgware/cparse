@@ -260,6 +260,10 @@ static size_t estx_term_print(const estx_t *estx, const estx_term_t term, dst_t 
 	size_t off = dst.off;
 
 	const estx_term_data_t *data = estx_get_term_data(estx, term);
+	if (data == NULL) {
+		return 0;
+	}
+
 	switch (data->type) {
 	case ESTX_TERM_RULE: {
 		dst.off += dputf(dst, " %d", data->val.rule);
@@ -334,11 +338,7 @@ size_t estx_print(const estx_t *estx, dst_t dst)
 	arr_foreach(&estx->rules, i, rule)
 	{
 		dst.off += dputf(dst, "%d =", i);
-		if (rule->terms >= estx->terms.cnt) {
-			log_error("cparse", "esyntax", NULL, "failed to get rule %d terms", i);
-		} else {
-			dst.off += estx_term_print(estx, rule->terms, dst);
-		}
+		dst.off += estx_term_print(estx, rule->terms, dst);
 		dst.off += dputs(dst, STRV("\n"));
 	}
 
