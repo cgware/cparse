@@ -52,26 +52,22 @@ void estx_free(estx_t *estx);
 estx_rule_t estx_add_rule(estx_t *estx);
 estx_rule_data_t *estx_get_rule_data(const estx_t *estx, estx_rule_t rule);
 
-estx_term_t estx_create_term(estx_t *estx, estx_term_data_t term);
+int estx_term_rule(estx_t *estx, estx_rule_t rule, estx_term_occ_t occ, estx_term_t *term);
+int estx_term_tok(estx_t *estx, token_type_t token, estx_term_occ_t occ, estx_term_t *term);
+int estx_term_lit(estx_t *estx, strv_t str, estx_term_occ_t occ, estx_term_t *term);
+int estx_term_alt(estx_t *estx, estx_term_t *term);
+int estx_term_con(estx_t *estx, estx_term_t *term);
+int estx_term_group(estx_t *estx, estx_term_occ_t occ, estx_term_t *term);
+
 estx_term_data_t *estx_get_term_data(const estx_t *estx, estx_term_t term);
 
 estx_term_data_t estx_create_literal(estx_t *estx, strv_t str, estx_term_occ_t occ);
 
-estx_term_t estx_rule_set_term(estx_t *estx, estx_rule_t rule, estx_term_t term);
-estx_term_t estx_term_add_term(estx_t *estx, estx_term_t term, estx_term_t child);
+int estx_rule_set_term(estx_t *estx, estx_rule_t rule, estx_term_t term);
+int estx_term_add_term(estx_t *estx, estx_term_t term, estx_term_t child);
 
 size_t estx_print(const estx_t *estx, dst_t dst);
 size_t estx_print_tree(const estx_t *estx, dst_t dst);
-
-#define ESTX_TERM_NONE(_estx) ESTX_TERM_END
-#define ESTX_TERM_RULE(_estx, _rule, _occ)                                                                                                 \
-	estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_RULE, .val.rule = _rule, .occ = _occ})
-#define ESTX_TERM_TOKEN(_estx, _token, _occ)                                                                                               \
-	estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_TOKEN, .val.token = _token, .occ = _occ})
-#define ESTX_TERM_LITERAL(_estx, _literal, _occ) estx_create_term(_estx, estx_create_literal(_estx, _literal, _occ))
-#define ESTX_TERM_ALT(_estx)			 estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_ALT})
-#define ESTX_TERM_CON(_estx)			 estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_CON})
-#define ESTX_TERM_GROUP(_estx, _occ)		 estx_create_term(_estx, (estx_term_data_t){.type = ESTX_TERM_GROUP, .occ = _occ})
 
 #define estx_rule_foreach arr_foreach
 #define estx_term_foreach tree_foreach_child

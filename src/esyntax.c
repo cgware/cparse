@@ -73,23 +73,130 @@ estx_rule_data_t *estx_get_rule_data(const estx_t *estx, estx_rule_t rule)
 	return data;
 }
 
-estx_term_t estx_create_term(estx_t *estx, estx_term_data_t term)
+int estx_term_rule(estx_t *estx, estx_rule_t rule, estx_term_occ_t occ, estx_term_t *term)
 {
 	if (estx == NULL) {
-		return (uint)-1;
+		return 1;
 	}
 
-	estx_term_t child;
-	estx_term_data_t *data = tree_add(&estx->terms, &child);
-
+	estx_term_data_t *data = tree_add(&estx->terms, term);
 	if (data == NULL) {
-		log_error("cparse", "esyntax", NULL, "failed to create term");
-		return (uint)-1;
+		log_error("cparse", "esyntax", NULL, "failed to create rule term");
+		return 1;
 	}
 
-	*data = term;
+	*data = (estx_term_data_t){
+		.type	  = ESTX_TERM_RULE,
+		.val.rule = rule,
+		.occ	  = occ,
+	};
 
-	return child;
+	return 0;
+}
+
+int estx_term_tok(estx_t *estx, token_type_t token, estx_term_occ_t occ, estx_term_t *term)
+{
+	if (estx == NULL) {
+		return 1;
+	}
+
+	estx_term_data_t *data = tree_add(&estx->terms, term);
+	if (data == NULL) {
+		log_error("cparse", "esyntax", NULL, "failed to create token term");
+		return 1;
+	}
+
+	*data = (estx_term_data_t){
+		.type	   = ESTX_TERM_TOKEN,
+		.val.token = token,
+		.occ	   = occ,
+	};
+
+	return 0;
+}
+
+int estx_term_lit(estx_t *estx, strv_t str, estx_term_occ_t occ, estx_term_t *term)
+{
+	if (estx == NULL) {
+		return 1;
+	}
+
+	estx_term_data_t *data = tree_add(&estx->terms, term);
+	if (data == NULL) {
+		log_error("cparse", "esyntax", NULL, "failed to create literal term");
+		return 1;
+	}
+
+	size_t start;
+	if (buf_add(&estx->strs, str.data, str.len, &start)) {
+		return 1;
+	}
+
+	*data = (estx_term_data_t){
+		.type	     = ESTX_TERM_LITERAL,
+		.val.literal = {.start = start, .len = (uint)str.len},
+		.occ	     = occ,
+	};
+
+	return 0;
+}
+
+int estx_term_alt(estx_t *estx, estx_term_t *term)
+{
+	if (estx == NULL) {
+		return 1;
+	}
+
+	estx_term_data_t *data = tree_add(&estx->terms, term);
+	if (data == NULL) {
+		log_error("cparse", "esyntax", NULL, "failed to create alternative term");
+		return 1;
+	}
+
+	*data = (estx_term_data_t){
+		.type = ESTX_TERM_ALT,
+	};
+
+	return 0;
+}
+
+int estx_term_con(estx_t *estx, estx_term_t *term)
+{
+	if (estx == NULL) {
+		return 1;
+	}
+
+	estx_term_data_t *data = tree_add(&estx->terms, term);
+	if (data == NULL) {
+		log_error("cparse", "esyntax", NULL, "failed to create concat term");
+		return 1;
+	}
+
+	*data = (estx_term_data_t){
+		.type = ESTX_TERM_CON,
+	};
+
+	return 0;
+}
+
+int estx_term_group(estx_t *estx, estx_term_occ_t occ, estx_term_t *term)
+{
+	if (estx == NULL) {
+		return 1;
+	}
+
+	estx_term_data_t *data = tree_add(&estx->terms, term);
+	if (data == NULL) {
+		log_error("cparse", "esyntax", NULL, "failed to create group term");
+		return 1;
+	}
+
+	*data = (estx_term_data_t){
+		.type = ESTX_TERM_GROUP,
+		.occ  = occ,
+	};
+
+	return 0;
 }
 
 estx_term_data_t *estx_get_term_data(const estx_t *estx, estx_term_t term)
@@ -108,42 +215,27 @@ estx_term_data_t *estx_get_term_data(const estx_t *estx, estx_term_t term)
 	return data;
 }
 
-estx_term_data_t estx_create_literal(estx_t *estx, strv_t str, estx_term_occ_t occ)
-{
-	if (estx == NULL) {
-		return (estx_term_data_t){0};
-	}
-
-	size_t start = estx->strs.used;
-	buf_add(&estx->strs, str.data, str.len, NULL);
-
-	return (estx_term_data_t){.type = ESTX_TERM_LITERAL, .val.literal = {.start = start, .len = (uint)str.len}, .occ = occ};
-}
-
-estx_term_t estx_rule_set_term(estx_t *estx, estx_rule_t rule, estx_term_t term)
+int estx_rule_set_term(estx_t *estx, estx_rule_t rule, estx_term_t term)
 {
 	estx_rule_data_t *data = estx_get_rule_data(estx, rule);
 
 	if (data == NULL) {
 		log_error("cparse", "esyntax", NULL, "failed to get rule: %d", rule);
-		return (uint)-1;
+		return 1;
 	}
 
-	return data->terms = term;
+	data->terms = term;
+	return 0;
 }
 
-estx_term_t estx_term_add_term(estx_t *estx, estx_term_t term, estx_term_t child)
+int estx_term_add_term(estx_t *estx, estx_term_t term, estx_term_t child)
 {
 	if (estx_get_term_data(estx, term) == NULL) {
 		log_error("cparse", "esyntax", NULL, "failed to get term: %d", term);
-		return (uint)-1;
+		return 1;
 	}
 
-	if (term < estx->terms.cnt) {
-		tree_set_child(&estx->terms, term, child);
-	}
-
-	return child;
+	return tree_set_child(&estx->terms, term, child);
 }
 
 static size_t estx_term_occ_print(estx_term_occ_t occ, dst_t dst)
