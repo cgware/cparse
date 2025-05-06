@@ -103,7 +103,10 @@ TEST(stx_from_bnf)
 
 	stx_t new_stx = {0};
 	stx_init(&new_stx, 10, 10, ALLOC_STD);
-	EXPECT_EQ(stx_from_bnf(&bnf, &prs, prs_root, &new_stx, &names), 0);
+	stx_rule_t root;
+	EXPECT_EQ(stx_from_bnf(NULL, &prs, prs_root, &new_stx, &names, &root), 0);
+	EXPECT_EQ(stx_from_bnf(&bnf, &prs, prs_root, &new_stx, &names, &root), 0);
+	EXPECT_EQ(root, 0);
 
 	uint file, bnfr, rules;
 	strbuf_find(&names, STRV("file"), &file);
@@ -152,8 +155,11 @@ TEST(stx_from_bnf_custom)
 	strbuf_t names = {0};
 	strbuf_init(&names, 16, 16, ALLOC_STD);
 
+	stx_rule_t root;
+
 	log_set_quiet(0, 1);
-	EXPECT_EQ(stx_from_bnf(&bnf, &prs, file, &new_stx, &names), 0);
+	EXPECT_EQ(stx_from_bnf(&bnf, &prs, file, &new_stx, &names, &root), 0);
+	EXPECT_EQ(root, 0);
 	log_set_quiet(0, 0);
 
 	strbuf_free(&names);

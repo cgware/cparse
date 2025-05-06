@@ -187,7 +187,9 @@ TEST(stx_get_term_data)
 	stx_term_t term;
 
 	EXPECT_EQ(stx_get_term_data(NULL, 0), NULL);
+	log_set_quiet(0, 1);
 	EXPECT_EQ(stx_get_term_data(&stx, 0), NULL);
+	log_set_quiet(0, 0);
 
 	stx_term_lit(&stx, STRV_NULL, &term);
 	EXPECT_NE(stx_get_term_data(&stx, 0), NULL);

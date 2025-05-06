@@ -82,7 +82,8 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, dst_t dst)
 	strbuf_t names = {0};
 	strbuf_init(&names, 16, 16, ALLOC_STD);
 
-	stx_from_bnf(&bnf, &prs, prs_root, &ebnf->stx, &names);
+	stx_rule_t root;
+	stx_from_bnf(&bnf, &prs, prs_root, &ebnf->stx, &names, &root);
 
 	strbuf_find(&names, STRV("file"), &ebnf->file);
 	strbuf_find(&names, STRV("ebnf"), &ebnf->ebnf);
