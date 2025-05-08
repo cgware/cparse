@@ -255,71 +255,73 @@ static size_t estx_term_occ_print(estx_term_occ_t occ, dst_t dst)
 	return 0;
 }
 
-static size_t estx_term_print(const estx_t *estx, const estx_term_t term, dst_t dst)
+static size_t estx_term_print(const estx_t *estx, const estx_term_t term_id, const estx_term_data_t *term, dst_t dst)
 {
 	size_t off = dst.off;
 
-	const estx_term_data_t *data = estx_get_term_data(estx, term);
-	if (data == NULL) {
+	if (term == NULL) {
 		return 0;
 	}
 
-	switch (data->type) {
+	switch (term->type) {
 	case ESTX_TERM_RULE: {
-		dst.off += dputf(dst, " %d", data->val.rule);
-		dst.off += estx_term_occ_print(data->occ, dst);
+		dst.off += dputf(dst, " %d", term->val.rule);
+		dst.off += estx_term_occ_print(term->occ, dst);
 		break;
 	}
 	case ESTX_TERM_TOKEN: {
 		dst.off += dputs(dst, STRV(" "));
-		dst.off += token_type_print(1 << data->val.token, dst);
-		dst.off += estx_term_occ_print(data->occ, dst);
+		dst.off += token_type_print(1 << term->val.token, dst);
+		dst.off += estx_term_occ_print(term->occ, dst);
 		break;
 	}
 	case ESTX_TERM_LITERAL: {
-		strv_t literal = STRVN((char *)&estx->strs.data[data->val.literal.start], data->val.literal.len);
+		strv_t literal = STRVN((char *)&estx->strs.data[term->val.literal.start], term->val.literal.len);
 		if (strv_eq(literal, STRV("'"))) {
 			dst.off += dputf(dst, " \"%.*s\"", literal.len, literal.data);
 		} else {
 			dst.off += dputf(dst, " \'%.*s\'", literal.len, literal.data);
 		}
-		dst.off += estx_term_occ_print(data->occ, dst);
+		dst.off += estx_term_occ_print(term->occ, dst);
 		break;
 	}
 	case ESTX_TERM_ALT: {
 		estx_term_t child;
 		int first = 1;
-		tree_foreach_child(&estx->terms, term, child)
+		const estx_term_data_t *data;
+		tree_foreach_child(&estx->terms, term_id, child, data)
 		{
 			if (!first) {
 				dst.off += dputs(dst, STRV(" |"));
 			}
 
-			dst.off += estx_term_print(estx, child, dst);
+			dst.off += estx_term_print(estx, child, data, dst);
 			first = 0;
 		}
 		break;
 	}
 	case ESTX_TERM_CON: {
 		estx_term_t child;
-		tree_foreach_child(&estx->terms, term, child)
+		const estx_term_data_t *data;
+		tree_foreach_child(&estx->terms, term_id, child, data)
 		{
-			dst.off += estx_term_print(estx, child, dst);
+			dst.off += estx_term_print(estx, child, data, dst);
 		}
 		break;
 	}
 	case ESTX_TERM_GROUP: {
 		estx_term_t child;
+		const estx_term_data_t *data;
 		dst.off += dputs(dst, STRV(" ("));
-		tree_foreach_child(&estx->terms, term, child)
+		tree_foreach_child(&estx->terms, term_id, child, data)
 		{
-			dst.off += estx_term_print(estx, child, dst);
+			dst.off += estx_term_print(estx, child, data, dst);
 		}
 		dst.off += dputs(dst, STRV(" )"));
-		dst.off += estx_term_occ_print(data->occ, dst);
+		dst.off += estx_term_occ_print(term->occ, dst);
 		break;
 	}
-	default: log_warn("cparse", "esyntax", NULL, "unknown term type: %d", data->type); break;
+	default: log_warn("cparse", "esyntax", NULL, "unknown term type: %d", term->type); break;
 	}
 
 	return dst.off - off;
@@ -338,7 +340,8 @@ size_t estx_print(const estx_t *estx, dst_t dst)
 	arr_foreach(&estx->rules, i, rule)
 	{
 		dst.off += dputf(dst, "%d =", i);
-		dst.off += estx_term_print(estx, rule->terms, dst);
+		const estx_term_data_t *data = estx_get_term_data(estx, rule->terms);
+		dst.off += estx_term_print(estx, rule->terms, data, dst);
 		dst.off += dputs(dst, STRV("\n"));
 	}
 

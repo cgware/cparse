@@ -104,8 +104,9 @@ static cfg_var_t cfg_parse_value(const cfg_prs_t *cfg_prs, eprs_t *eprs, strv_t 
 		ret = CFG_LIT(cfg, key, lex_get_token_val(eprs->lex, val));
 	} else if ((node = eprs_get_rule(eprs, value, cfg_prs->arr)) < eprs->nodes.cnt) {
 		eprs_node_t child;
+		void *data;
 		ret = CFG_ARR(cfg, key);
-		eprs_node_foreach(&eprs->nodes, node, child)
+		eprs_node_foreach(&eprs->nodes, node, child, data)
 		{
 			eprs_node_t val = eprs_get_rule(eprs, child, cfg_prs->val);
 			if (val >= eprs->nodes.cnt) {
@@ -116,8 +117,9 @@ static cfg_var_t cfg_parse_value(const cfg_prs_t *cfg_prs, eprs_t *eprs, strv_t 
 		}
 	} else if ((node = eprs_get_rule(eprs, value, cfg_prs->obj)) < eprs->nodes.cnt) {
 		eprs_node_t child;
+		void *data;
 		ret = CFG_OBJ(cfg, key);
-		eprs_node_foreach(&eprs->nodes, node, child)
+		eprs_node_foreach(&eprs->nodes, node, child, data)
 		{
 			eprs_node_t kv = eprs_get_rule(eprs, child, cfg_prs->kv);
 			if (kv >= eprs->nodes.cnt) {
@@ -164,7 +166,8 @@ cfg_var_t cfg_parse_tbl(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t kv, 
 void cfg_parse_ent(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t ent, cfg_var_t parent, cfg_t *cfg)
 {
 	eprs_node_t child;
-	eprs_node_foreach(&eprs->nodes, ent, child)
+	void *data;
+	eprs_node_foreach(&eprs->nodes, ent, child, data)
 	{
 		eprs_node_t prs_kv = eprs_get_rule(eprs, child, cfg_prs->kv);
 		if (prs_kv < eprs->nodes.cnt) {

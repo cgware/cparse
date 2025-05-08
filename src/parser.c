@@ -126,13 +126,13 @@ int prs_get_rule(const prs_t *prs, prs_node_t parent, stx_rule_t rule, prs_node_
 	}
 
 	prs_node_t child;
-	tree_foreach_child(&prs->nodes, parent, child)
+	const prs_node_data_t *data;
+	tree_foreach_child(&prs->nodes, parent, child, data)
 	{
-		prs_node_data_t *cdata = tree_get(&prs->nodes, child);
-		switch (cdata->type) {
+		switch (data->type) {
 		case PRS_NODE_RULE:
-			if (cdata->val.rule == rule) {
-				if(node) {
+			if (data->val.rule == rule) {
+				if (node) {
 					*node = child;
 				}
 				return 0;
@@ -152,9 +152,9 @@ int prs_get_str(const prs_t *prs, prs_node_t parent, token_t *out)
 	}
 
 	prs_node_t child;
-	tree_foreach_child(&prs->nodes, parent, child)
+	const prs_node_data_t *data;
+	tree_foreach_child(&prs->nodes, parent, child, data)
 	{
-		prs_node_data_t *data = tree_get(&prs->nodes, child);
 		switch (data->type) {
 		case PRS_NODE_RULE: prs_get_str(prs, child, out); break;
 		case PRS_NODE_TOKEN: {

@@ -61,8 +61,6 @@ int estx_term_group(estx_t *estx, estx_term_occ_t occ, estx_term_t *term);
 
 estx_term_data_t *estx_get_term_data(const estx_t *estx, estx_term_t term);
 
-estx_term_data_t estx_create_literal(estx_t *estx, strv_t str, estx_term_occ_t occ);
-
 int estx_rule_set_term(estx_t *estx, estx_rule_t rule, estx_term_t term);
 int estx_term_add_term(estx_t *estx, estx_term_t term, estx_term_t child);
 

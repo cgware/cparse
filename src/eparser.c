@@ -71,15 +71,14 @@ eprs_node_t eprs_get_rule(const eprs_t *eprs, eprs_node_t parent, estx_rule_t ru
 		return EPRS_NODE_END;
 	}
 
-	eprs_node_data_t *data = tree_get(&eprs->nodes, parent);
+	const eprs_node_data_t *data = tree_get(&eprs->nodes, parent);
 	if (data && data->type == EPRS_NODE_RULE && data->val.rule == rule) {
 		return parent;
 	}
 
 	eprs_node_t child;
-	tree_foreach_child(&eprs->nodes, parent, child)
+	tree_foreach_child(&eprs->nodes, parent, child, data)
 	{
-		data = tree_get(&eprs->nodes, child);
 		switch (data->type) {
 		case EPRS_NODE_RULE:
 			if (data->val.rule == rule) {
@@ -100,9 +99,9 @@ int eprs_get_str(const eprs_t *eprs, eprs_node_t parent, token_t *out)
 	}
 
 	eprs_node_t child;
-	tree_foreach_child(&eprs->nodes, parent, child)
+	const eprs_node_data_t *data;
+	tree_foreach_child(&eprs->nodes, parent, child, data)
 	{
-		eprs_node_data_t *data = tree_get(&eprs->nodes, child);
 		switch (data->type) {
 		case EPRS_NODE_RULE: eprs_get_str(eprs, child, out); break;
 		case EPRS_NODE_TOKEN: {
@@ -130,12 +129,12 @@ typedef struct eprs_parse_err_s {
 } eprs_parse_err_t;
 
 static int eprs_parse_rule(eprs_t *prs, const estx_rule_t rule_id, uint *off, eprs_node_t node, eprs_parse_err_t *err);
-static int eprs_parse_terms(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, uint *off, eprs_node_t node, eprs_parse_err_t *err);
+static int eprs_parse_terms(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, uint *off, eprs_node_t node, eprs_parse_err_t *err,
+			    const estx_term_data_t *term);
 
-static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, uint *off, eprs_node_t node, eprs_parse_err_t *err)
+static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, uint *off, eprs_node_t node, eprs_parse_err_t *err,
+			   const estx_term_data_t *term)
 {
-	const estx_term_data_t *term = estx_get_term_data(eprs->estx, term_id);
-
 	switch (term->type) {
 	case ESTX_TERM_RULE: {
 		uint nodes_cnt	  = eprs->nodes.cnt;
@@ -221,11 +220,11 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 	}
 	case ESTX_TERM_ALT: {
 		estx_term_t child_id;
-		estx_term_foreach(&eprs->estx->terms, term_id, child_id)
+		estx_term_foreach(&eprs->estx->terms, term_id, child_id, term)
 		{
 			uint cur       = *off;
 			uint nodes_cnt = eprs->nodes.cnt;
-			if (eprs_parse_terms(eprs, rule, child_id, off, node, err)) {
+			if (eprs_parse_terms(eprs, rule, child_id, off, node, err, term)) {
 				log_trace("cparse", "eparser", NULL, "alt: failed");
 				tree_set_cnt(&eprs->nodes, nodes_cnt);
 				*off = cur;
@@ -239,10 +238,10 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 	case ESTX_TERM_CON: {
 		uint cur = *off;
 		estx_term_t child_id;
-		estx_term_foreach(&eprs->estx->terms, term_id, child_id)
+		estx_term_foreach(&eprs->estx->terms, term_id, child_id, term)
 		{
 			uint nodes_cnt = eprs->nodes.cnt;
-			if (eprs_parse_terms(eprs, rule, child_id, off, node, err)) {
+			if (eprs_parse_terms(eprs, rule, child_id, off, node, err, term)) {
 				log_trace("cparse", "eparser", NULL, "con: failed");
 				tree_set_cnt(&eprs->nodes, nodes_cnt);
 				*off = cur;
@@ -256,10 +255,10 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 	case ESTX_TERM_GROUP: {
 		uint cur = *off;
 		estx_term_t child_id;
-		estx_term_foreach(&eprs->estx->terms, term_id, child_id)
+		estx_term_foreach(&eprs->estx->terms, term_id, child_id, term)
 		{
 			uint nodes_cnt = eprs->nodes.cnt;
-			if (eprs_parse_terms(eprs, rule, child_id, off, node, err)) {
+			if (eprs_parse_terms(eprs, rule, child_id, off, node, err, term)) {
 				log_trace("cparse", "eparser", NULL, "group: failed");
 				tree_set_cnt(&eprs->nodes, nodes_cnt);
 				*off = cur;
@@ -276,13 +275,12 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 	return 1;
 }
 
-static int eprs_parse_terms(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, uint *off, eprs_node_t node, eprs_parse_err_t *err)
+static int eprs_parse_terms(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, uint *off, eprs_node_t node, eprs_parse_err_t *err,
+			    const estx_term_data_t *term)
 {
-	const estx_term_data_t *term = estx_get_term_data(eprs->estx, term_id);
-
 	uint cur = *off;
 
-	int ret = eprs_parse_term(eprs, rule, term_id, off, node, err);
+	int ret = eprs_parse_term(eprs, rule, term_id, off, node, err, term);
 	int one = term->occ == ESTX_TERM_OCC_ONE;
 
 	if (term->type == ESTX_TERM_ALT || term->type == ESTX_TERM_CON || one) {
@@ -309,7 +307,7 @@ static int eprs_parse_terms(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id,
 			break;
 		}
 		cur = *off;
-		ret = eprs_parse_term(eprs, rule, term_id, off, node, err);
+		ret = eprs_parse_term(eprs, rule, term_id, off, node, err, term);
 	}
 
 	*off = cur;
@@ -326,8 +324,9 @@ static int eprs_parse_rule(eprs_t *prs, const estx_rule_t rule_id, uint *off, ep
 
 	log_trace("cparse", "eparser", NULL, "<%d>", rule_id);
 
-	uint cur = *off;
-	if (eprs_parse_terms(prs, rule_id, rule->terms, off, node, err)) {
+	uint cur		     = *off;
+	const estx_term_data_t *term = estx_get_term_data(prs->estx, rule->terms);
+	if (eprs_parse_terms(prs, rule_id, rule->terms, off, node, err, term)) {
 		log_trace("cparse", "eparser", NULL, "<%d>: failed", rule_id);
 		*off = cur;
 		return 1;
