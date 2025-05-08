@@ -37,24 +37,21 @@ void estx_free(estx_t *estx)
 	buf_free(&estx->strs);
 }
 
-estx_rule_t estx_add_rule(estx_t *estx)
+int estx_add_rule(estx_t *estx, estx_rule_t *rule)
 {
 	if (estx == NULL) {
-		return (uint)-1;
+		return 1;
 	}
 
-	estx_rule_t rule;
-	estx_rule_data_t *data = arr_add(&estx->rules, &rule);
+	estx_rule_data_t *data = arr_add(&estx->rules, rule);
 	if (data == NULL) {
 		log_error("cparse", "esyntax", NULL, "failed to add rule");
-		return (uint)-1;
+		return 1;
 	}
 
-	*data = (estx_rule_data_t){
-		.terms = (uint)-1,
-	};
+	*data = (estx_rule_data_t){0};
 
-	return rule;
+	return 0;
 }
 
 estx_rule_data_t *estx_get_rule_data(const estx_t *estx, estx_rule_t rule)
@@ -64,7 +61,6 @@ estx_rule_data_t *estx_get_rule_data(const estx_t *estx, estx_rule_t rule)
 	}
 
 	estx_rule_data_t *data = arr_get(&estx->rules, rule);
-
 	if (data == NULL) {
 		log_warn("cparse", "esyntax", NULL, "invalid rule: %d", rule);
 		return NULL;
@@ -206,7 +202,6 @@ estx_term_data_t *estx_get_term_data(const estx_t *estx, estx_term_t term)
 	}
 
 	estx_term_data_t *data = tree_get(&estx->terms, term);
-
 	if (data == NULL) {
 		log_warn("cparse", "esyntax", NULL, "invalid term: %d", term);
 		return NULL;
@@ -218,13 +213,13 @@ estx_term_data_t *estx_get_term_data(const estx_t *estx, estx_term_t term)
 int estx_rule_set_term(estx_t *estx, estx_rule_t rule, estx_term_t term)
 {
 	estx_rule_data_t *data = estx_get_rule_data(estx, rule);
-
 	if (data == NULL) {
 		log_error("cparse", "esyntax", NULL, "failed to get rule: %d", rule);
 		return 1;
 	}
 
 	data->terms = term;
+
 	return 0;
 }
 

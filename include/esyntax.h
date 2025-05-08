@@ -49,7 +49,7 @@ typedef struct estx_s {
 estx_t *estx_init(estx_t *estx, uint rules_cap, uint terms_cap, alloc_t alloc);
 void estx_free(estx_t *estx);
 
-estx_rule_t estx_add_rule(estx_t *estx);
+int estx_add_rule(estx_t *estx, estx_rule_t *rule);
 estx_rule_data_t *estx_get_rule_data(const estx_t *estx, estx_rule_t rule);
 
 int estx_term_rule(estx_t *estx, estx_rule_t rule, estx_term_occ_t occ, estx_term_t *term);

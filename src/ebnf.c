@@ -126,7 +126,7 @@ static void term_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 		estx_rule_t new_rule;
 		if (strbuf_find(names, name, &new_rule)) {
 			strbuf_add(names, name, &new_rule);
-			estx_add_rule(estx);
+			estx_add_rule(estx, NULL);
 		}
 
 		estx_term_t term;
@@ -285,7 +285,7 @@ static int rules_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 	estx_rule_t rule;
 	if (strbuf_find(names, name, &rule)) {
 		strbuf_add(names, name, &rule);
-		estx_add_rule(estx);
+		estx_add_rule(estx, NULL);
 	}
 
 	prs_node_t prs_alt;

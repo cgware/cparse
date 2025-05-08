@@ -41,11 +41,14 @@ TEST(estx_add_rule)
 	estx_init(&estx, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(estx_add_rule(NULL), (uint)-1);
+	estx_rule_t rule;
+
+	EXPECT_EQ(estx_add_rule(NULL, NULL), 1);
 	mem_oom(1);
-	EXPECT_EQ(estx_add_rule(&estx), (uint)-1);
+	EXPECT_EQ(estx_add_rule(&estx, NULL), 1);
 	mem_oom(0);
-	EXPECT_EQ(estx_add_rule(&estx), 0);
+	EXPECT_EQ(estx_add_rule(&estx, &rule), 0);
+	EXPECT_EQ(rule, 0);
 
 	estx_free(&estx);
 
@@ -220,7 +223,8 @@ TEST(estx_rule_set_term)
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
 
-	estx_rule_t rule = estx_add_rule(&estx);
+	estx_rule_t rule;
+	estx_add_rule(&estx, &rule);
 
 	log_set_quiet(0, 1);
 	EXPECT_EQ(estx_rule_set_term(NULL, 0, -1), 1);
@@ -263,7 +267,7 @@ TEST(estx_print_no_term)
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
 
-	estx_add_rule(&estx);
+	estx_add_rule(&estx, NULL);
 
 	char buf[64] = {0};
 	log_set_quiet(0, 1);
@@ -283,11 +287,14 @@ TEST(estx_print)
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
 
+	estx_rule_t rule;
 	estx_term_t file, line;
+	estx_add_rule(&estx, &rule);
 	estx_term_con(&estx, &file);
-	estx_rule_set_term(&estx, estx_add_rule(&estx), file);
+	estx_rule_set_term(&estx, rule, file);
+	estx_add_rule(&estx, &rule);
 	estx_term_con(&estx, &line);
-	estx_rule_set_term(&estx, estx_add_rule(&estx), line);
+	estx_rule_set_term(&estx, rule, line);
 
 	estx_term_t term;
 	estx_term_rule(&estx, line, ESTX_TERM_OCC_ONE, &term);
@@ -365,9 +372,11 @@ TEST(estx_print_tree)
 	estx_t estx = {0};
 	estx_init(&estx, 1, 1, ALLOC_STD);
 
+	estx_rule_t rule;
 	estx_term_t file;
+	estx_add_rule(&estx, &rule);
 	estx_term_con(&estx, &file);
-	estx_rule_set_term(&estx, estx_add_rule(&estx), file);
+	estx_rule_set_term(&estx, rule, file);
 
 	estx_term_t term;
 	estx_term_con(&estx, &term);
