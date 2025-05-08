@@ -29,6 +29,75 @@ TEST(eprs_init_free)
 	END;
 }
 
+TEST(eprs_node_rule)
+{
+	START;
+
+	eprs_t eprs = {0};
+	log_set_quiet(0, 1);
+	eprs_init(&eprs, 0, ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	eprs_node_t node;
+
+	EXPECT_EQ(eprs_node_rule(NULL, 0, NULL), 1);
+	mem_oom(1);
+	EXPECT_EQ(eprs_node_rule(&eprs, 0, NULL), 1);
+	mem_oom(0);
+	EXPECT_EQ(eprs_node_rule(&eprs, 0, &node), 0);
+	EXPECT_EQ(node, 0);
+
+	eprs_free(&eprs);
+
+	END;
+}
+
+TEST(eprs_node_tok)
+{
+	START;
+
+	eprs_t eprs = {0};
+	log_set_quiet(0, 1);
+	eprs_init(&eprs, 0, ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	eprs_node_t node;
+
+	EXPECT_EQ(eprs_node_tok(NULL, (token_t){0}, NULL), 1);
+	mem_oom(1);
+	EXPECT_EQ(eprs_node_tok(&eprs, (token_t){0}, NULL), 1);
+	mem_oom(0);
+	EXPECT_EQ(eprs_node_tok(&eprs, (token_t){0}, &node), 0);
+	EXPECT_EQ(node, 0);
+
+	eprs_free(&eprs);
+
+	END;
+}
+
+TEST(eprs_node_lit)
+{
+	START;
+
+	eprs_t eprs = {0};
+	log_set_quiet(0, 1);
+	eprs_init(&eprs, 0, ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	eprs_node_t node;
+
+	EXPECT_EQ(eprs_node_lit(NULL, 0, 0, NULL), 1);
+	mem_oom(1);
+	EXPECT_EQ(eprs_node_lit(&eprs, 0, 0, NULL), 1);
+	mem_oom(0);
+	EXPECT_EQ(eprs_node_lit(&eprs, 0, 0, &node), 0);
+	EXPECT_EQ(node, 0);
+
+	eprs_free(&eprs);
+
+	END;
+}
+
 TEST(eprs_add_node)
 {
 	START;
@@ -38,20 +107,17 @@ TEST(eprs_add_node)
 	eprs_init(&eprs, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(eprs_add(NULL, (eprs_node_data_t){.type = EPRS_NODE_UNKNOWN}), EPRS_NODE_END);
-	mem_oom(1);
-	EXPECT_EQ(eprs_add(&eprs, (eprs_node_data_t){.type = EPRS_NODE_UNKNOWN}), EPRS_NODE_END);
-	mem_oom(0);
+	eprs_node_t parent, child;
 
-	eprs_node_t parent = eprs_add(&eprs, (eprs_node_data_t){.type = EPRS_NODE_UNKNOWN});
-	eprs_node_t child  = eprs_add(&eprs, (eprs_node_data_t){.type = EPRS_NODE_UNKNOWN});
+	eprs_node_rule(&eprs, 0, &parent);
+	eprs_node_rule(&eprs, 0, &child);
 
-	EXPECT_EQ(eprs_add_node(NULL, EPRS_NODE_END, EPRS_NODE_END), EPRS_NODE_END);
-	EXPECT_EQ(eprs_add_node(&eprs, EPRS_NODE_END, EPRS_NODE_END), EPRS_NODE_END);
+	EXPECT_EQ(eprs_add_node(NULL, eprs.nodes.cnt, eprs.nodes.cnt), 1);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(eprs_add_node(&eprs, parent, EPRS_NODE_END), EPRS_NODE_END);
+	EXPECT_EQ(eprs_add_node(&eprs, eprs.nodes.cnt, eprs.nodes.cnt), 1);
+	EXPECT_EQ(eprs_add_node(&eprs, parent, eprs.nodes.cnt), 1);
 	log_set_quiet(0, 0);
-	EXPECT_EQ(eprs_add_node(&eprs, parent, child), child);
+	EXPECT_EQ(eprs_add_node(&eprs, parent, child), 0);
 
 	eprs_free(&eprs);
 
@@ -67,11 +133,12 @@ TEST(eprs_remove_node)
 	eprs_init(&eprs, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	eprs_node_t node = eprs_add_node(&eprs, EPRS_NODE_END, eprs_add(&eprs, (eprs_node_data_t){.type = EPRS_NODE_UNKNOWN}));
+	eprs_node_t node;
+	eprs_node_rule(&eprs, 0, &node);
 
-	EXPECT_EQ(eprs_remove_node(NULL, EPRS_NODE_END), 1);
+	EXPECT_EQ(eprs_remove_node(NULL, eprs.nodes.cnt), 1);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(eprs_remove_node(&eprs, EPRS_NODE_END), 1);
+	EXPECT_EQ(eprs_remove_node(&eprs, eprs.nodes.cnt), 1);
 	log_set_quiet(0, 0);
 	EXPECT_EQ(eprs_remove_node(&eprs, node), 0);
 
@@ -89,18 +156,24 @@ TEST(eprs_get_rule)
 	eprs_init(&eprs, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	eprs_node_t root = eprs_add_node(&eprs, EPRS_NODE_END, EPRS_NODE_LITERAL(&eprs, 0, 0));
+	eprs_node_t root, node;
+	eprs_node_lit(&eprs, 0, 0, &root);
 
-	eprs_add_node(&eprs, root, EPRS_NODE_LITERAL(&eprs, 0, 0));
-	eprs_node_t node = eprs_add_node(&eprs, root, EPRS_NODE_RULE(&eprs, 0));
+	eprs_node_lit(&eprs, 0, 0, &node);
+	eprs_add_node(&eprs, root, node);
+	eprs_node_rule(&eprs, 0, &node);
+	eprs_add_node(&eprs, root, node);
 
-	EXPECT_EQ(eprs_get_rule(NULL, EPRS_NODE_END, eprs.nodes.cnt), EPRS_NODE_END);
+	EXPECT_EQ(eprs_get_rule(NULL, eprs.nodes.cnt, eprs.nodes.cnt, NULL), 1);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(eprs_get_rule(&eprs, EPRS_NODE_END, eprs.nodes.cnt), EPRS_NODE_END);
+	EXPECT_EQ(eprs_get_rule(&eprs, eprs.nodes.cnt, eprs.nodes.cnt, NULL), 1);
 	log_set_quiet(0, 0);
-	EXPECT_EQ(eprs_get_rule(&eprs, root, eprs.nodes.cnt), EPRS_NODE_END);
-	EXPECT_EQ(eprs_get_rule(&eprs, root, 0), node);
-	EXPECT_EQ(eprs_get_rule(&eprs, node, 0), node);
+	EXPECT_EQ(eprs_get_rule(&eprs, root, eprs.nodes.cnt, NULL), 1);
+	eprs_node_t tmp;
+	EXPECT_EQ(eprs_get_rule(&eprs, root, 0, &tmp), 0);
+	EXPECT_EQ(tmp, node);
+	EXPECT_EQ(eprs_get_rule(&eprs, node, 0, &tmp), 0);
+	EXPECT_EQ(tmp, node);
 
 	eprs_free(&eprs);
 
@@ -114,17 +187,23 @@ TEST(eprs_get_str)
 	eprs_t eprs = {0};
 	eprs_init(&eprs, 1, ALLOC_STD);
 
-	eprs_node_t root = eprs_add_node(&eprs, EPRS_NODE_END, EPRS_NODE_RULE(&eprs, 0));
+	eprs_node_t root, node;
+	eprs_node_rule(&eprs, 0, &root);
 
-	eprs_add_node(&eprs, root, EPRS_NODE_LITERAL(&eprs, 0, 0));
-	eprs_add_node(&eprs, root, EPRS_NODE_TOKEN(&eprs, (token_t){0}));
-	eprs_add_node(&eprs, root, EPRS_NODE_RULE(&eprs, 0));
-	eprs_add_node(&eprs, root, eprs_add(&eprs, (eprs_node_data_t){.type = EPRS_NODE_UNKNOWN}));
+	eprs_node_lit(&eprs, 0, 0, &node);
+	eprs_add_node(&eprs, root, node);
+	eprs_node_tok(&eprs, (token_t){0}, &node);
+	eprs_add_node(&eprs, root, node);
+	eprs_node_rule(&eprs, 1, &node);
+	eprs_add_node(&eprs, root, node);
+	eprs_node_rule(&eprs, 0, &node);
+	eprs_add_node(&eprs, root, node);
+	*(int *)tree_get(&eprs.nodes, node) = 0;
 
 	token_t str = {0};
 
-	EXPECT_EQ(eprs_get_str(NULL, EPRS_NODE_END, NULL), 1);
-	EXPECT_EQ(eprs_get_str(&eprs, EPRS_NODE_END, NULL), 1);
+	EXPECT_EQ(eprs_get_str(NULL, eprs.nodes.cnt, NULL), 1);
+	EXPECT_EQ(eprs_get_str(&eprs, eprs.nodes.cnt, NULL), 1);
 
 	str.len = 0;
 	log_set_quiet(0, 1);
@@ -1054,13 +1133,18 @@ TEST(eprs_print)
 	eprs_t eprs = {0};
 	eprs_init(&eprs, 1, ALLOC_STD);
 
-	eprs_node_t root = eprs_add_node(&eprs, EPRS_NODE_END, EPRS_NODE_RULE(&eprs, 0));
-	eprs_add_node(&eprs, root, EPRS_NODE_TOKEN(&eprs, (token_t){0}));
-	eprs_add_node(&eprs, root, EPRS_NODE_LITERAL(&eprs, 0, 0));
-	eprs_add_node(&eprs, root, eprs_add(&eprs, (eprs_node_data_t){.type = EPRS_NODE_UNKNOWN}));
+	eprs_node_t root, node;
+	eprs_node_rule(&eprs, 0, &root);
+	eprs_node_tok(&eprs, (token_t){0}, &node);
+	eprs_add_node(&eprs, root, node);
+	eprs_node_lit(&eprs, 0, 0, &node);
+	eprs_add_node(&eprs, root, node);
+	eprs_node_rule(&eprs, 0, &node);
+	eprs_add_node(&eprs, root, node);
+	*(int *)tree_get(&eprs.nodes, node) = 0;
 
 	char buf[64] = {0};
-	EXPECT_EQ(eprs_print(NULL, EPRS_NODE_END, DST_BUF(buf)), 0);
+	EXPECT_EQ(eprs_print(NULL, eprs.nodes.cnt, DST_BUF(buf)), 0);
 
 	EXPECT_EQ(eprs_print(&eprs, root, DST_BUF(buf)), 33);
 	EXPECT_STR(buf,
@@ -1079,6 +1163,9 @@ STEST(eparser)
 	SSTART;
 
 	RUN(eprs_init_free);
+	RUN(eprs_node_rule);
+	RUN(eprs_node_tok);
+	RUN(eprs_node_lit);
 	RUN(eprs_add_node);
 	RUN(eprs_remove_node);
 	RUN(eprs_get_rule);

@@ -193,7 +193,6 @@ TEST(prs_get_str)
 	prs_add_node(&prs, root, node);
 	prs_node_rule(&prs, 1, &node);
 	prs_add_node(&prs, root, node);
-
 	prs_node_rule(&prs, 0, &node);
 	prs_add_node(&prs, root, node);
 	*(int *)tree_get(&prs.nodes, node) = 0;

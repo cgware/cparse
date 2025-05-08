@@ -2,6 +2,23 @@
 
 #include "log.h"
 
+typedef enum eprs_node_type_e {
+	EPRS_NODE_UNKNOWN,
+	EPRS_NODE_RULE,
+	EPRS_NODE_TOKEN,
+	EPRS_NODE_LITERAL,
+} eprs_node_type_t;
+
+typedef struct eprs_node_data_s {
+	eprs_node_type_t type;
+	union {
+		estx_rule_t rule;
+		token_t literal;
+		token_t token;
+		int alt;
+	} val;
+} eprs_node_data_t;
+
 eprs_t *eprs_init(eprs_t *eprs, uint nodes_cap, alloc_t alloc)
 {
 	if (eprs == NULL) {
@@ -25,35 +42,73 @@ void eprs_free(eprs_t *eprs)
 	tree_free(&eprs->nodes);
 }
 
-eprs_node_t eprs_add(eprs_t *eprs, eprs_node_data_t node)
+int eprs_node_rule(eprs_t *eprs, estx_rule_t rule, eprs_node_t *node)
 {
 	if (eprs == NULL) {
-		return EPRS_NODE_END;
+		return 1;
 	}
 
-	eprs_node_t child;
-	eprs_node_data_t *data = tree_add(&eprs->nodes, &child);
+	eprs_node_data_t *data = tree_add(&eprs->nodes, node);
 	if (data == NULL) {
-		log_error("cparse", "eparser", NULL, "failed to add node");
-		return EPRS_NODE_END;
+		log_error("cparse", "eparser", NULL, "failed to add rule node");
+		return 1;
 	}
 
-	*data = node;
+	*data = (eprs_node_data_t){
+		.type	  = EPRS_NODE_RULE,
+		.val.rule = rule,
+	};
 
-	return child;
+	return 0;
 }
 
-eprs_node_t eprs_add_node(eprs_t *eprs, eprs_node_t parent, eprs_node_t node)
+int eprs_node_tok(eprs_t *eprs, token_t tok, eprs_node_t *node)
 {
 	if (eprs == NULL) {
-		return EPRS_NODE_END;
+		return 1;
 	}
 
-	if (parent < eprs->nodes.cnt && tree_set_child(&eprs->nodes, parent, node)) {
-		return (uint)-1;
+	eprs_node_data_t *data = tree_add(&eprs->nodes, node);
+	if (data == NULL) {
+		log_error("cparse", "eparser", NULL, "failed to add token node");
+		return 1;
 	}
 
-	return node;
+	*data = (eprs_node_data_t){
+		.type	   = EPRS_NODE_TOKEN,
+		.val.token = tok,
+	};
+
+	return 0;
+}
+
+int eprs_node_lit(eprs_t *eprs, size_t start, uint len, eprs_node_t *node)
+{
+	if (eprs == NULL) {
+		return 1;
+	}
+
+	eprs_node_data_t *data = tree_add(&eprs->nodes, node);
+	if (data == NULL) {
+		log_error("cparse", "eparser", NULL, "failed to add literal node");
+		return 1;
+	}
+
+	*data = (eprs_node_data_t){
+		.type	   = EPRS_NODE_LITERAL,
+		.val.token = {.start = start, .len = len},
+	};
+
+	return 0;
+}
+
+int eprs_add_node(eprs_t *eprs, eprs_node_t parent, eprs_node_t node)
+{
+	if (eprs == NULL) {
+		return 1;
+	}
+
+	return tree_set_child(&eprs->nodes, parent, node);
 }
 
 int eprs_remove_node(eprs_t *eprs, eprs_node_t node)
@@ -65,15 +120,18 @@ int eprs_remove_node(eprs_t *eprs, eprs_node_t node)
 	return tree_remove(&eprs->nodes, node);
 }
 
-eprs_node_t eprs_get_rule(const eprs_t *eprs, eprs_node_t parent, estx_rule_t rule)
+int eprs_get_rule(const eprs_t *eprs, eprs_node_t parent, estx_rule_t rule, eprs_node_t *node)
 {
 	if (eprs == NULL) {
-		return EPRS_NODE_END;
+		return 1;
 	}
 
 	const eprs_node_data_t *data = tree_get(&eprs->nodes, parent);
 	if (data && data->type == EPRS_NODE_RULE && data->val.rule == rule) {
-		return parent;
+		if (node) {
+			*node = parent;
+		}
+		return 0;
 	}
 
 	eprs_node_t child;
@@ -82,14 +140,17 @@ eprs_node_t eprs_get_rule(const eprs_t *eprs, eprs_node_t parent, estx_rule_t ru
 		switch (data->type) {
 		case EPRS_NODE_RULE:
 			if (data->val.rule == rule) {
-				return child;
+				if (node) {
+					*node = child;
+				}
+				return 0;
 			}
 			break;
 		default: break;
 		}
 	}
 
-	return EPRS_NODE_END;
+	return 1;
 }
 
 int eprs_get_str(const eprs_t *eprs, eprs_node_t parent, token_t *out)
@@ -137,9 +198,10 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 {
 	switch (term->type) {
 	case ESTX_TERM_RULE: {
-		uint nodes_cnt	  = eprs->nodes.cnt;
-		eprs_node_t child = EPRS_NODE_RULE(eprs, term->val.rule);
-		uint cur	  = *off;
+		uint nodes_cnt = eprs->nodes.cnt;
+		eprs_node_t child;
+		eprs_node_rule(eprs, term->val.rule, &child);
+		uint cur = *off;
 		if (eprs_parse_rule(eprs, term->val.rule, off, child, err)) {
 			tree_set_cnt(&eprs->nodes, nodes_cnt);
 			*off = cur;
@@ -158,8 +220,9 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 		token_t token = lex_get_token(eprs->lex, *off);
 
 		if (token.type & (1 << token_type)) {
-			eprs_add_node(
-				eprs, node, EPRS_NODE_TOKEN(eprs, ((token_t){.type = token_type, .start = token.start, .len = token.len})));
+			eprs_node_t tok;
+			eprs_node_tok(eprs, (token_t){.type = token_type, .start = token.start, .len = token.len}, &tok);
+			eprs_add_node(eprs, node, tok);
 			log_trace("cparse", "eparser", NULL, "%.*s: success +%d", len, buf, token.len);
 			*off += token.len;
 			return 0;
@@ -213,7 +276,9 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 			}
 		}
 
-		eprs_add_node(eprs, node, EPRS_NODE_LITERAL(eprs, *off, (uint)literal.len));
+		eprs_node_t lit;
+		eprs_node_lit(eprs, *off, (uint)literal.len, &lit);
+		eprs_add_node(eprs, node, lit);
 		log_trace("cparse", "parser", NULL, "\'%*s\': success +%d", literal.len, literal.data, literal.len);
 		*off += (uint)literal.len;
 		return 0;
@@ -353,8 +418,9 @@ int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t r
 		.exp  = (uint)-1,
 	};
 
-	eprs_node_t tmp = eprs_add_node(eprs, EPRS_NODE_END, EPRS_NODE_RULE(eprs, rule));
-	uint parsed	= 0;
+	eprs_node_t tmp;
+	eprs_node_rule(eprs, rule, &tmp);
+	uint parsed = 0;
 	if (eprs_parse_rule(eprs, rule, &parsed, tmp, &err) || parsed != eprs->lex->tokens.cnt) {
 		if (err.exp == (uint)-1) {
 			log_error("cparse", "parser", NULL, "wrong syntax");

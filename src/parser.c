@@ -214,7 +214,7 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 
 		if (token.type & (1 << token_type)) {
 			prs_node_t tok;
-			prs_node_tok(prs, ((token_t){.type = token_type, .start = token.start, .len = token.len}), &tok);
+			prs_node_tok(prs, (token_t){.type = token_type, .start = token.start, .len = token.len}, &tok);
 			prs_add_node(prs, node, tok);
 			log_trace("cparse", "parser", NULL, "%.*s: success +%d", (int)len, buf, token.len);
 			*off += token.len;
