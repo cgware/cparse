@@ -1,4 +1,4 @@
-#include "syntax.h"
+#include "stx.h"
 
 #include "log.h"
 #include "mem.h"
@@ -260,7 +260,7 @@ TEST(stx_rule_add_arr)
 	stx_add_rule(&stx, &rule);
 
 	stx_term_t term;
-	stx_term_tok(&stx, TOKEN_UPPER, &term);
+	stx_term_tok(&stx, TOK_UPPER, &term);
 
 	mem_oom(1);
 	EXPECT_EQ(stx_rule_add_arr(&stx, rule, term), 1);
@@ -291,7 +291,7 @@ TEST(stx_rule_add_arr_sep)
 
 	stx_term_t term, sep;
 	stx_term_rule(&stx, rule, &sep);
-	stx_term_tok(&stx, TOKEN_UPPER, &term);
+	stx_term_tok(&stx, TOK_UPPER, &term);
 
 	mem_oom(1);
 	EXPECT_EQ(stx_rule_add_arr_sep(&stx, rule, term, sep), 1);
@@ -350,7 +350,7 @@ TEST(stx_print)
 
 	stx_term_tok(&stx, -1, &term);
 	stx_rule_add_term(&stx, line, term);
-	stx_term_tok(&stx, TOKEN_ALPHA, &term);
+	stx_term_tok(&stx, TOK_ALPHA, &term);
 	stx_rule_add_term(&stx, line, term);
 	stx_term_lit(&stx, STRV(";"), &term);
 	stx_rule_add_term(&stx, line, term);
@@ -411,7 +411,7 @@ TEST(stx_print_tree)
 	stx_term_t term;
 	stx_term_rule(&stx, functions, &term);
 	stx_rule_add_term(&stx, file, term);
-	stx_term_tok(&stx, TOKEN_EOF, &term);
+	stx_term_tok(&stx, TOK_EOF, &term);
 	stx_rule_add_term(&stx, file, term);
 
 	stx_term_rule(&stx, function, &term);
@@ -424,8 +424,8 @@ TEST(stx_print_tree)
 	stx_rule_add_arr(&stx, identifier, term);
 
 	stx_term_t t0, t1, t2, t3;
-	stx_term_tok(&stx, TOKEN_ALPHA, &t0);
-	stx_term_tok(&stx, TOKEN_DIGIT, &t1);
+	stx_term_tok(&stx, TOK_ALPHA, &t0);
+	stx_term_tok(&stx, TOK_DIGIT, &t1);
 	stx_term_lit(&stx, STRV("_"), &t2);
 	stx_term_lit(&stx, STRV("'"), &t3);
 	stx_rule_add_or(&stx, chars, 4, t0, t1, t2, t3);
@@ -473,7 +473,7 @@ TEST(stx_print_tree)
 	END;
 }
 
-STEST(syntax)
+STEST(stx)
 {
 	SSTART;
 

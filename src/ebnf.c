@@ -2,7 +2,7 @@
 
 #include "bnf.h"
 #include "log.h"
-#include "token.h"
+#include "tok.h"
 
 ebnf_t *ebnf_init(ebnf_t *ebnf, alloc_t alloc)
 {
@@ -97,7 +97,7 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, dst_t dst)
 	strbuf_find(&names, STRV("literal"), &ebnf->literal);
 	strbuf_find(&names, STRV("tdouble"), &ebnf->tdouble);
 	strbuf_find(&names, STRV("tsingle"), &ebnf->tsingle);
-	strbuf_find(&names, STRV("token"), &ebnf->token);
+	strbuf_find(&names, STRV("token"), &ebnf->tok);
 	strbuf_find(&names, STRV("group"), &ebnf->group);
 	strbuf_find(&names, STRV("opt"), &ebnf->opt);
 	strbuf_find(&names, STRV("rep"), &ebnf->rep);
@@ -119,9 +119,9 @@ static void term_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 {
 	prs_node_t prs_rname;
 	if (prs_get_rule(prs, node, ebnf->rname, &prs_rname) == 0) {
-		token_t str = {0};
+		tok_t str = {0};
 		prs_get_str(prs, prs_rname, &str);
-		strv_t name = lex_get_token_val(prs->lex, str);
+		strv_t name = lex_get_tok_val(prs->lex, str);
 
 		estx_rule_t new_rule;
 		if (strbuf_find(names, name, &new_rule)) {
@@ -143,7 +143,7 @@ static void term_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 	prs_node_t prs_literal;
 	if (prs_get_rule(prs, node, ebnf->literal, &prs_literal) == 0) {
 		prs_node_t prs_text_double, prs_text_single;
-		token_t str = {0};
+		tok_t str = {0};
 
 		if (prs_get_rule(prs, prs_literal, ebnf->tdouble, &prs_text_double) == 0) {
 			prs_get_str(prs, prs_text_double, &str);
@@ -153,7 +153,7 @@ static void term_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 			return;
 		}
 
-		strv_t literal = lex_get_token_val(prs->lex, str);
+		strv_t literal = lex_get_tok_val(prs->lex, str);
 
 		estx_term_t term;
 		estx_term_lit(estx, literal, occ, &term);
@@ -166,14 +166,14 @@ static void term_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 		return;
 	}
 
-	prs_node_t prs_token;
-	if (prs_get_rule(prs, node, ebnf->token, &prs_token) == 0) {
-		token_t str = {0};
-		prs_get_str(prs, prs_token, &str);
-		strv_t token = lex_get_token_val(prs->lex, str);
+	prs_node_t prs_tok;
+	if (prs_get_rule(prs, node, ebnf->tok, &prs_tok) == 0) {
+		tok_t str = {0};
+		prs_get_str(prs, prs_tok, &str);
+		strv_t tok = lex_get_tok_val(prs->lex, str);
 
 		estx_term_t term;
-		estx_term_tok(estx, token_type_enum(token), occ, &term);
+		estx_term_tok(estx, tok_type_enum(tok), occ, &term);
 
 		if (is_rule) {
 			estx_rule_set_term(estx, rule, term);
@@ -278,9 +278,9 @@ static int rules_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 	prs_get_rule(prs, node, ebnf->rule, &prs_rule);
 	prs_get_rule(prs, prs_rule, ebnf->rname, &prs_rname);
 
-	token_t str = {0};
+	tok_t str = {0};
 	prs_get_str(prs, prs_rname, &str);
-	strv_t name = lex_get_token_val(prs->lex, str);
+	strv_t name = lex_get_tok_val(prs->lex, str);
 
 	estx_rule_t rule;
 	if (strbuf_find(names, name, &rule)) {

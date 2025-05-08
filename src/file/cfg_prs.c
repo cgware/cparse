@@ -1,7 +1,7 @@
-#include "file/cfg_parse.h"
+#include "file/cfg_prs.h"
 
 #include "ebnf.h"
-#include "eparser.h"
+#include "eprs.h"
 #include "log.h"
 #include "str.h"
 
@@ -84,24 +84,24 @@ static cfg_var_t cfg_parse_value(const cfg_prs_t *cfg_prs, eprs_t *eprs, strv_t 
 	eprs_node_t node;
 	cfg_var_t ret = CFG_VAR_END;
 	if (eprs_get_rule(eprs, value, cfg_prs->i, &node) == 0) {
-		token_t val = {0};
+		tok_t val = {0};
 		eprs_get_str(eprs, node, &val);
 
-		strv_t val_str = lex_get_token_val(eprs->lex, val);
+		strv_t val_str = lex_get_tok_val(eprs->lex, val);
 		int val_int;
 		strv_to_int(val_str, &val_int);
 
 		ret = CFG_INT(cfg, key, val_int);
 	} else if (eprs_get_rule(eprs, value, cfg_prs->str, &node) == 0) {
-		token_t val = {0};
+		tok_t val = {0};
 		eprs_get_str(eprs, node, &val);
 
-		ret = CFG_STR(cfg, key, lex_get_token_val(eprs->lex, val));
+		ret = CFG_STR(cfg, key, lex_get_tok_val(eprs->lex, val));
 	} else if (eprs_get_rule(eprs, value, cfg_prs->lit, &node) == 0) {
-		token_t val = {0};
+		tok_t val = {0};
 		eprs_get_str(eprs, node, &val);
 
-		ret = CFG_LIT(cfg, key, lex_get_token_val(eprs->lex, val));
+		ret = CFG_LIT(cfg, key, lex_get_tok_val(eprs->lex, val));
 	} else if (eprs_get_rule(eprs, value, cfg_prs->arr, &node) == 0) {
 		eprs_node_t child;
 		void *data;
@@ -138,12 +138,12 @@ static cfg_var_t cfg_parse_kv(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_
 	eprs_node_t prs_key;
 	eprs_get_rule(eprs, kv, cfg_prs->key, &prs_key);
 
-	token_t key = {0};
+	tok_t key = {0};
 	eprs_get_str(eprs, prs_key, &key);
 
 	eprs_node_t prs_val;
 	eprs_get_rule(eprs, kv, cfg_prs->val, &prs_val);
-	cfg_var_t s = cfg_parse_value(cfg_prs, eprs, lex_get_token_val(eprs->lex, key), prs_val, cfg);
+	cfg_var_t s = cfg_parse_value(cfg_prs, eprs, lex_get_tok_val(eprs->lex, key), prs_val, cfg);
 	return s;
 }
 
@@ -154,10 +154,10 @@ cfg_var_t cfg_parse_tbl(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t kv, 
 	eprs_node_t prs_key;
 	eprs_get_rule(eprs, kv, cfg_prs->key, &prs_key);
 
-	token_t key = {0};
+	tok_t key = {0};
 	eprs_get_str(eprs, prs_key, &key);
 
-	cfg_var_t tbl = CFG_TBL(cfg, lex_get_token_val(eprs->lex, key));
+	cfg_var_t tbl = CFG_TBL(cfg, lex_get_tok_val(eprs->lex, key));
 
 	eprs_node_t prs_ent;
 	eprs_get_rule(eprs, kv, cfg_prs->ent, &prs_ent);

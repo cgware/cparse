@@ -1,4 +1,4 @@
-#include "file/cfg_parse.h"
+#include "file/cfg_prs.h"
 
 #include "log.h"
 #include "mem.h"
@@ -177,7 +177,7 @@ TEST(cfg_parse_test)
 	END;
 }
 
-STEST(cfg_parse)
+STEST(cfg_prs)
 {
 	SSTART;
 

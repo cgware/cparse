@@ -1,4 +1,4 @@
-#include "esyntax.h"
+#include "estx.h"
 
 #include "log.h"
 
@@ -9,17 +9,17 @@ estx_t *estx_init(estx_t *estx, uint rules_cap, uint terms_cap, alloc_t alloc)
 	}
 
 	if (arr_init(&estx->rules, rules_cap, sizeof(estx_rule_data_t), alloc) == NULL) {
-		log_error("cparse", "esyntax", NULL, "failed to initialize rules array");
+		log_error("cparse", "estx", NULL, "failed to initialize rules array");
 		return NULL;
 	}
 
 	if (tree_init(&estx->terms, terms_cap, sizeof(estx_term_data_t), alloc) == NULL) {
-		log_error("cparse", "esyntax", NULL, "failed to initialize terms tree");
+		log_error("cparse", "estx", NULL, "failed to initialize terms tree");
 		return NULL;
 	}
 
 	if (buf_init(&estx->strs, 16, alloc) == NULL) {
-		log_error("cparse", "syntax", NULL, "failed to initialize strings buffer");
+		log_error("cparse", "estx", NULL, "failed to initialize strings buffer");
 		return NULL;
 	}
 
@@ -45,7 +45,7 @@ int estx_add_rule(estx_t *estx, estx_rule_t *rule)
 
 	estx_rule_data_t *data = arr_add(&estx->rules, rule);
 	if (data == NULL) {
-		log_error("cparse", "esyntax", NULL, "failed to add rule");
+		log_error("cparse", "estx", NULL, "failed to add rule");
 		return 1;
 	}
 
@@ -62,7 +62,7 @@ estx_rule_data_t *estx_get_rule_data(const estx_t *estx, estx_rule_t rule)
 
 	estx_rule_data_t *data = arr_get(&estx->rules, rule);
 	if (data == NULL) {
-		log_warn("cparse", "esyntax", NULL, "invalid rule: %d", rule);
+		log_warn("cparse", "estx", NULL, "invalid rule: %d", rule);
 		return NULL;
 	}
 
@@ -77,7 +77,7 @@ int estx_term_rule(estx_t *estx, estx_rule_t rule, estx_term_occ_t occ, estx_ter
 
 	estx_term_data_t *data = tree_add(&estx->terms, term);
 	if (data == NULL) {
-		log_error("cparse", "esyntax", NULL, "failed to create rule term");
+		log_error("cparse", "estx", NULL, "failed to create rule term");
 		return 1;
 	}
 
@@ -90,7 +90,7 @@ int estx_term_rule(estx_t *estx, estx_rule_t rule, estx_term_occ_t occ, estx_ter
 	return 0;
 }
 
-int estx_term_tok(estx_t *estx, token_type_t token, estx_term_occ_t occ, estx_term_t *term)
+int estx_term_tok(estx_t *estx, tok_type_t tok, estx_term_occ_t occ, estx_term_t *term)
 {
 	if (estx == NULL) {
 		return 1;
@@ -98,14 +98,14 @@ int estx_term_tok(estx_t *estx, token_type_t token, estx_term_occ_t occ, estx_te
 
 	estx_term_data_t *data = tree_add(&estx->terms, term);
 	if (data == NULL) {
-		log_error("cparse", "esyntax", NULL, "failed to create token term");
+		log_error("cparse", "estx", NULL, "failed to create tok term");
 		return 1;
 	}
 
 	*data = (estx_term_data_t){
-		.type	   = ESTX_TERM_TOKEN,
-		.val.token = token,
-		.occ	   = occ,
+		.type	 = ESTX_TERM_TOKEN,
+		.val.tok = tok,
+		.occ	 = occ,
 	};
 
 	return 0;
@@ -119,7 +119,7 @@ int estx_term_lit(estx_t *estx, strv_t str, estx_term_occ_t occ, estx_term_t *te
 
 	estx_term_data_t *data = tree_add(&estx->terms, term);
 	if (data == NULL) {
-		log_error("cparse", "esyntax", NULL, "failed to create literal term");
+		log_error("cparse", "estx", NULL, "failed to create literal term");
 		return 1;
 	}
 
@@ -145,7 +145,7 @@ int estx_term_alt(estx_t *estx, estx_term_t *term)
 
 	estx_term_data_t *data = tree_add(&estx->terms, term);
 	if (data == NULL) {
-		log_error("cparse", "esyntax", NULL, "failed to create alternative term");
+		log_error("cparse", "estx", NULL, "failed to create alternative term");
 		return 1;
 	}
 
@@ -164,7 +164,7 @@ int estx_term_con(estx_t *estx, estx_term_t *term)
 
 	estx_term_data_t *data = tree_add(&estx->terms, term);
 	if (data == NULL) {
-		log_error("cparse", "esyntax", NULL, "failed to create concat term");
+		log_error("cparse", "estx", NULL, "failed to create concat term");
 		return 1;
 	}
 
@@ -183,7 +183,7 @@ int estx_term_group(estx_t *estx, estx_term_occ_t occ, estx_term_t *term)
 
 	estx_term_data_t *data = tree_add(&estx->terms, term);
 	if (data == NULL) {
-		log_error("cparse", "esyntax", NULL, "failed to create group term");
+		log_error("cparse", "estx", NULL, "failed to create group term");
 		return 1;
 	}
 
@@ -203,7 +203,7 @@ estx_term_data_t *estx_get_term_data(const estx_t *estx, estx_term_t term)
 
 	estx_term_data_t *data = tree_get(&estx->terms, term);
 	if (data == NULL) {
-		log_warn("cparse", "esyntax", NULL, "invalid term: %d", term);
+		log_warn("cparse", "estx", NULL, "invalid term: %d", term);
 		return NULL;
 	}
 
@@ -214,7 +214,7 @@ int estx_rule_set_term(estx_t *estx, estx_rule_t rule, estx_term_t term)
 {
 	estx_rule_data_t *data = estx_get_rule_data(estx, rule);
 	if (data == NULL) {
-		log_error("cparse", "esyntax", NULL, "failed to get rule: %d", rule);
+		log_error("cparse", "estx", NULL, "failed to get rule: %d", rule);
 		return 1;
 	}
 
@@ -226,7 +226,7 @@ int estx_rule_set_term(estx_t *estx, estx_rule_t rule, estx_term_t term)
 int estx_term_add_term(estx_t *estx, estx_term_t term, estx_term_t child)
 {
 	if (estx_get_term_data(estx, term) == NULL) {
-		log_error("cparse", "esyntax", NULL, "failed to get term: %d", term);
+		log_error("cparse", "estx", NULL, "failed to get term: %d", term);
 		return 1;
 	}
 
@@ -266,7 +266,7 @@ static size_t estx_term_print(const estx_t *estx, const estx_term_t term_id, con
 	}
 	case ESTX_TERM_TOKEN: {
 		dst.off += dputs(dst, STRV(" "));
-		dst.off += token_type_print(1 << term->val.token, dst);
+		dst.off += tok_type_print(1 << term->val.tok, dst);
 		dst.off += estx_term_occ_print(term->occ, dst);
 		break;
 	}
@@ -316,7 +316,7 @@ static size_t estx_term_print(const estx_t *estx, const estx_term_t term_id, con
 		dst.off += estx_term_occ_print(term->occ, dst);
 		break;
 	}
-	default: log_warn("cparse", "esyntax", NULL, "unknown term type: %d", term->type); break;
+	default: log_warn("cparse", "estx", NULL, "unknown term type: %d", term->type); break;
 	}
 
 	return dst.off - off;
@@ -358,7 +358,7 @@ size_t term_print_cb(void *data, dst_t dst, const void *priv)
 		break;
 	}
 	case ESTX_TERM_TOKEN: {
-		dst.off += token_type_print(1 << term->val.token, dst);
+		dst.off += tok_type_print(1 << term->val.tok, dst);
 		dst.off += estx_term_occ_print(term->occ, dst);
 		break;
 	}
@@ -385,7 +385,7 @@ size_t term_print_cb(void *data, dst_t dst, const void *priv)
 		dst.off += estx_term_occ_print(term->occ, dst);
 		break;
 	}
-	default: log_warn("cparse", "esyntax", NULL, "unknown term type: %d", term->type); break;
+	default: log_warn("cparse", "estx", NULL, "unknown term type: %d", term->type); break;
 	}
 
 	dst.off += dputs(dst, STRV("\n"));

@@ -2,7 +2,7 @@
 
 #include "log.h"
 #include "strbuf.h"
-#include "token.h"
+#include "tok.h"
 
 bnf_t *bnf_init(bnf_t *bnf, alloc_t alloc)
 {
@@ -47,7 +47,7 @@ const stx_t *bnf_get_stx(bnf_t *bnf)
 	stx_add_rule(stx, &bnf->terms);
 	stx_add_rule(stx, &bnf->term);
 	stx_add_rule(stx, &bnf->literal);
-	stx_add_rule(stx, &bnf->token);
+	stx_add_rule(stx, &bnf->tok);
 	stx_add_rule(stx, &bnf->tdouble);
 	stx_add_rule(stx, &bnf->tsingle);
 	stx_add_rule(stx, &cdouble);
@@ -60,7 +60,7 @@ const stx_t *bnf_get_stx(bnf_t *bnf)
 
 	stx_term_rule(stx, bnf->bnf, &term);
 	stx_rule_add_term(stx, bnf->file, term);
-	stx_term_tok(stx, TOKEN_EOF, &term);
+	stx_term_tok(stx, TOK_EOF, &term);
 	stx_rule_add_term(stx, bnf->file, term);
 
 	stx_term_rule(stx, bnf->rules, &term);
@@ -83,14 +83,14 @@ const stx_t *bnf_get_stx(bnf_t *bnf)
 	stx_rule_add_term(stx, bnf->rule, term);
 	stx_term_rule(stx, bnf->expr, &term);
 	stx_rule_add_term(stx, bnf->rule, term);
-	stx_term_tok(stx, TOKEN_NL, &term);
+	stx_term_tok(stx, TOK_NL, &term);
 	stx_rule_add_term(stx, bnf->rule, term);
 
 	stx_term_t l, r;
-	stx_term_tok(stx, TOKEN_LOWER, &l);
+	stx_term_tok(stx, TOK_LOWER, &l);
 	stx_term_rule(stx, rchars, &term);
 	stx_term_add_term(stx, l, term);
-	stx_term_tok(stx, TOKEN_LOWER, &r);
+	stx_term_tok(stx, TOK_LOWER, &r);
 	stx_term_t orv;
 	stx_term_or(stx, l, r, &orv);
 	stx_rule_add_term(stx, bnf->rname, orv);
@@ -98,7 +98,7 @@ const stx_t *bnf_get_stx(bnf_t *bnf)
 	stx_term_rule(stx, rchar, &term);
 	stx_rule_add_arr(stx, rchars, term);
 
-	stx_term_tok(stx, TOKEN_LOWER, &l);
+	stx_term_tok(stx, TOK_LOWER, &l);
 	stx_term_lit(stx, STRV("-"), &r);
 	stx_term_or(stx, l, r, &orv);
 	stx_rule_add_term(stx, rchar, orv);
@@ -125,7 +125,7 @@ const stx_t *bnf_get_stx(bnf_t *bnf)
 	stx_term_add_term(stx, l, term);
 	stx_term_lit(stx, STRV(">"), &term);
 	stx_term_add_term(stx, l, term);
-	stx_term_rule(stx, bnf->token, &r);
+	stx_term_rule(stx, bnf->tok, &r);
 	stx_term_rule(stx, bnf->literal, &term);
 	stx_rule_add_or(stx, bnf->term, 3, term, r, l);
 
@@ -142,8 +142,8 @@ const stx_t *bnf_get_stx(bnf_t *bnf)
 	stx_term_or(stx, l, r, &orv);
 	stx_rule_add_term(stx, bnf->literal, orv);
 
-	stx_term_tok(stx, TOKEN_UPPER, &term);
-	stx_rule_add_arr(stx, bnf->token, term);
+	stx_term_tok(stx, TOK_UPPER, &term);
+	stx_rule_add_arr(stx, bnf->tok, term);
 
 	stx_term_rule(stx, cdouble, &term);
 	stx_rule_add_arr(stx, bnf->tdouble, term);
@@ -160,9 +160,9 @@ const stx_t *bnf_get_stx(bnf_t *bnf)
 	stx_rule_add_term(stx, csingle, orv);
 
 	stx_term_t t0, t1, t2, t3;
-	stx_term_tok(stx, TOKEN_ALPHA, &t0);
-	stx_term_tok(stx, TOKEN_DIGIT, &t1);
-	stx_term_tok(stx, TOKEN_SYMBOL, &t2);
+	stx_term_tok(stx, TOK_ALPHA, &t0);
+	stx_term_tok(stx, TOK_DIGIT, &t1);
+	stx_term_tok(stx, TOK_SYMBOL, &t2);
 	stx_term_rule(stx, space, &t3);
 	stx_rule_add_or(stx, character, 4, t0, t1, t2, t3);
 
@@ -179,9 +179,9 @@ static int term_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent, 
 {
 	prs_node_t prs_rule_name;
 	if (prs_get_rule(prs, parent, bnf->rname, &prs_rule_name) == 0) {
-		token_t str = {0};
+		tok_t str = {0};
 		prs_get_str(prs, prs_rule_name, &str);
-		strv_t name = lex_get_token_val(prs->lex, str);
+		strv_t name = lex_get_tok_val(prs->lex, str);
 
 		stx_rule_t term_rule;
 		if (strbuf_find(names, name, &term_rule)) {
@@ -196,26 +196,26 @@ static int term_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent, 
 	if (prs_get_rule(prs, parent, bnf->literal, &prs_literal) == 0) {
 		prs_node_t prs_text_double;
 		if (prs_get_rule(prs, prs_literal, bnf->tdouble, &prs_text_double) == 0) {
-			token_t str = {0};
+			tok_t str = {0};
 			prs_get_str(prs, prs_text_double, &str);
-			return stx_term_lit(stx, lex_get_token_val(prs->lex, str), term);
+			return stx_term_lit(stx, lex_get_tok_val(prs->lex, str), term);
 		}
 
 		prs_node_t prs_text_single;
 		if (prs_get_rule(prs, prs_literal, bnf->tsingle, &prs_text_single) == 0) {
-			token_t str = {0};
+			tok_t str = {0};
 			prs_get_str(prs, prs_text_single, &str);
-			return stx_term_lit(stx, lex_get_token_val(prs->lex, str), term);
+			return stx_term_lit(stx, lex_get_tok_val(prs->lex, str), term);
 		}
 
 		return 1;
 	}
 
-	prs_node_t prs_token;
-	if (prs_get_rule(prs, parent, bnf->token, &prs_token) == 0) {
-		token_t str = {0};
-		prs_get_str(prs, prs_token, &str);
-		return stx_term_tok(stx, token_type_enum(lex_get_token_val(prs->lex, str)), term);
+	prs_node_t prs_tok;
+	if (prs_get_rule(prs, parent, bnf->tok, &prs_tok) == 0) {
+		tok_t str = {0};
+		prs_get_str(prs, prs_tok, &str);
+		return stx_term_tok(stx, tok_type_enum(lex_get_tok_val(prs->lex, str)), term);
 	}
 
 	return 1;
@@ -261,9 +261,9 @@ static int rules_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent,
 	prs_get_rule(prs, parent, bnf->rule, &prs_rule);
 	prs_get_rule(prs, prs_rule, bnf->rname, &prs_rname);
 
-	token_t str = {0};
+	tok_t str = {0};
 	prs_get_str(prs, prs_rname, &str);
-	strv_t name = lex_get_token_val(prs->lex, str);
+	strv_t name = lex_get_tok_val(prs->lex, str);
 
 	stx_rule_t rule;
 	if (strbuf_find(names, name, &rule)) {

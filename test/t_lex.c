@@ -1,4 +1,4 @@
-#include "lexer.h"
+#include "lex.h"
 
 #include "log.h"
 #include "mem.h"
@@ -41,7 +41,7 @@ TEST(lex_add_word)
 	END;
 }
 
-TEST(lex_get_token)
+TEST(lex_get_tok)
 {
 	START;
 
@@ -50,16 +50,16 @@ TEST(lex_get_token)
 	lex_init(&lex, 0, 1, ALLOC_STD);
 	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__);
 
-	token_t token = lex_get_token(&lex, 0);
-	EXPECT_EQ(token.start, 0);
-	EXPECT_EQ(token.len, 1);
+	tok_t tok = lex_get_tok(&lex, 0);
+	EXPECT_EQ(tok.start, 0);
+	EXPECT_EQ(tok.len, 1);
 
 	lex_free(&lex);
 
 	END;
 }
 
-TEST(lex_get_token_val)
+TEST(lex_get_tok_val)
 {
 	START;
 
@@ -68,10 +68,10 @@ TEST(lex_get_token_val)
 	lex_init(&lex, 0, 1, ALLOC_STD);
 	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__);
 
-	token_t token = lex_get_token(&lex, 0);
+	tok_t tok = lex_get_tok(&lex, 0);
 
-	EXPECT_EQ(lex_get_token_val(NULL, token).len, 0);
-	strv_t val = lex_get_token_val(&lex, token);
+	EXPECT_EQ(lex_get_tok_val(NULL, tok).len, 0);
+	strv_t val = lex_get_tok_val(&lex, tok);
 
 	EXPECT_STRN(val.data, "s", val.len);
 
@@ -80,7 +80,7 @@ TEST(lex_get_token_val)
 	END;
 }
 
-TEST(lex_get_token_loc)
+TEST(lex_get_tok_loc)
 {
 	START;
 
@@ -89,8 +89,8 @@ TEST(lex_get_token_loc)
 	lex_init(&lex, 0, 1, ALLOC_STD);
 	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__);
 
-	lex_get_token_loc(NULL, 0);
-	token_loc_t loc = lex_get_token_loc(&lex, 0);
+	lex_get_tok_loc(NULL, 0);
+	tok_loc_t loc = lex_get_tok_loc(&lex, 0);
 
 	EXPECT_EQ(loc.line_off, 0);
 	EXPECT_EQ(loc.line_len, 3);
@@ -102,7 +102,7 @@ TEST(lex_get_token_loc)
 	END;
 }
 
-TEST(lex_get_token_loc_nl)
+TEST(lex_get_tok_loc_nl)
 {
 	START;
 
@@ -111,7 +111,7 @@ TEST(lex_get_token_loc_nl)
 	lex_init(&lex, 0, 1, ALLOC_STD);
 	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__);
 
-	token_loc_t loc = lex_get_token_loc(&lex, 1);
+	tok_loc_t loc = lex_get_tok_loc(&lex, 1);
 
 	EXPECT_EQ(loc.line_off, 0);
 	EXPECT_EQ(loc.line_len, 5);
@@ -123,7 +123,7 @@ TEST(lex_get_token_loc_nl)
 	END;
 }
 
-TEST(lex_get_token_loc_el)
+TEST(lex_get_tok_loc_el)
 {
 	START;
 
@@ -132,7 +132,7 @@ TEST(lex_get_token_loc_el)
 	lex_init(&lex, 0, 1, ALLOC_STD);
 	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__);
 
-	token_loc_t loc = lex_get_token_loc(&lex, 5);
+	tok_loc_t loc = lex_get_tok_loc(&lex, 5);
 
 	EXPECT_EQ(loc.line_off, 0);
 	EXPECT_EQ(loc.line_len, 5);
@@ -144,7 +144,7 @@ TEST(lex_get_token_loc_el)
 	END;
 }
 
-TEST(lex_get_token_loc_sl)
+TEST(lex_get_tok_loc_sl)
 {
 	START;
 
@@ -153,7 +153,7 @@ TEST(lex_get_token_loc_sl)
 	lex_init(&lex, 0, 1, ALLOC_STD);
 	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__);
 
-	token_loc_t loc = lex_get_token_loc(&lex, 6);
+	tok_loc_t loc = lex_get_tok_loc(&lex, 6);
 
 	EXPECT_EQ(loc.line_off, 6);
 	EXPECT_EQ(loc.line_len, 5);
@@ -192,20 +192,20 @@ TEST(lex_tokenize)
 	mem_oom(0);
 	EXPECT_EQ(lex_tokenize(&lex, src, STRV(__FILE__), __LINE__), 0);
 
-	EXPECT_EQ(lex.tokens.cnt, 2);
+	EXPECT_EQ(lex.toks.cnt, 2);
 
 	{
-		token_t token = lex_get_token(&lex, 0);
-		EXPECT_EQ(token.type, (1 << TOKEN_UPPER) | (1 << TOKEN_ALPHA));
-		EXPECT_EQ(token.start, 0);
-		EXPECT_EQ(token.len, 1);
+		tok_t tok = lex_get_tok(&lex, 0);
+		EXPECT_EQ(tok.type, (1 << TOK_UPPER) | (1 << TOK_ALPHA));
+		EXPECT_EQ(tok.start, 0);
+		EXPECT_EQ(tok.len, 1);
 	}
 
 	{
-		token_t token = lex_get_token(&lex, 1);
-		EXPECT_EQ(token.type, (1 << TOKEN_WORD));
-		EXPECT_EQ(token.start, 1);
-		EXPECT_EQ(token.len, 3);
+		tok_t tok = lex_get_tok(&lex, 1);
+		EXPECT_EQ(tok.type, (1 << TOK_WORD));
+		EXPECT_EQ(tok.start, 1);
+		EXPECT_EQ(tok.len, 3);
 	}
 
 	lex_free(&lex);
@@ -213,7 +213,7 @@ TEST(lex_tokenize)
 	END;
 }
 
-TEST(lex_print_token)
+TEST(lex_print_tok)
 {
 	START;
 
@@ -224,8 +224,8 @@ TEST(lex_print_token)
 
 	char buf[256] = {0};
 
-	EXPECT_EQ(lex_print_token(NULL, (token_t){0}, DST_BUF(buf)), 0);
-	EXPECT_EQ(lex_print_token(&lex, lex_get_token(&lex, 0), DST_BUF(buf)), 14);
+	EXPECT_EQ(lex_print_tok(NULL, (tok_t){0}, DST_BUF(buf)), 0);
+	EXPECT_EQ(lex_print_tok(&lex, lex_get_tok(&lex, 0), DST_BUF(buf)), 14);
 
 	EXPECT_STR(buf, "ALPHA|UPPER(A)");
 
@@ -257,7 +257,7 @@ TEST(lex_print)
 	END;
 }
 
-TEST(lex_token_loc_print_loc)
+TEST(lex_tok_loc_print_loc)
 {
 	START;
 
@@ -267,11 +267,11 @@ TEST(lex_token_loc_print_loc)
 	lex_init(&lex, 0, 1, ALLOC_STD);
 	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 3);
 
-	token_loc_t loc = lex_get_token_loc(&lex, 7);
+	tok_loc_t loc = lex_get_tok_loc(&lex, 7);
 
 	char buf[2048] = {0};
-	EXPECT_EQ(lex_token_loc_print_loc(NULL, loc, DST_BUF(buf)), 0);
-	lex_token_loc_print_loc(&lex, loc, DST_BUF(buf));
+	EXPECT_EQ(lex_tok_loc_print_loc(NULL, loc, DST_BUF(buf)), 0);
+	lex_tok_loc_print_loc(&lex, loc, DST_BUF(buf));
 
 	EXPECT_STR(buf, __FILE__ ":266:1: ");
 
@@ -280,7 +280,7 @@ TEST(lex_token_loc_print_loc)
 	END;
 }
 
-TEST(lex_token_loc_print_src)
+TEST(lex_tok_loc_print_src)
 {
 	START;
 
@@ -289,11 +289,11 @@ TEST(lex_token_loc_print_src)
 	lex_init(&lex, 0, 1, ALLOC_STD);
 	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__);
 
-	token_loc_t loc = lex_get_token_loc(&lex, 7);
+	tok_loc_t loc = lex_get_tok_loc(&lex, 7);
 
 	char buf[2048] = {0};
-	EXPECT_EQ(lex_token_loc_print_src(NULL, loc, DST_BUF(buf)), 0);
-	lex_token_loc_print_src(&lex, loc, DST_BUF(buf));
+	EXPECT_EQ(lex_tok_loc_print_src(NULL, loc, DST_BUF(buf)), 0);
+	lex_tok_loc_print_src(&lex, loc, DST_BUF(buf));
 
 	EXPECT_STR(buf,
 		   "line2\n"
@@ -304,24 +304,24 @@ TEST(lex_token_loc_print_src)
 	END;
 }
 
-STEST(lexer)
+STEST(lex)
 {
 	SSTART;
 
 	RUN(lex_init_free);
 	RUN(lex_add_word);
-	RUN(lex_get_token);
-	RUN(lex_get_token_val);
-	RUN(lex_get_token_loc);
-	RUN(lex_get_token_loc_nl);
-	RUN(lex_get_token_loc_el);
-	RUN(lex_get_token_loc_sl);
+	RUN(lex_get_tok);
+	RUN(lex_get_tok_val);
+	RUN(lex_get_tok_loc);
+	RUN(lex_get_tok_loc_nl);
+	RUN(lex_get_tok_loc_el);
+	RUN(lex_get_tok_loc_sl);
 	RUN(lex_set_src);
 	RUN(lex_tokenize);
-	RUN(lex_print_token);
+	RUN(lex_print_tok);
 	RUN(lex_print);
-	RUN(lex_token_loc_print_loc);
-	RUN(lex_token_loc_print_src);
+	RUN(lex_tok_loc_print_loc);
+	RUN(lex_tok_loc_print_src);
 
 	SEND;
 }

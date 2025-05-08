@@ -4,7 +4,7 @@
 #include "arr.h"
 #include "buf.h"
 #include "str.h"
-#include "token.h"
+#include "tok.h"
 #include "tree.h"
 
 typedef uint estx_rule_t;
@@ -31,8 +31,8 @@ typedef struct estx_term_data_s {
 	estx_term_occ_t occ;
 	union {
 		estx_rule_t rule;
-		token_type_t token;
-		token_t literal;
+		tok_type_t tok;
+		tok_t literal;
 	} val;
 } estx_term_data_t;
 
@@ -53,7 +53,7 @@ int estx_add_rule(estx_t *estx, estx_rule_t *rule);
 estx_rule_data_t *estx_get_rule_data(const estx_t *estx, estx_rule_t rule);
 
 int estx_term_rule(estx_t *estx, estx_rule_t rule, estx_term_occ_t occ, estx_term_t *term);
-int estx_term_tok(estx_t *estx, token_type_t token, estx_term_occ_t occ, estx_term_t *term);
+int estx_term_tok(estx_t *estx, tok_type_t tok, estx_term_occ_t occ, estx_term_t *term);
 int estx_term_lit(estx_t *estx, strv_t str, estx_term_occ_t occ, estx_term_t *term);
 int estx_term_alt(estx_t *estx, estx_term_t *term);
 int estx_term_con(estx_t *estx, estx_term_t *term);

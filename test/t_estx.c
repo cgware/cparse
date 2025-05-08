@@ -1,4 +1,4 @@
-#include "esyntax.h"
+#include "estx.h"
 
 #include "log.h"
 #include "mem.h"
@@ -300,9 +300,9 @@ TEST(estx_print)
 	estx_term_rule(&estx, line, ESTX_TERM_OCC_ONE, &term);
 	estx_term_add_term(&estx, file, term);
 
-	estx_term_tok(&estx, TOKEN_UNKNOWN, ESTX_TERM_OCC_OPT, &term);
+	estx_term_tok(&estx, TOK_UNKNOWN, ESTX_TERM_OCC_OPT, &term);
 	estx_term_add_term(&estx, line, term);
-	estx_term_tok(&estx, TOKEN_ALPHA, ESTX_TERM_OCC_REP, &term);
+	estx_term_tok(&estx, TOK_ALPHA, ESTX_TERM_OCC_REP, &term);
 	estx_term_add_term(&estx, line, term);
 	estx_term_lit(&estx, STRV(";"), ESTX_TERM_OCC_OPT | ESTX_TERM_OCC_REP, &term);
 	estx_term_add_term(&estx, line, term);
@@ -395,7 +395,7 @@ TEST(estx_print_tree)
 	END;
 }
 
-STEST(esyntax)
+STEST(estx)
 {
 	SSTART;
 

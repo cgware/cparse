@@ -1,4 +1,4 @@
-#include "eparser.h"
+#include "eprs.h"
 
 #include "ebnf.h"
 #include "log.h"
@@ -63,11 +63,11 @@ TEST(eprs_node_tok)
 
 	eprs_node_t node;
 
-	EXPECT_EQ(eprs_node_tok(NULL, (token_t){0}, NULL), 1);
+	EXPECT_EQ(eprs_node_tok(NULL, (tok_t){0}, NULL), 1);
 	mem_oom(1);
-	EXPECT_EQ(eprs_node_tok(&eprs, (token_t){0}, NULL), 1);
+	EXPECT_EQ(eprs_node_tok(&eprs, (tok_t){0}, NULL), 1);
 	mem_oom(0);
-	EXPECT_EQ(eprs_node_tok(&eprs, (token_t){0}, &node), 0);
+	EXPECT_EQ(eprs_node_tok(&eprs, (tok_t){0}, &node), 0);
 	EXPECT_EQ(node, 0);
 
 	eprs_free(&eprs);
@@ -192,7 +192,7 @@ TEST(eprs_get_str)
 
 	eprs_node_lit(&eprs, 0, 0, &node);
 	eprs_add_node(&eprs, root, node);
-	eprs_node_tok(&eprs, (token_t){0}, &node);
+	eprs_node_tok(&eprs, (tok_t){0}, &node);
 	eprs_add_node(&eprs, root, node);
 	eprs_node_rule(&eprs, 1, &node);
 	eprs_add_node(&eprs, root, node);
@@ -200,7 +200,7 @@ TEST(eprs_get_str)
 	eprs_add_node(&eprs, root, node);
 	*(int *)tree_get(&eprs.nodes, node) = 0;
 
-	token_t str = {0};
+	tok_t str = {0};
 
 	EXPECT_EQ(eprs_get_str(NULL, eprs.nodes.cnt, NULL), 1);
 	EXPECT_EQ(eprs_get_str(&eprs, eprs.nodes.cnt, NULL), 1);
@@ -322,7 +322,7 @@ TEST(eprs_parse_rule)
 	END;
 }
 
-TEST(eprs_parse_token_unexpected)
+TEST(eprs_parse_tok_unexpected)
 {
 	START;
 
@@ -340,7 +340,7 @@ TEST(eprs_parse_token_unexpected)
 	estx_rule_t rule;
 	estx_add_rule(&estx, &rule);
 	estx_term_t term;
-	estx_term_tok(&estx, TOKEN_ALPHA, ESTX_TERM_OCC_ONE, &term);
+	estx_term_tok(&estx, TOK_ALPHA, ESTX_TERM_OCC_ONE, &term);
 	estx_rule_set_term(&estx, rule, term);
 
 	char buf[256] = {0};
@@ -358,7 +358,7 @@ TEST(eprs_parse_token_unexpected)
 	END;
 }
 
-TEST(eprs_parse_token)
+TEST(eprs_parse_tok)
 {
 	START;
 
@@ -376,7 +376,7 @@ TEST(eprs_parse_token)
 	estx_rule_t rule;
 	estx_add_rule(&estx, &rule);
 	estx_term_t term;
-	estx_term_tok(&estx, TOKEN_ALPHA, ESTX_TERM_OCC_ONE, &term);
+	estx_term_tok(&estx, TOK_ALPHA, ESTX_TERM_OCC_ONE, &term);
 	estx_rule_set_term(&estx, rule, term);
 
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_NONE()), 0);
@@ -807,7 +807,7 @@ TEST(eprs_parse_rep_loop)
 	estx_term_t term;
 	estx_term_rule(&estx, line, ESTX_TERM_OCC_OPT | ESTX_TERM_OCC_REP, &term);
 	estx_rule_set_term(&estx, file, term);
-	estx_term_tok(&estx, TOKEN_EOF, ESTX_TERM_OCC_ONE, &term);
+	estx_term_tok(&estx, TOK_EOF, ESTX_TERM_OCC_ONE, &term);
 	estx_term_add_term(&estx, file, term);
 	estx_term_rule(&estx, val, ESTX_TERM_OCC_OPT, &term);
 	estx_rule_set_term(&estx, line, term);
@@ -931,7 +931,7 @@ TEST(eprs_parse_cache)
 	estx_term_t term;
 	estx_term_rule(&estx, line, ESTX_TERM_OCC_ONE, &term);
 	estx_rule_set_term(&estx, file, term);
-	estx_term_tok(&estx, TOKEN_EOF, ESTX_TERM_OCC_ONE, &term);
+	estx_term_tok(&estx, TOK_EOF, ESTX_TERM_OCC_ONE, &term);
 	estx_term_add_term(&estx, file, term);
 	estx_term_rule(&estx, ra, ESTX_TERM_OCC_OPT | ESTX_TERM_OCC_REP, &term);
 	estx_rule_set_term(&estx, line, term);
@@ -1128,8 +1128,8 @@ TEST(eprs_parse)
 	RUN(eprs_parse_gen);
 	RUN(eprs_parse_rule_invalid);
 	RUN(eprs_parse_rule);
-	RUN(eprs_parse_token_unexpected);
-	RUN(eprs_parse_token);
+	RUN(eprs_parse_tok_unexpected);
+	RUN(eprs_parse_tok);
 	RUN(eprs_parse_literal_unexpected_end);
 	RUN(eprs_parse_literal_unexpected);
 	RUN(eprs_parse_literal);
@@ -1159,7 +1159,7 @@ TEST(eprs_print)
 
 	eprs_node_t root, node;
 	eprs_node_rule(&eprs, 0, &root);
-	eprs_node_tok(&eprs, (token_t){0}, &node);
+	eprs_node_tok(&eprs, (tok_t){0}, &node);
 	eprs_add_node(&eprs, root, node);
 	eprs_node_lit(&eprs, 0, 0, &node);
 	eprs_add_node(&eprs, root, node);
@@ -1182,7 +1182,7 @@ TEST(eprs_print)
 	END;
 }
 
-STEST(eparser)
+STEST(eprs)
 {
 	SSTART;
 

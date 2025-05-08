@@ -1,4 +1,4 @@
-#include "parser.h"
+#include "prs.h"
 
 #include "bnf.h"
 #include "log.h"
@@ -63,11 +63,11 @@ TEST(prs_node_tok)
 
 	prs_node_t node;
 
-	EXPECT_EQ(prs_node_tok(NULL, (token_t){0}, NULL), 1);
+	EXPECT_EQ(prs_node_tok(NULL, (tok_t){0}, NULL), 1);
 	mem_oom(1);
-	EXPECT_EQ(prs_node_tok(&prs, (token_t){0}, NULL), 1);
+	EXPECT_EQ(prs_node_tok(&prs, (tok_t){0}, NULL), 1);
 	mem_oom(0);
-	EXPECT_EQ(prs_node_tok(&prs, (token_t){0}, &node), 0);
+	EXPECT_EQ(prs_node_tok(&prs, (tok_t){0}, &node), 0);
 	EXPECT_EQ(node, 0);
 
 	prs_free(&prs);
@@ -189,7 +189,7 @@ TEST(prs_get_str)
 
 	prs_node_lit(&prs, 0, 0, &node);
 	prs_add_node(&prs, root, node);
-	prs_node_tok(&prs, (token_t){0}, &node);
+	prs_node_tok(&prs, (tok_t){0}, &node);
 	prs_add_node(&prs, root, node);
 	prs_node_rule(&prs, 1, &node);
 	prs_add_node(&prs, root, node);
@@ -200,7 +200,7 @@ TEST(prs_get_str)
 	EXPECT_EQ(prs_get_str(NULL, prs.nodes.cnt, NULL), 1);
 	EXPECT_EQ(prs_get_str(&prs, prs.nodes.cnt, NULL), 1);
 
-	token_t str = {0};
+	tok_t str = {0};
 	log_set_quiet(0, 1);
 	EXPECT_EQ(prs_get_str(&prs, root, &str), 0);
 	log_set_quiet(0, 0);
@@ -316,7 +316,7 @@ TEST(prs_parse_rule)
 	END;
 }
 
-TEST(prs_parse_token_unexpected)
+TEST(prs_parse_tok_unexpected)
 {
 	START;
 
@@ -334,7 +334,7 @@ TEST(prs_parse_token_unexpected)
 	stx_rule_t rule;
 	stx_add_rule(&stx, &rule);
 	stx_term_t term;
-	stx_term_tok(&stx, TOKEN_ALPHA, &term);
+	stx_term_tok(&stx, TOK_ALPHA, &term);
 	stx_rule_add_term(&stx, rule, term);
 
 	char buf[256] = {0};
@@ -352,7 +352,7 @@ TEST(prs_parse_token_unexpected)
 	END;
 }
 
-TEST(prs_parse_token)
+TEST(prs_parse_tok)
 {
 	START;
 
@@ -370,7 +370,7 @@ TEST(prs_parse_token)
 	stx_rule_t rule;
 	stx_add_rule(&stx, &rule);
 	stx_term_t term;
-	stx_term_tok(&stx, TOKEN_ALPHA, &term);
+	stx_term_tok(&stx, TOK_ALPHA, &term);
 	stx_rule_add_term(&stx, rule, term);
 
 	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, DST_NONE()), 0);
@@ -612,7 +612,7 @@ TEST(prs_parse_cache)
 	stx_term_t term;
 	stx_term_rule(&stx, line, &term);
 	stx_rule_add_term(&stx, file, term);
-	stx_term_tok(&stx, TOKEN_EOF, &term);
+	stx_term_tok(&stx, TOK_EOF, &term);
 	stx_rule_add_term(&stx, file, term);
 
 	stx_term_rule(&stx, ra, &term);
@@ -726,8 +726,8 @@ TEST(prs_parse)
 	RUN(prs_parse_gen);
 	RUN(prs_parse_rule_invalid);
 	RUN(prs_parse_rule);
-	RUN(prs_parse_token_unexpected);
-	RUN(prs_parse_token);
+	RUN(prs_parse_tok_unexpected);
+	RUN(prs_parse_tok);
 	RUN(prs_parse_literal_unexpected_end);
 	RUN(prs_parse_literal_unexpected);
 	RUN(prs_parse_literal);
@@ -749,7 +749,7 @@ TEST(prs_print)
 
 	prs_node_t root, node;
 	prs_node_rule(&prs, 0, &root);
-	prs_node_tok(&prs, (token_t){0}, &node);
+	prs_node_tok(&prs, (tok_t){0}, &node);
 	prs_add_node(&prs, root, node);
 	prs_node_lit(&prs, 0, 0, &node);
 	prs_add_node(&prs, root, node);
@@ -772,7 +772,7 @@ TEST(prs_print)
 	END;
 }
 
-STEST(parser)
+STEST(prs)
 {
 	SSTART;
 

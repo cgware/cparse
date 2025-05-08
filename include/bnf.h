@@ -1,8 +1,8 @@
 #ifndef BNF_H
 #define BNF_H
 
-#include "parser.h"
-#include "syntax.h"
+#include "prs.h"
+#include "stx.h"
 
 typedef struct bnf_s {
 	stx_t stx;
@@ -15,7 +15,7 @@ typedef struct bnf_s {
 	stx_rule_t terms;
 	stx_rule_t term;
 	stx_rule_t literal;
-	stx_rule_t token;
+	stx_rule_t tok;
 	stx_rule_t tdouble;
 	stx_rule_t tsingle;
 } bnf_t;

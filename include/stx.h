@@ -5,7 +5,7 @@
 #include "buf.h"
 #include "list.h"
 #include "strv.h"
-#include "token.h"
+#include "tok.h"
 
 typedef uint stx_rule_t;
 typedef lnode_t stx_term_t;
@@ -22,8 +22,8 @@ typedef struct stx_term_data_s {
 	stx_term_type_t type;
 	union {
 		stx_rule_t rule;
-		token_type_t token;
-		token_t literal;
+		tok_type_t tok;
+		tok_t literal;
 		struct {
 			stx_term_t l;
 			stx_term_t r;
@@ -50,7 +50,7 @@ int stx_add_rule(stx_t *stx, stx_rule_t *rule);
 stx_rule_data_t *stx_get_rule_data(const stx_t *stx, stx_rule_t rule);
 
 int stx_term_rule(stx_t *stx, stx_rule_t rule, stx_term_t *term);
-int stx_term_tok(stx_t *stx, token_type_t token, stx_term_t *term);
+int stx_term_tok(stx_t *stx, tok_type_t tok, stx_term_t *term);
 int stx_term_lit(stx_t *stx, strv_t str, stx_term_t *term);
 int stx_term_or(stx_t *stx, stx_term_t l, stx_term_t r, stx_term_t *term);
 

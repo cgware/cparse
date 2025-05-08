@@ -2,7 +2,7 @@
 #define EBNF_H
 
 #include "bnf.h"
-#include "esyntax.h"
+#include "estx.h"
 
 typedef struct ebnf_s {
 	stx_t stx;
@@ -16,7 +16,7 @@ typedef struct ebnf_s {
 	stx_rule_t factor;
 	stx_rule_t term;
 	stx_rule_t literal;
-	stx_rule_t token;
+	stx_rule_t tok;
 	stx_rule_t tdouble;
 	stx_rule_t tsingle;
 	stx_rule_t group;

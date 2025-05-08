@@ -4,30 +4,30 @@
 
 STEST(bnf);
 STEST(cfg);
-STEST(cfg_parse);
+STEST(cfg_prs);
 STEST(ebnf);
-STEST(eparser);
-STEST(esyntax);
-STEST(lexer);
+STEST(eprs);
+STEST(estx);
+STEST(lex);
 STEST(make);
-STEST(parser);
-STEST(syntax);
-STEST(token);
+STEST(prs);
+STEST(stx);
+STEST(tok);
 
 TEST(cparse)
 {
 	SSTART;
 	RUN(bnf);
 	RUN(cfg);
-	RUN(cfg_parse);
+	RUN(cfg_prs);
 	RUN(ebnf);
-	RUN(eparser);
-	RUN(esyntax);
-	RUN(lexer);
+	RUN(eprs);
+	RUN(estx);
+	RUN(lex);
 	RUN(make);
-	RUN(parser);
-	RUN(syntax);
-	RUN(token);
+	RUN(prs);
+	RUN(stx);
+	RUN(tok);
 	SEND;
 }
 

@@ -1,8 +1,8 @@
-#ifndef TOML_PARSE_H
-#define TOML_PARSE_H
+#ifndef CFG_PRS_H
+#define CFG_PRS_H
 
 #include "cfg.h"
-#include "esyntax.h"
+#include "estx.h"
 
 typedef struct cfg_prs_s {
 	estx_t estx;
