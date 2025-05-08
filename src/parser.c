@@ -2,6 +2,22 @@
 
 #include "log.h"
 
+typedef enum prs_node_type_e {
+	PRS_NODE_UNKNOWN,
+	PRS_NODE_RULE,
+	PRS_NODE_TOKEN,
+	PRS_NODE_LITERAL,
+} prs_node_type_t;
+
+typedef struct prs_node_data_s {
+	prs_node_type_t type;
+	union {
+		stx_rule_t rule;
+		token_t literal;
+		token_t token;
+	} val;
+} prs_node_data_t;
+
 prs_t *prs_init(prs_t *prs, uint nodes_cap, alloc_t alloc)
 {
 	if (prs == NULL) {
@@ -25,35 +41,73 @@ void prs_free(prs_t *prs)
 	tree_free(&prs->nodes);
 }
 
-prs_node_t prs_add(prs_t *prs, prs_node_data_t node)
+int prs_node_rule(prs_t *prs, stx_rule_t rule, prs_node_t *node)
 {
 	if (prs == NULL) {
-		return PRS_NODE_END;
+		return 1;
 	}
 
-	prs_node_t child;
-	prs_node_data_t *data = tree_add(&prs->nodes, &child);
+	prs_node_data_t *data = tree_add(&prs->nodes, node);
 	if (data == NULL) {
-		log_error("cparse", "parser", NULL, "failed to add node");
-		return PRS_NODE_END;
+		log_error("cparse", "parser", NULL, "failed to add rule node");
+		return 1;
 	}
 
-	*data = node;
+	*data = (prs_node_data_t){
+		.type	  = PRS_NODE_RULE,
+		.val.rule = rule,
+	};
 
-	return child;
+	return 0;
 }
 
-prs_node_t prs_add_node(prs_t *prs, prs_node_t parent, prs_node_t node)
+int prs_node_tok(prs_t *prs, token_t tok, prs_node_t *node)
 {
 	if (prs == NULL) {
-		return PRS_NODE_END;
+		return 1;
 	}
 
-	if (parent < prs->nodes.cnt) {
-		tree_set_child(&prs->nodes, parent, node);
+	prs_node_data_t *data = tree_add(&prs->nodes, node);
+	if (data == NULL) {
+		log_error("cparse", "parser", NULL, "failed to add token node");
+		return 1;
 	}
 
-	return node;
+	*data = (prs_node_data_t){
+		.type	   = PRS_NODE_TOKEN,
+		.val.token = tok,
+	};
+
+	return 0;
+}
+
+int prs_node_lit(prs_t *prs, size_t start, uint len, prs_node_t *node)
+{
+	if (prs == NULL) {
+		return 1;
+	}
+
+	prs_node_data_t *data = tree_add(&prs->nodes, node);
+	if (data == NULL) {
+		log_error("cparse", "parser", NULL, "failed to add token node");
+		return 1;
+	}
+
+	*data = (prs_node_data_t){
+		.type	     = PRS_NODE_LITERAL,
+		.val.literal = {.start = start, .len = len},
+	};
+
+	return 0;
+}
+
+int prs_add_node(prs_t *prs, prs_node_t parent, prs_node_t node)
+{
+	if (prs == NULL) {
+		return 1;
+	}
+
+	return tree_set_child(&prs->nodes, parent, node);
 }
 
 int prs_remove_node(prs_t *prs, prs_node_t node)
@@ -65,10 +119,10 @@ int prs_remove_node(prs_t *prs, prs_node_t node)
 	return tree_remove(&prs->nodes, node);
 }
 
-prs_node_t prs_get_rule(const prs_t *prs, prs_node_t parent, stx_rule_t rule)
+int prs_get_rule(const prs_t *prs, prs_node_t parent, stx_rule_t rule, prs_node_t *node)
 {
 	if (prs == NULL) {
-		return PRS_NODE_END;
+		return 1;
 	}
 
 	prs_node_t child;
@@ -78,14 +132,17 @@ prs_node_t prs_get_rule(const prs_t *prs, prs_node_t parent, stx_rule_t rule)
 		switch (cdata->type) {
 		case PRS_NODE_RULE:
 			if (cdata->val.rule == rule) {
-				return child;
+				if(node) {
+					*node = child;
+				}
+				return 0;
 			}
 			break;
 		default: break;
 		}
 	}
 
-	return PRS_NODE_END;
+	return 1;
 }
 
 int prs_get_str(const prs_t *prs, prs_node_t parent, token_t *out)
@@ -110,7 +167,6 @@ int prs_get_str(const prs_t *prs, prs_node_t parent, token_t *out)
 			out->len += data->val.literal.len;
 			break;
 		}
-		case PRS_NODE_UNKNOWN:
 		default: log_error("cparse", "parser", NULL, "unexpected node: %d", data->type); break;
 		}
 	}
@@ -134,9 +190,10 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 
 	switch (term->type) {
 	case STX_TERM_RULE: {
-		uint nodes_cnt	 = prs->nodes.cnt;
-		uint cur	 = *off;
-		prs_node_t child = PRS_NODE_RULE(prs, term->val.rule);
+		uint nodes_cnt = prs->nodes.cnt;
+		uint cur       = *off;
+		prs_node_t child;
+		prs_node_rule(prs, term->val.rule, &child);
 		if (prs_parse_rule(prs, term->val.rule, off, child, err)) {
 			prs->nodes.cnt = nodes_cnt;
 			*off	       = cur;
@@ -156,8 +213,9 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 		token_t token = lex_get_token(prs->lex, *off);
 
 		if (token.type & (1 << token_type)) {
-			prs_add_node(
-				prs, node, PRS_NODE_TOKEN(prs, ((token_t){.type = token_type, .start = token.start, .len = token.len})));
+			prs_node_t tok;
+			prs_node_tok(prs, ((token_t){.type = token_type, .start = token.start, .len = token.len}), &tok);
+			prs_add_node(prs, node, tok);
 			log_trace("cparse", "parser", NULL, "%.*s: success +%d", (int)len, buf, token.len);
 			*off += token.len;
 			return 0;
@@ -214,7 +272,9 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 			}
 		}
 
-		prs_add_node(prs, node, PRS_NODE_LITERAL(prs, *off, (uint)literal.len));
+		prs_node_t lit;
+		prs_node_lit(prs, *off, (uint)literal.len, &lit);
+		prs_add_node(prs, node, lit);
 		log_trace("cparse", "parser", NULL, "\'%*s\': success +%d", literal.len, literal.data, literal.len);
 		*off += (uint)literal.len;
 		return 0;
@@ -299,8 +359,9 @@ int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_rule_t rule, p
 		.exp  = (uint)-1,
 	};
 
-	prs_node_t tmp = prs_add_node(prs, PRS_NODE_END, PRS_NODE_RULE(prs, rule));
-	uint parsed    = 0;
+	prs_node_t tmp;
+	prs_node_rule(prs, rule, &tmp);
+	uint parsed = 0;
 	if (prs_parse_rule(prs, rule, &parsed, tmp, &err) || parsed != prs->lex->src.len) {
 		if (!err.has_exp) {
 			log_error("cparse", "parser", NULL, "wrong syntax");

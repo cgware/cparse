@@ -177,8 +177,8 @@ const stx_t *bnf_get_stx(bnf_t *bnf)
 
 static int term_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent, strbuf_t *names, stx_t *stx, stx_term_t *term)
 {
-	const prs_node_t prs_rule_name = prs_get_rule(prs, parent, bnf->rname);
-	if (prs_rule_name < prs->nodes.cnt) {
+	prs_node_t prs_rule_name;
+	if (prs_get_rule(prs, parent, bnf->rname, &prs_rule_name) == 0) {
 		token_t str = {0};
 		prs_get_str(prs, prs_rule_name, &str);
 		strv_t name = lex_get_token_val(prs->lex, str);
@@ -192,17 +192,17 @@ static int term_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent, 
 		return stx_term_rule(stx, term_rule, term);
 	}
 
-	const prs_node_t prs_literal = prs_get_rule(prs, parent, bnf->literal);
-	if (prs_literal < prs->nodes.cnt) {
-		const prs_node_t prs_text_double = prs_get_rule(prs, prs_literal, bnf->tdouble);
-		if (prs_text_double < prs->nodes.cnt) {
+	prs_node_t prs_literal;
+	if (prs_get_rule(prs, parent, bnf->literal, &prs_literal) == 0) {
+		prs_node_t prs_text_double;
+		if (prs_get_rule(prs, prs_literal, bnf->tdouble, &prs_text_double) == 0) {
 			token_t str = {0};
 			prs_get_str(prs, prs_text_double, &str);
 			return stx_term_lit(stx, lex_get_token_val(prs->lex, str), term);
 		}
 
-		const prs_node_t prs_text_single = prs_get_rule(prs, prs_literal, bnf->tsingle);
-		if (prs_text_single < prs->nodes.cnt) {
+		prs_node_t prs_text_single;
+		if (prs_get_rule(prs, prs_literal, bnf->tsingle, &prs_text_single) == 0) {
 			token_t str = {0};
 			prs_get_str(prs, prs_text_single, &str);
 			return stx_term_lit(stx, lex_get_token_val(prs->lex, str), term);
@@ -211,8 +211,8 @@ static int term_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent, 
 		return 1;
 	}
 
-	const prs_node_t prs_token = prs_get_rule(prs, parent, bnf->token);
-	if (prs_token < prs->nodes.cnt) {
+	prs_node_t prs_token;
+	if (prs_get_rule(prs, parent, bnf->token, &prs_token) == 0) {
 		token_t str = {0};
 		prs_get_str(prs, prs_token, &str);
 		return stx_term_tok(stx, token_type_enum(lex_get_token_val(prs->lex, str)), term);
@@ -223,11 +223,12 @@ static int term_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent, 
 
 static int terms_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent, strbuf_t *names, stx_t *stx, stx_term_t *term)
 {
-	const prs_node_t prs_term = prs_get_rule(prs, parent, bnf->term);
+	prs_node_t prs_term;
+	prs_get_rule(prs, parent, bnf->term, &prs_term);
 	term_from_bnf(bnf, prs, prs_term, names, stx, term);
 
-	const prs_node_t prs_terms = prs_get_rule(prs, parent, bnf->terms);
-	if (prs_terms < prs->nodes.cnt) {
+	prs_node_t prs_terms;
+	if (prs_get_rule(prs, parent, bnf->terms, &prs_terms) == 0) {
 		stx_term_t next;
 		terms_from_bnf(bnf, prs, prs_terms, names, stx, &next);
 		stx_term_add_term(stx, *term, next);
@@ -238,9 +239,10 @@ static int terms_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent,
 
 static int exprs_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent, strbuf_t *names, stx_t *stx, stx_term_t *term)
 {
-	const prs_node_t prs_expr = prs_get_rule(prs, parent, bnf->expr);
-	if (prs_expr < prs->nodes.cnt) {
-		const prs_node_t prs_terms = prs_get_rule(prs, parent, bnf->terms);
+	prs_node_t prs_expr;
+	if (prs_get_rule(prs, parent, bnf->expr, &prs_expr) == 0) {
+		prs_node_t prs_terms;
+		prs_get_rule(prs, parent, bnf->terms, &prs_terms);
 
 		stx_term_t l, r;
 		terms_from_bnf(bnf, prs, prs_terms, names, stx, &l);
@@ -248,14 +250,16 @@ static int exprs_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent,
 		return stx_term_or(stx, l, r, term);
 	}
 
-	const prs_node_t prs_terms = prs_get_rule(prs, parent, bnf->terms);
+	prs_node_t prs_terms;
+	prs_get_rule(prs, parent, bnf->terms, &prs_terms);
 	return terms_from_bnf(bnf, prs, prs_terms, names, stx, term);
 }
 
 static int rules_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent, strbuf_t *names, stx_t *stx, stx_rule_t *root)
 {
-	const prs_node_t prs_rule  = prs_get_rule(prs, parent, bnf->rule);
-	const prs_node_t prs_rname = prs_get_rule(prs, prs_rule, bnf->rname);
+	prs_node_t prs_rule, prs_rname;
+	prs_get_rule(prs, parent, bnf->rule, &prs_rule);
+	prs_get_rule(prs, prs_rule, bnf->rname, &prs_rname);
 
 	token_t str = {0};
 	prs_get_str(prs, prs_rname, &str);
@@ -267,18 +271,18 @@ static int rules_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t parent,
 		stx_add_rule(stx, &rule);
 	}
 
-	const prs_node_t prs_expr = prs_get_rule(prs, prs_rule, bnf->expr);
+	prs_node_t prs_expr;
+	prs_get_rule(prs, prs_rule, bnf->expr, &prs_expr);
 	stx_term_t term;
 	exprs_from_bnf(bnf, prs, prs_expr, names, stx, &term);
 	stx_rule_add_term(stx, rule, term);
-
-	const prs_node_t rules = prs_get_rule(prs, parent, bnf->rules);
 
 	if (root) {
 		*root = rule;
 	}
 
-	if (rules >= prs->nodes.cnt) {
+	prs_node_t rules;
+	if (prs_get_rule(prs, parent, bnf->rules, &rules)) {
 		return 0;
 	}
 
@@ -291,8 +295,9 @@ int stx_from_bnf(const bnf_t *bnf, const prs_t *prs, prs_node_t root, stx_t *stx
 		return 0;
 	}
 
-	prs_node_t fbnf	 = prs_get_rule(prs, root, bnf->bnf);
-	prs_node_t rules = prs_get_rule(prs, fbnf, bnf->rules);
+	prs_node_t fbnf, rules;
+	prs_get_rule(prs, root, bnf->bnf, &fbnf);
+	prs_get_rule(prs, fbnf, bnf->rules, &rules);
 
 	return rules_from_bnf(bnf, prs, rules, names, stx, rule);
 }

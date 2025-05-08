@@ -29,6 +29,75 @@ TEST(prs_init_free)
 	END;
 }
 
+TEST(prs_node_rule)
+{
+	START;
+
+	prs_t prs = {0};
+	log_set_quiet(0, 1);
+	prs_init(&prs, 0, ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	prs_node_t node;
+
+	EXPECT_EQ(prs_node_rule(NULL, 0, NULL), 1);
+	mem_oom(1);
+	EXPECT_EQ(prs_node_rule(&prs, 0, NULL), 1);
+	mem_oom(0);
+	EXPECT_EQ(prs_node_rule(&prs, 0, &node), 0);
+	EXPECT_EQ(node, 0);
+
+	prs_free(&prs);
+
+	END;
+}
+
+TEST(prs_node_tok)
+{
+	START;
+
+	prs_t prs = {0};
+	log_set_quiet(0, 1);
+	prs_init(&prs, 0, ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	prs_node_t node;
+
+	EXPECT_EQ(prs_node_tok(NULL, (token_t){0}, NULL), 1);
+	mem_oom(1);
+	EXPECT_EQ(prs_node_tok(&prs, (token_t){0}, NULL), 1);
+	mem_oom(0);
+	EXPECT_EQ(prs_node_tok(&prs, (token_t){0}, &node), 0);
+	EXPECT_EQ(node, 0);
+
+	prs_free(&prs);
+
+	END;
+}
+
+TEST(prs_node_lit)
+{
+	START;
+
+	prs_t prs = {0};
+	log_set_quiet(0, 1);
+	prs_init(&prs, 0, ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	prs_node_t node;
+
+	EXPECT_EQ(prs_node_lit(NULL, 0, 0, NULL), 1);
+	mem_oom(1);
+	EXPECT_EQ(prs_node_lit(&prs, 0, 0, NULL), 1);
+	mem_oom(0);
+	EXPECT_EQ(prs_node_lit(&prs, 0, 0, &node), 0);
+	EXPECT_EQ(node, 0);
+
+	prs_free(&prs);
+
+	END;
+}
+
 TEST(prs_add_node)
 {
 	START;
@@ -38,20 +107,17 @@ TEST(prs_add_node)
 	prs_init(&prs, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(prs_add(NULL, (prs_node_data_t){.type = PRS_NODE_UNKNOWN}), PRS_NODE_END);
-	mem_oom(1);
-	EXPECT_EQ(prs_add(&prs, (prs_node_data_t){.type = PRS_NODE_UNKNOWN}), PRS_NODE_END);
-	mem_oom(0);
+	prs_node_t parent, child;
 
-	prs_node_t parent = prs_add(&prs, (prs_node_data_t){.type = PRS_NODE_UNKNOWN});
-	prs_node_t child  = prs_add(&prs, (prs_node_data_t){.type = PRS_NODE_UNKNOWN});
+	prs_node_rule(&prs, 0, &parent);
+	prs_node_rule(&prs, 0, &child);
 
-	EXPECT_EQ(prs_add_node(NULL, PRS_NODE_END, PRS_NODE_END), PRS_NODE_END);
-	EXPECT_EQ(prs_add_node(&prs, PRS_NODE_END, PRS_NODE_END), PRS_NODE_END);
+	EXPECT_EQ(prs_add_node(NULL, prs.nodes.cnt, prs.nodes.cnt), 1);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(prs_add_node(&prs, parent, PRS_NODE_END), PRS_NODE_END);
+	EXPECT_EQ(prs_add_node(&prs, prs.nodes.cnt, prs.nodes.cnt), 1);
+	EXPECT_EQ(prs_add_node(&prs, parent, prs.nodes.cnt), 1);
 	log_set_quiet(0, 0);
-	EXPECT_EQ(prs_add_node(&prs, parent, child), child);
+	EXPECT_EQ(prs_add_node(&prs, parent, child), 0);
 
 	prs_free(&prs);
 
@@ -67,11 +133,12 @@ TEST(prs_remove_node)
 	prs_init(&prs, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	prs_node_t node = prs_add_node(&prs, PRS_NODE_END, prs_add(&prs, (prs_node_data_t){.type = PRS_NODE_UNKNOWN}));
+	prs_node_t node;
+	prs_node_rule(&prs, 0, &node);
 
-	EXPECT_EQ(prs_remove_node(NULL, PRS_NODE_END), 1);
+	EXPECT_EQ(prs_remove_node(NULL, prs.nodes.cnt), 1);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(prs_remove_node(&prs, PRS_NODE_END), 1);
+	EXPECT_EQ(prs_remove_node(&prs, prs.nodes.cnt), 1);
 	log_set_quiet(0, 0);
 	EXPECT_EQ(prs_remove_node(&prs, node), 0);
 
@@ -87,18 +154,23 @@ TEST(prs_get_rule)
 	prs_t prs = {0};
 	prs_init(&prs, 1, ALLOC_STD);
 
-	prs_node_t root = prs_add_node(&prs, PRS_NODE_END, PRS_NODE_LITERAL(&prs, 0, 0));
+	prs_node_t root, node, got;
+	prs_node_lit(&prs, 0, 0, &root);
 
-	prs_add_node(&prs, root, PRS_NODE_LITERAL(&prs, 0, 0));
-	prs_add_node(&prs, root, PRS_NODE_RULE(&prs, 0));
-	prs_node_t node = prs_add_node(&prs, root, PRS_NODE_RULE(&prs, 1));
+	prs_node_lit(&prs, 0, 0, &node);
+	prs_add_node(&prs, root, node);
+	prs_node_rule(&prs, 0, &node);
+	prs_add_node(&prs, root, node);
+	prs_node_rule(&prs, 1, &node);
+	prs_add_node(&prs, root, node);
 
-	EXPECT_EQ(prs_get_rule(NULL, PRS_NODE_END, 0), PRS_NODE_END);
+	EXPECT_EQ(prs_get_rule(NULL, prs.nodes.cnt, 0, NULL), 1);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(prs_get_rule(&prs, PRS_NODE_END, 0), PRS_NODE_END);
+	EXPECT_EQ(prs_get_rule(&prs, prs.nodes.cnt, 0, NULL), 1);
 	log_set_quiet(0, 0);
-	EXPECT_EQ(prs_get_rule(&prs, root, (uint)-1), PRS_NODE_END);
-	EXPECT_EQ(prs_get_rule(&prs, root, 1), node);
+	EXPECT_EQ(prs_get_rule(&prs, root, prs.nodes.cnt, NULL), 1);
+	EXPECT_EQ(prs_get_rule(&prs, root, 1, &got), 0);
+	EXPECT_EQ(got, node);
 
 	prs_free(&prs);
 
@@ -112,15 +184,22 @@ TEST(prs_get_str)
 	prs_t prs = {0};
 	prs_init(&prs, 1, ALLOC_STD);
 
-	prs_node_t root = prs_add_node(&prs, PRS_NODE_END, PRS_NODE_RULE(&prs, 0));
+	prs_node_t root, node;
+	prs_node_rule(&prs, 0, &root);
 
-	prs_add_node(&prs, root, PRS_NODE_LITERAL(&prs, 0, 0));
-	prs_add_node(&prs, root, PRS_NODE_TOKEN(&prs, (token_t){0}));
-	prs_add_node(&prs, root, PRS_NODE_RULE(&prs, 1));
-	prs_add_node(&prs, root, prs_add(&prs, (prs_node_data_t){.type = PRS_NODE_UNKNOWN}));
+	prs_node_lit(&prs, 0, 0, &node);
+	prs_add_node(&prs, root, node);
+	prs_node_tok(&prs, (token_t){0}, &node);
+	prs_add_node(&prs, root, node);
+	prs_node_rule(&prs, 1, &node);
+	prs_add_node(&prs, root, node);
 
-	EXPECT_EQ(prs_get_str(NULL, PRS_NODE_END, NULL), 1);
-	EXPECT_EQ(prs_get_str(&prs, PRS_NODE_END, NULL), 1);
+	prs_node_rule(&prs, 0, &node);
+	prs_add_node(&prs, root, node);
+	*(int *)tree_get(&prs.nodes, node) = 0;
+
+	EXPECT_EQ(prs_get_str(NULL, prs.nodes.cnt, NULL), 1);
+	EXPECT_EQ(prs_get_str(&prs, prs.nodes.cnt, NULL), 1);
 
 	token_t str = {0};
 	log_set_quiet(0, 1);
@@ -669,13 +748,18 @@ TEST(prs_print)
 	prs_t prs = {0};
 	prs_init(&prs, 1, ALLOC_STD);
 
-	prs_node_t root = prs_add_node(&prs, PRS_NODE_END, PRS_NODE_RULE(&prs, 0));
-	prs_add_node(&prs, root, PRS_NODE_TOKEN(&prs, (token_t){0}));
-	prs_add_node(&prs, root, PRS_NODE_LITERAL(&prs, 0, 0));
-	prs_add_node(&prs, root, prs_add(&prs, (prs_node_data_t){.type = PRS_NODE_UNKNOWN}));
+	prs_node_t root, node;
+	prs_node_rule(&prs, 0, &root);
+	prs_node_tok(&prs, (token_t){0}, &node);
+	prs_add_node(&prs, root, node);
+	prs_node_lit(&prs, 0, 0, &node);
+	prs_add_node(&prs, root, node);
+	prs_node_rule(&prs, 0, &node);
+	prs_add_node(&prs, root, node);
+	*(int *)tree_get(&prs.nodes, node) = 0;
 
 	char buf[64] = {0};
-	EXPECT_EQ(prs_print(NULL, PRS_NODE_END, DST_BUF(buf)), 0);
+	EXPECT_EQ(prs_print(NULL, prs.nodes.cnt, DST_BUF(buf)), 0);
 
 	EXPECT_EQ(prs_print(&prs, root, DST_BUF(buf)), 33);
 	EXPECT_STR(buf,
@@ -694,6 +778,9 @@ STEST(parser)
 	SSTART;
 
 	RUN(prs_init_free);
+	RUN(prs_node_rule);
+	RUN(prs_node_tok);
+	RUN(prs_node_lit);
 	RUN(prs_add_node);
 	RUN(prs_remove_node);
 	RUN(prs_get_rule);

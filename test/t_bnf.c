@@ -141,16 +141,26 @@ TEST(stx_from_bnf_custom)
 	prs_t prs = {0};
 	prs_init(&prs, 100, ALLOC_STD);
 
-	prs_node_t file	  = prs_add_node(&prs, PRS_NODE_END, PRS_NODE_RULE(&prs, bnf.file));
-	prs_node_t pbnf	  = prs_add_node(&prs, file, PRS_NODE_RULE(&prs, bnf.bnf));
-	prs_node_t rules  = prs_add_node(&prs, pbnf, PRS_NODE_RULE(&prs, bnf.rules));
-	prs_node_t rule	  = prs_add_node(&prs, rules, PRS_NODE_RULE(&prs, bnf.rule));
-	prs_node_t expr	  = prs_add_node(&prs, rule, PRS_NODE_RULE(&prs, bnf.expr));
-	prs_node_t terms0 = prs_add_node(&prs, expr, PRS_NODE_RULE(&prs, bnf.terms));
-	prs_node_t term0  = prs_add_node(&prs, terms0, PRS_NODE_RULE(&prs, bnf.term));
-	prs_add_node(&prs, term0, PRS_NODE_RULE(&prs, bnf.literal));
-	prs_node_t terms1 = prs_add_node(&prs, terms0, PRS_NODE_RULE(&prs, bnf.terms));
-	prs_add_node(&prs, terms1, PRS_NODE_RULE(&prs, bnf.term));
+	prs_node_t file, pbnf, rules, rule, expr, terms0, term0, terms1, node;
+	prs_node_rule(&prs, bnf.file, &file);
+	prs_node_rule(&prs, bnf.bnf, &pbnf);
+	prs_add_node(&prs, file, pbnf);
+	prs_node_rule(&prs, bnf.rules, &rules);
+	prs_add_node(&prs, pbnf, rules);
+	prs_node_rule(&prs, bnf.rule, &rule);
+	prs_add_node(&prs, rules, rule);
+	prs_node_rule(&prs, bnf.expr, &expr);
+	prs_add_node(&prs, rule, expr);
+	prs_node_rule(&prs, bnf.terms, &terms0);
+	prs_add_node(&prs, expr, terms0);
+	prs_node_rule(&prs, bnf.term, &term0);
+	prs_add_node(&prs, terms0, term0);
+	prs_node_rule(&prs, bnf.literal, &node);
+	prs_add_node(&prs, term0, node);
+	prs_node_rule(&prs, bnf.terms, &terms1);
+	prs_add_node(&prs, terms0, terms1);
+	prs_node_rule(&prs, bnf.term, &node);
+	prs_add_node(&prs, terms1, node);
 
 	strbuf_t names = {0};
 	strbuf_init(&names, 16, 16, ALLOC_STD);
