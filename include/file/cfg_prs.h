@@ -6,18 +6,18 @@
 
 typedef struct cfg_prs_s {
 	estx_t estx;
-	estx_rule_t file;
-	estx_rule_t cfg;
-	estx_rule_t kv;
-	estx_rule_t key;
-	estx_rule_t val;
-	estx_rule_t i;
-	estx_rule_t str;
-	estx_rule_t lit;
-	estx_rule_t arr;
-	estx_rule_t obj;
-	estx_rule_t tbl;
-	estx_rule_t ent;
+	estx_node_t file;
+	estx_node_t cfg;
+	estx_node_t kv;
+	estx_node_t key;
+	estx_node_t val;
+	estx_node_t i;
+	estx_node_t str;
+	estx_node_t lit;
+	estx_node_t arr;
+	estx_node_t obj;
+	estx_node_t tbl;
+	estx_node_t ent;
 } cfg_prs_t;
 
 cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc);

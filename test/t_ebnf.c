@@ -104,17 +104,13 @@ TEST(stx_from_ebnf)
 	prs_node_t prs_root;
 	prs_parse(&prs, &lex, &ebnf.stx, ebnf.file, &prs_root, DST_NONE());
 
-	strbuf_t names = {0};
-	strbuf_init(&names, 16, 16, ALLOC_STD);
-
 	estx_t new_stx = {0};
-	estx_init(&new_stx, 10, 10, ALLOC_STD);
-	estx_rule_t root;
-	EXPECT_EQ(estx_from_ebnf(NULL, &prs, prs_root, &new_stx, &names, &root), 0);
-	EXPECT_EQ(estx_from_ebnf(&ebnf, &prs, prs_root, &new_stx, &names, &root), 0);
+	estx_init(&new_stx, 10, ALLOC_STD);
+	estx_node_t root;
+	EXPECT_EQ(estx_from_ebnf(NULL, &prs, prs_root, &new_stx, &root), 0);
+	EXPECT_EQ(estx_from_ebnf(&ebnf, &prs, prs_root, &new_stx, &root), 0);
 	EXPECT_EQ(root, 0);
 
-	strbuf_free(&names);
 	estx_free(&new_stx);
 	lex_free(&lex);
 	prs_free(&prs);
@@ -135,7 +131,7 @@ TEST(stx_from_ebnf_custom)
 	prs_init(&prs, 100, ALLOC_STD);
 
 	estx_t new_stx = {0};
-	estx_init(&new_stx, 10, 10, ALLOC_STD);
+	estx_init(&new_stx, 10, ALLOC_STD);
 
 	prs.stx = &ebnf.stx;
 
@@ -177,17 +173,13 @@ TEST(stx_from_ebnf_custom)
 	prs_node_rule(&prs, ebnf.opt_rep, &node);
 	prs_add_node(&prs, f_grp, node);
 
-	strbuf_t names = {0};
-	strbuf_init(&names, 16, 16, ALLOC_STD);
-
-	estx_rule_t root;
+	estx_node_t root;
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(estx_from_ebnf(&ebnf, &prs, file, &new_stx, &names, &root), 0);
+	EXPECT_EQ(estx_from_ebnf(&ebnf, &prs, file, &new_stx, &root), 0);
 	EXPECT_EQ(root, 0);
 	log_set_quiet(0, 0);
 
-	strbuf_free(&names);
 	estx_free(&new_stx);
 	prs_free(&prs);
 	ebnf_free(&ebnf);

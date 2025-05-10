@@ -30,6 +30,6 @@ void ebnf_free(ebnf_t *ebnf);
 
 const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, dst_t dst);
 
-int estx_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t root, estx_t *estx, strbuf_t *names, estx_rule_t *rule);
+int estx_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t root, estx_t *estx, estx_node_t *rule);
 
 #endif

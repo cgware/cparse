@@ -405,6 +405,29 @@ TEST(stx_rule_add_arr_sep)
 	END;
 }
 
+TEST(stx_rule_add_arr_sep_copy_oom)
+{
+	START;
+
+	stx_t stx = {0};
+	stx_init(&stx, 4, ALLOC_STD);
+
+	stx_node_t rule;
+	stx_rule(&stx, STRV("rule"), &rule);
+
+	stx_node_t term, sep;
+	stx_term_rule(&stx, rule, &sep);
+	stx_term_tok(&stx, TOK_UPPER, &term);
+
+	mem_oom(1);
+	EXPECT_EQ(stx_rule_add_arr_sep(&stx, rule, term, sep), 1);
+	mem_oom(0);
+
+	stx_free(&stx);
+
+	END;
+}
+
 TEST(stx_print)
 {
 	START;
@@ -460,35 +483,6 @@ TEST(stx_print)
 	EXPECT_STR(buf,
 		   "<file> ::= <line>\n"
 		   "<line> ::= UNKNOWN ALPHA ';' \"'\" |\n");
-
-	stx_free(&stx);
-
-	END;
-}
-
-TEST(stx_print_invalid_rule)
-{
-	START;
-
-	stx_t stx = {0};
-	stx_init(&stx, 3, ALLOC_STD);
-
-	stx_node_t file, term;
-	stx_rule(&stx, STRV("file"), &file);
-
-	stx_term_lit(&stx, STRV(""), &term);
-	stx_add_term(&stx, file, term);
-	*stx_get_node(&stx, term) = (stx_node_data_t){
-		.type	  = STX_TERM_RULE,
-		.val.rule = -1,
-	};
-
-	char buf[64] = {0};
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(stx_print(&stx, DST_BUF(buf)), 11);
-	log_set_quiet(0, 0);
-	EXPECT_STR(buf, "<file> ::=\n");
 
 	stx_free(&stx);
 
@@ -576,7 +570,7 @@ TEST(stx_print_tree)
 	END;
 }
 
-TEST(stx_print_tree_empty_rule)
+TEST(stx_print_empty_rule)
 {
 	START;
 
@@ -589,6 +583,8 @@ TEST(stx_print_tree_empty_rule)
 
 	char buf[16] = {0};
 
+	EXPECT_EQ(stx_print(&stx, DST_BUF(buf)), 11);
+	EXPECT_STR(buf, "<file> ::=\n");
 	EXPECT_EQ(stx_print_tree(&stx, DST_BUF(buf)), 7);
 	EXPECT_STR(buf, "<file>\n");
 
@@ -597,7 +593,7 @@ TEST(stx_print_tree_empty_rule)
 	END;
 }
 
-TEST(stx_print_tree_invalid_rule)
+TEST(stx_print_invalid_rule)
 {
 	START;
 
@@ -618,6 +614,8 @@ TEST(stx_print_tree_invalid_rule)
 	char buf[16] = {0};
 
 	log_set_quiet(0, 1);
+	EXPECT_EQ(stx_print(&stx, DST_BUF(buf)), 11);
+	EXPECT_STR(buf, "<file> ::=\n");
 	EXPECT_EQ(stx_print_tree(&stx, DST_BUF(buf)), 7);
 	log_set_quiet(0, 0);
 	EXPECT_STR(buf, "<file>\n");
@@ -647,11 +645,11 @@ STEST(stx)
 	RUN(stx_rule_add_arr);
 	RUN(stx_rule_add_arr_copy_oom);
 	RUN(stx_rule_add_arr_sep);
+	RUN(stx_rule_add_arr_sep_copy_oom);
 	RUN(stx_print);
-	RUN(stx_print_invalid_rule);
 	RUN(stx_print_tree);
-	RUN(stx_print_tree_empty_rule);
-	RUN(stx_print_tree_invalid_rule);
+	RUN(stx_print_empty_rule);
+	RUN(stx_print_invalid_rule);
 
 	SEND;
 }

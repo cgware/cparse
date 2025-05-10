@@ -62,12 +62,13 @@ int stx_term_rule(stx_t *stx, stx_node_t rule, stx_node_t *term)
 		return 1;
 	}
 
-	if (stx_get_node(stx, rule) == NULL) {
+	stx_node_data_t *data = stx_get_node(stx, rule);
+	if (data == NULL || data->type != STX_RULE) {
 		log_error("cparse", "stx", NULL, "invalid rule: %d", rule);
 		return 1;
 	}
 
-	stx_node_data_t *data = list_add(&stx->nodes, term);
+	data = list_add(&stx->nodes, term);
 	if (data == NULL) {
 		log_error("cparse", "stx", NULL, "failed to create rule term");
 		return 1;

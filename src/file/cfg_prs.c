@@ -46,26 +46,22 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 
 	ebnf_free(&ebnf);
 
-	strbuf_t names = {0};
-	strbuf_init(&names, 16, 16, ALLOC_STD);
+	estx_init(&cfg_prs->estx, 16, ALLOC_STD);
+	estx_from_ebnf(&ebnf, &prs, prs_root, &cfg_prs->estx, NULL);
 
-	estx_init(&cfg_prs->estx, 10, 10, ALLOC_STD);
-	estx_from_ebnf(&ebnf, &prs, prs_root, &cfg_prs->estx, &names, NULL);
+	estx_find_rule(&cfg_prs->estx, STRV("file"), &cfg_prs->file);
+	estx_find_rule(&cfg_prs->estx, STRV("cfg"), &cfg_prs->cfg);
+	estx_find_rule(&cfg_prs->estx, STRV("kv"), &cfg_prs->kv);
+	estx_find_rule(&cfg_prs->estx, STRV("key"), &cfg_prs->key);
+	estx_find_rule(&cfg_prs->estx, STRV("val"), &cfg_prs->val);
+	estx_find_rule(&cfg_prs->estx, STRV("int"), &cfg_prs->i);
+	estx_find_rule(&cfg_prs->estx, STRV("str"), &cfg_prs->str);
+	estx_find_rule(&cfg_prs->estx, STRV("lit"), &cfg_prs->lit);
+	estx_find_rule(&cfg_prs->estx, STRV("arr"), &cfg_prs->arr);
+	estx_find_rule(&cfg_prs->estx, STRV("obj"), &cfg_prs->obj);
+	estx_find_rule(&cfg_prs->estx, STRV("tbl"), &cfg_prs->tbl);
+	estx_find_rule(&cfg_prs->estx, STRV("ent"), &cfg_prs->ent);
 
-	strbuf_find(&names, STRV("file"), &cfg_prs->file);
-	strbuf_find(&names, STRV("cfg"), &cfg_prs->cfg);
-	strbuf_find(&names, STRV("kv"), &cfg_prs->kv);
-	strbuf_find(&names, STRV("key"), &cfg_prs->key);
-	strbuf_find(&names, STRV("val"), &cfg_prs->val);
-	strbuf_find(&names, STRV("int"), &cfg_prs->i);
-	strbuf_find(&names, STRV("str"), &cfg_prs->str);
-	strbuf_find(&names, STRV("lit"), &cfg_prs->lit);
-	strbuf_find(&names, STRV("arr"), &cfg_prs->arr);
-	strbuf_find(&names, STRV("obj"), &cfg_prs->obj);
-	strbuf_find(&names, STRV("tbl"), &cfg_prs->tbl);
-	strbuf_find(&names, STRV("ent"), &cfg_prs->ent);
-
-	strbuf_free(&names);
 	prs_free(&prs);
 	lex_free(&lex);
 

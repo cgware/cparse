@@ -12,7 +12,7 @@ typedef enum eprs_node_type_e {
 typedef struct eprs_node_data_s {
 	eprs_node_type_t type;
 	union {
-		estx_rule_t rule;
+		estx_node_t rule;
 		tok_t literal;
 		tok_t tok;
 		int alt;
@@ -42,7 +42,7 @@ void eprs_free(eprs_t *eprs)
 	tree_free(&eprs->nodes);
 }
 
-int eprs_node_rule(eprs_t *eprs, estx_rule_t rule, eprs_node_t *node)
+int eprs_node_rule(eprs_t *eprs, estx_node_t rule, eprs_node_t *node)
 {
 	if (eprs == NULL) {
 		return 1;
@@ -120,7 +120,7 @@ int eprs_remove_node(eprs_t *eprs, eprs_node_t node)
 	return tree_remove(&eprs->nodes, node);
 }
 
-int eprs_get_rule(const eprs_t *eprs, eprs_node_t parent, estx_rule_t rule, eprs_node_t *node)
+int eprs_get_rule(const eprs_t *eprs, eprs_node_t parent, estx_node_t rule, eprs_node_t *node)
 {
 	if (eprs == NULL) {
 		return 1;
@@ -184,25 +184,29 @@ int eprs_get_str(const eprs_t *eprs, eprs_node_t parent, tok_t *out)
 }
 
 typedef struct eprs_parse_err_s {
-	estx_rule_t rule;
+	estx_node_t rule;
 	uint tok;
-	estx_term_t exp;
+	estx_node_t exp;
 } eprs_parse_err_t;
 
-static int eprs_parse_rule(eprs_t *prs, const estx_rule_t rule_id, uint *off, eprs_node_t node, eprs_parse_err_t *err);
-static int eprs_parse_terms(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, uint *off, eprs_node_t node, eprs_parse_err_t *err,
-			    const estx_term_data_t *term);
+static int eprs_parse_rule(eprs_t *prs, const estx_node_t rule_id, uint *off, eprs_node_t node, eprs_parse_err_t *err);
+static int eprs_parse_terms(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, uint *off, eprs_node_t node, eprs_parse_err_t *err,
+			    const estx_node_data_t *term);
 
-static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, uint *off, eprs_node_t node, eprs_parse_err_t *err,
-			   const estx_term_data_t *term)
+static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, uint *off, eprs_node_t node, eprs_parse_err_t *err,
+			   const estx_node_data_t *term)
 {
 	switch (term->type) {
+	case ESTX_RULE: {
+		estx_node_t terms;
+		estx_node_data_t *data = tree_get_child(&eprs->estx->nodes, term_id, &terms);
+		return eprs_parse_terms(eprs, rule, terms, off, node, err, data);
+	}
 	case ESTX_TERM_RULE: {
 		uint nodes_cnt = eprs->nodes.cnt;
 		eprs_node_t child;
-		eprs_node_rule(eprs, term->val.rule, &child);
 		uint cur = *off;
-		if (eprs_parse_rule(eprs, term->val.rule, off, child, err)) {
+		if (eprs_node_rule(eprs, term->val.rule, &child) || eprs_parse_rule(eprs, term->val.rule, off, child, err)) {
 			tree_set_cnt(&eprs->nodes, nodes_cnt);
 			*off = cur;
 			return 1;
@@ -210,7 +214,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 		eprs_add_node(eprs, node, child);
 		return 0;
 	}
-	case ESTX_TERM_TOKEN: {
+	case ESTX_TERM_TOK: {
 		const tok_type_t tok_type = term->val.tok;
 
 		char buf[32] = {0};
@@ -238,9 +242,8 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 		log_trace("cparse", "eprs", NULL, "failed: expected %.*s, but got %.*s", len, buf, (int)act_len, act);
 		return 1;
 	}
-	case ESTX_TERM_LITERAL: {
-		const char *data = eprs->estx->strs.data;
-		strv_t literal	 = STRVN(&data[term->val.literal.start], term->val.literal.len);
+	case ESTX_TERM_LIT: {
+		strv_t literal = estx_data_lit(eprs->estx, term);
 
 		for (uint i = 0; i < (uint)literal.len; i++) {
 			tok_t tok = lex_get_tok(eprs->lex, *off + i);
@@ -285,8 +288,8 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 		return 0;
 	}
 	case ESTX_TERM_ALT: {
-		estx_term_t child_id;
-		estx_term_foreach(&eprs->estx->terms, term_id, child_id, term)
+		estx_node_t child_id;
+		estx_node_foreach(&eprs->estx->nodes, term_id, child_id, term)
 		{
 			uint cur       = *off;
 			uint nodes_cnt = eprs->nodes.cnt;
@@ -303,8 +306,8 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 	}
 	case ESTX_TERM_CON: {
 		uint cur = *off;
-		estx_term_t child_id;
-		estx_term_foreach(&eprs->estx->terms, term_id, child_id, term)
+		estx_node_t child_id;
+		estx_node_foreach(&eprs->estx->nodes, term_id, child_id, term)
 		{
 			uint nodes_cnt = eprs->nodes.cnt;
 			if (eprs_parse_terms(eprs, rule, child_id, off, node, err, term)) {
@@ -320,8 +323,8 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 	}
 	case ESTX_TERM_GROUP: {
 		uint cur = *off;
-		estx_term_t child_id;
-		estx_term_foreach(&eprs->estx->terms, term_id, child_id, term)
+		estx_node_t child_id;
+		estx_node_foreach(&eprs->estx->nodes, term_id, child_id, term)
 		{
 			uint nodes_cnt = eprs->nodes.cnt;
 			if (eprs_parse_terms(eprs, rule, child_id, off, node, err, term)) {
@@ -341,9 +344,12 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 	return 1;
 }
 
-static int eprs_parse_terms(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, uint *off, eprs_node_t node, eprs_parse_err_t *err,
-			    const estx_term_data_t *term)
+static int eprs_parse_terms(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, uint *off, eprs_node_t node, eprs_parse_err_t *err,
+			    const estx_node_data_t *term)
 {
+	if (term == NULL) {
+		return 1;
+	}
 	uint cur = *off;
 
 	int ret = eprs_parse_term(eprs, rule, term_id, off, node, err, term);
@@ -380,29 +386,23 @@ static int eprs_parse_terms(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id,
 	return 0;
 }
 
-static int eprs_parse_rule(eprs_t *prs, const estx_rule_t rule_id, uint *off, eprs_node_t node, eprs_parse_err_t *err)
+static int eprs_parse_rule(eprs_t *prs, const estx_node_t rule, uint *off, eprs_node_t node, eprs_parse_err_t *err)
 {
-	const estx_rule_data_t *rule = estx_get_rule_data(prs->estx, rule_id);
-	if (rule == NULL) {
-		log_error("cparse", "eprs", NULL, "rule not found: %d", rule_id);
-		return 1;
-	}
-
-	log_trace("cparse", "eprs", NULL, "<%d>", rule_id);
+	log_trace("cparse", "eprs", NULL, "<%d>", rule);
 
 	uint cur		     = *off;
-	const estx_term_data_t *term = estx_get_term_data(prs->estx, rule->terms);
-	if (eprs_parse_terms(prs, rule_id, rule->terms, off, node, err, term)) {
-		log_trace("cparse", "eprs", NULL, "<%d>: failed", rule_id);
+	const estx_node_data_t *term = estx_get_node(prs->estx, rule);
+	if (eprs_parse_terms(prs, rule, rule, off, node, err, term)) {
+		log_trace("cparse", "eprs", NULL, "<%d>: failed", rule);
 		*off = cur;
 		return 1;
 	}
 
-	log_trace("cparse", "eprs", NULL, "<%d>: success +%d", rule_id, *off - cur);
+	log_trace("cparse", "eprs", NULL, "<%d>: success +%d", rule, *off - cur);
 	return 0;
 }
 
-int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t rule, eprs_node_t *root, dst_t dst)
+int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_node_t rule, eprs_node_t *root, dst_t dst)
 {
 	if (eprs == NULL || lex == NULL || estx == NULL) {
 		return 1;
@@ -428,20 +428,19 @@ int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t r
 			return 1;
 		}
 
-		const estx_term_data_t *term = estx_get_term_data(eprs->estx, err.exp);
+		const estx_node_data_t *term = estx_get_node(eprs->estx, err.exp);
 
 		tok_loc_t loc = lex_get_tok_loc(eprs->lex, err.tok);
 
 		dst.off += lex_tok_loc_print_loc(eprs->lex, loc, dst);
 
-		if (term->type == ESTX_TERM_TOKEN) {
+		if (term->type == ESTX_TERM_TOK) {
 			char buf[32] = {0};
 			size_t len   = tok_type_print(1 << term->val.tok, DST_BUF(buf));
 			dst.off += dputf(dst, "error: expected %.*s\n", (int)len, buf);
 
 		} else {
-			const char *data = eprs->estx->strs.data;
-			strv_t exp_str	 = STRVN(&data[term->val.literal.start], term->val.literal.len);
+			strv_t exp_str = estx_data_lit(eprs->estx, term);
 			dst.off += dputf(dst, "error: expected \'%.*s\'\n", exp_str.len, exp_str.data);
 		}
 
