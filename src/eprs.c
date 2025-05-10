@@ -239,7 +239,8 @@ static int eprs_parse_term(eprs_t *eprs, estx_rule_t rule, estx_term_t term_id, 
 		return 1;
 	}
 	case ESTX_TERM_LITERAL: {
-		strv_t literal = STRVN((char *)&eprs->estx->strs.data[term->val.literal.start], term->val.literal.len);
+		const char *data = eprs->estx->strs.data;
+		strv_t literal	 = STRVN(&data[term->val.literal.start], term->val.literal.len);
 
 		for (uint i = 0; i < (uint)literal.len; i++) {
 			tok_t tok = lex_get_tok(eprs->lex, *off + i);
@@ -439,7 +440,8 @@ int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_rule_t r
 			dst.off += dputf(dst, "error: expected %.*s\n", (int)len, buf);
 
 		} else {
-			strv_t exp_str = STRVN((char *)&eprs->estx->strs.data[term->val.literal.start], term->val.literal.len);
+			const char *data = eprs->estx->strs.data;
+			strv_t exp_str	 = STRVN(&data[term->val.literal.start], term->val.literal.len);
 			dst.off += dputf(dst, "error: expected \'%.*s\'\n", exp_str.len, exp_str.data);
 		}
 

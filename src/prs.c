@@ -12,7 +12,7 @@ typedef enum prs_node_type_e {
 typedef struct prs_node_data_s {
 	prs_node_type_t type;
 	union {
-		stx_rule_t rule;
+		stx_node_t rule;
 		tok_t literal;
 		tok_t tok;
 	} val;
@@ -41,9 +41,14 @@ void prs_free(prs_t *prs)
 	tree_free(&prs->nodes);
 }
 
-int prs_node_rule(prs_t *prs, stx_rule_t rule, prs_node_t *node)
+int prs_node_rule(prs_t *prs, stx_node_t rule, prs_node_t *node)
 {
 	if (prs == NULL) {
+		return 1;
+	}
+
+	if (stx_get_node(prs->stx, rule) == NULL) {
+		log_error("cparse", "prs", NULL, "invalid rule: %d", rule);
 		return 1;
 	}
 
@@ -119,7 +124,7 @@ int prs_remove_node(prs_t *prs, prs_node_t node)
 	return tree_remove(&prs->nodes, node);
 }
 
-int prs_get_rule(const prs_t *prs, prs_node_t parent, stx_rule_t rule, prs_node_t *node)
+int prs_get_rule(const prs_t *prs, prs_node_t parent, stx_node_t rule, prs_node_t *node)
 {
 	if (prs == NULL) {
 		return 1;
@@ -175,26 +180,26 @@ int prs_get_str(const prs_t *prs, prs_node_t parent, tok_t *out)
 }
 
 typedef struct prs_parse_err_s {
-	stx_rule_t rule;
+	stx_node_t rule;
 	uint tok;
-	stx_term_t exp;
+	stx_node_t exp;
 	byte has_exp : 1;
 } prs_parse_err_t;
 
-static int prs_parse_rule(prs_t *prs, stx_rule_t rule_id, uint *off, prs_node_t node, prs_parse_err_t *err);
-static int prs_parse_terms(prs_t *prs, stx_rule_t rule, stx_term_t terms, uint *off, prs_node_t node, prs_parse_err_t *err);
+static int prs_parse_rule(prs_t *prs, stx_node_t rule_id, uint *off, prs_node_t node, prs_parse_err_t *err);
+static int prs_parse_terms(prs_t *prs, stx_node_t rule, stx_node_t terms, uint *off, prs_node_t node, prs_parse_err_t *err);
 
-static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint *off, prs_node_t node, prs_parse_err_t *err)
+static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint *off, prs_node_t node, prs_parse_err_t *err)
 {
-	const stx_term_data_t *term = stx_get_term_data(prs->stx, term_id);
+	const stx_node_data_t *term = stx_get_node(prs->stx, term_id);
 
 	switch (term->type) {
+	case STX_RULE: return 0;
 	case STX_TERM_RULE: {
 		uint nodes_cnt = prs->nodes.cnt;
 		uint cur       = *off;
 		prs_node_t child;
-		prs_node_rule(prs, term->val.rule, &child);
-		if (prs_parse_rule(prs, term->val.rule, off, child, err)) {
+		if (prs_node_rule(prs, term->val.rule, &child) || prs_parse_rule(prs, term->val.rule, off, child, err)) {
 			prs->nodes.cnt = nodes_cnt;
 			*off	       = cur;
 			return 1;
@@ -203,7 +208,7 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 		prs_add_node(prs, node, child);
 		return 0;
 	}
-	case STX_TERM_TOKEN: {
+	case STX_TERM_TOK: {
 		const tok_type_t tok_type = term->val.tok;
 
 		char buf[32] = {0};
@@ -232,8 +237,8 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 		log_trace("cparse", "prs", NULL, "failed: expected %.*s, but got %.*s", (int)len, buf, act_len, act);
 		return 1;
 	}
-	case STX_TERM_LITERAL: {
-		strv_t literal = STRVN((char *)&prs->stx->strs.data[term->val.literal.start], term->val.literal.len);
+	case STX_TERM_LIT: {
+		strv_t literal = stx_data_lit(prs->stx, term);
 
 		for (uint i = 0; i < (uint)literal.len; i++) {
 			tok_t tok = lex_get_tok(prs->lex, *off + i);
@@ -306,11 +311,11 @@ static int prs_parse_term(prs_t *prs, stx_rule_t rule, stx_term_t term_id, uint 
 	return 1;
 }
 
-static int prs_parse_terms(prs_t *prs, stx_rule_t rule, stx_term_t terms, uint *off, prs_node_t node, prs_parse_err_t *err)
+static int prs_parse_terms(prs_t *prs, stx_node_t rule, stx_node_t terms, uint *off, prs_node_t node, prs_parse_err_t *err)
 {
 	uint cur = *off;
-	const stx_term_data_t *term;
-	stx_term_foreach(&prs->stx->terms, terms, term)
+	const stx_node_data_t *data;
+	stx_node_foreach(&prs->stx->nodes, terms, data)
 	{
 		if (prs_parse_term(prs, rule, terms, off, node, err)) {
 			*off = cur;
@@ -321,28 +326,22 @@ static int prs_parse_terms(prs_t *prs, stx_rule_t rule, stx_term_t terms, uint *
 	return 0;
 }
 
-static int prs_parse_rule(prs_t *prs, const stx_rule_t rule_id, uint *off, prs_node_t node, prs_parse_err_t *err)
+static int prs_parse_rule(prs_t *prs, stx_node_t rule, uint *off, prs_node_t node, prs_parse_err_t *err)
 {
-	const stx_rule_data_t *rule = stx_get_rule_data(prs->stx, rule_id);
-	if (rule == NULL) {
-		log_error("cparse", "prs", NULL, "rule not found: %d", rule_id);
-		return 1;
-	}
-
-	log_trace("cparse", "prs", NULL, "<%d>", rule_id);
+	log_trace("cparse", "prs", NULL, "<%d>", rule);
 
 	uint cur = *off;
-	if (prs_parse_terms(prs, rule_id, rule->terms, off, node, err)) {
-		log_trace("cparse", "prs", NULL, "<%d>: failed", rule_id);
+	if (prs_parse_terms(prs, rule, rule, off, node, err)) {
+		log_trace("cparse", "prs", NULL, "<%d>: failed", rule);
 		*off = cur;
 		return 1;
 	}
 
-	log_trace("cparse", "prs", NULL, "<%d>: success +%d", rule_id, *off - cur);
+	log_trace("cparse", "prs", NULL, "<%d>: success +%d", rule, *off - cur);
 	return 0;
 }
 
-int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_rule_t rule, prs_node_t *root, dst_t dst)
+int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_node_t rule, prs_node_t *root, dst_t dst)
 {
 	if (prs == NULL || lex == NULL || stx == NULL) {
 		return 1;
@@ -368,19 +367,19 @@ int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_rule_t rule, p
 			return 1;
 		}
 
-		const stx_term_data_t *term = stx_get_term_data(prs->stx, err.exp);
+		const stx_node_data_t *term = stx_get_node(prs->stx, err.exp);
 
 		tok_loc_t loc = lex_get_tok_loc(prs->lex, err.tok);
 
 		dst.off += lex_tok_loc_print_loc(prs->lex, loc, dst);
 
-		if (term->type == STX_TERM_TOKEN) {
+		if (term->type == STX_TERM_TOK) {
 			char buf[32] = {0};
 			size_t len   = tok_type_print(1 << term->val.tok, DST_BUF(buf));
 			dst.off += dputf(dst, "error: expected %.*s\n", (int)len, buf);
 
 		} else {
-			strv_t exp_str = STRVN((char *)&prs->stx->strs.data[term->val.literal.start], term->val.literal.len);
+			strv_t exp_str = stx_data_lit(prs->stx, term);
 			dst.off += dputf(dst, "error: expected \'%.*s\'\n", exp_str.len, exp_str.data);
 		}
 

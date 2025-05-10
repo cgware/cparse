@@ -10,7 +10,7 @@ ebnf_t *ebnf_init(ebnf_t *ebnf, alloc_t alloc)
 		return NULL;
 	}
 
-	if (stx_init(&ebnf->stx, 10, 10, alloc) == NULL) {
+	if (stx_init(&ebnf->stx, 64, alloc) == NULL) {
 		log_error("cparse", "ebnf", NULL, "failed to intialize syntax");
 		return NULL;
 	}
@@ -79,31 +79,26 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, dst_t dst)
 
 	bnf_free(&bnf);
 
-	strbuf_t names = {0};
-	strbuf_init(&names, 16, 16, ALLOC_STD);
+	stx_node_t root;
+	stx_from_bnf(&bnf, &prs, prs_root, &ebnf->stx, &root);
 
-	stx_rule_t root;
-	stx_from_bnf(&bnf, &prs, prs_root, &ebnf->stx, &names, &root);
-
-	strbuf_find(&names, STRV("file"), &ebnf->file);
-	strbuf_find(&names, STRV("ebnf"), &ebnf->ebnf);
-	strbuf_find(&names, STRV("rules"), &ebnf->rules);
-	strbuf_find(&names, STRV("rule"), &ebnf->rule);
-	strbuf_find(&names, STRV("rname"), &ebnf->rname);
-	strbuf_find(&names, STRV("alt"), &ebnf->alt);
-	strbuf_find(&names, STRV("concat"), &ebnf->concat);
-	strbuf_find(&names, STRV("factor"), &ebnf->factor);
-	strbuf_find(&names, STRV("term"), &ebnf->term);
-	strbuf_find(&names, STRV("literal"), &ebnf->literal);
-	strbuf_find(&names, STRV("tdouble"), &ebnf->tdouble);
-	strbuf_find(&names, STRV("tsingle"), &ebnf->tsingle);
-	strbuf_find(&names, STRV("token"), &ebnf->tok);
-	strbuf_find(&names, STRV("group"), &ebnf->group);
-	strbuf_find(&names, STRV("opt"), &ebnf->opt);
-	strbuf_find(&names, STRV("rep"), &ebnf->rep);
-	strbuf_find(&names, STRV("opt-rep"), &ebnf->opt_rep);
-
-	strbuf_free(&names);
+	stx_find_rule(&ebnf->stx, STRV("file"), &ebnf->file);
+	stx_find_rule(&ebnf->stx, STRV("ebnf"), &ebnf->ebnf);
+	stx_find_rule(&ebnf->stx, STRV("rules"), &ebnf->rules);
+	stx_find_rule(&ebnf->stx, STRV("rule"), &ebnf->rule);
+	stx_find_rule(&ebnf->stx, STRV("rname"), &ebnf->rname);
+	stx_find_rule(&ebnf->stx, STRV("alt"), &ebnf->alt);
+	stx_find_rule(&ebnf->stx, STRV("concat"), &ebnf->concat);
+	stx_find_rule(&ebnf->stx, STRV("factor"), &ebnf->factor);
+	stx_find_rule(&ebnf->stx, STRV("term"), &ebnf->term);
+	stx_find_rule(&ebnf->stx, STRV("literal"), &ebnf->literal);
+	stx_find_rule(&ebnf->stx, STRV("tdouble"), &ebnf->tdouble);
+	stx_find_rule(&ebnf->stx, STRV("tsingle"), &ebnf->tsingle);
+	stx_find_rule(&ebnf->stx, STRV("token"), &ebnf->tok);
+	stx_find_rule(&ebnf->stx, STRV("group"), &ebnf->group);
+	stx_find_rule(&ebnf->stx, STRV("opt"), &ebnf->opt);
+	stx_find_rule(&ebnf->stx, STRV("rep"), &ebnf->rep);
+	stx_find_rule(&ebnf->stx, STRV("opt-rep"), &ebnf->opt_rep);
 
 	prs_free(&prs);
 	lex_free(&lex);

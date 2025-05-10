@@ -1154,7 +1154,7 @@ int make_vars_eval(const make_t *make, make_vars_t *vars)
 	}
 
 	strbuf_reset(&vars->names, 0);
-	arr_reset(&vars->flags, 0, 0);
+	arr_reset(&vars->flags, 0);
 	strbuf_reset(&vars->expanded, 0);
 	strbuf_reset(&vars->resolved, 0);
 

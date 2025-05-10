@@ -62,7 +62,7 @@ estx_rule_data_t *estx_get_rule_data(const estx_t *estx, estx_rule_t rule)
 
 	estx_rule_data_t *data = arr_get(&estx->rules, rule);
 	if (data == NULL) {
-		log_warn("cparse", "estx", NULL, "invalid rule: %d", rule);
+		log_error("cparse", "estx", NULL, "invalid rule: %d", rule);
 		return NULL;
 	}
 
@@ -203,7 +203,7 @@ estx_term_data_t *estx_get_term_data(const estx_t *estx, estx_term_t term)
 
 	estx_term_data_t *data = tree_get(&estx->terms, term);
 	if (data == NULL) {
-		log_warn("cparse", "estx", NULL, "invalid term: %d", term);
+		log_error("cparse", "estx", NULL, "invalid term: %d", term);
 		return NULL;
 	}
 
@@ -271,7 +271,8 @@ static size_t estx_term_print(const estx_t *estx, const estx_term_t term_id, con
 		break;
 	}
 	case ESTX_TERM_LITERAL: {
-		strv_t literal = STRVN((char *)&estx->strs.data[term->val.literal.start], term->val.literal.len);
+		const char *data = estx->strs.data;
+		strv_t literal	 = STRVN(&data[term->val.literal.start], term->val.literal.len);
 		if (strv_eq(literal, STRV("'"))) {
 			dst.off += dputf(dst, " \"%.*s\"", literal.len, literal.data);
 		} else {
@@ -363,7 +364,8 @@ size_t term_print_cb(void *data, dst_t dst, const void *priv)
 		break;
 	}
 	case ESTX_TERM_LITERAL: {
-		strv_t literal = STRVN((char *)&estx->strs.data[term->val.literal.start], term->val.literal.len);
+		const char *data = estx->strs.data;
+		strv_t literal	 = STRVN(&data[term->val.literal.start], term->val.literal.len);
 		if (strv_eq(literal, STRV("'"))) {
 			dst.off += dputf(dst, "\"%.*s\"", literal.len, literal.data);
 		} else {

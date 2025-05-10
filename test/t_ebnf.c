@@ -36,32 +36,32 @@ TEST(ebnf_get_stx)
 	EXPECT_NE(ebnf_get_stx(&ebnf, ALLOC_STD, DST_NONE()), NULL);
 
 	char buf[1024] = {0};
-	EXPECT_EQ(stx_print(&ebnf.stx, DST_BUF(buf)), 588);
+	EXPECT_EQ(stx_print(&ebnf.stx, DST_BUF(buf)), 851);
 	EXPECT_STR(buf,
-		   "<0> ::= <1> EOF\n"
-		   "<1> ::= <2>\n"
-		   "<2> ::= <3> <2> | <3>\n"
-		   "<3> ::= <4> <5> '=' <6> <7> NL\n"
-		   "<4> ::= LOWER <8> | LOWER\n"
-		   "<5> ::= <6> <5> | <6>\n"
-		   "<6> ::= ' '\n"
-		   "<7> ::= <10> <6> '|' <6> <7> | <10>\n"
-		   "<8> ::= <9> <8> | <9>\n"
-		   "<9> ::= LOWER | '_'\n"
-		   "<10> ::= <11> <6> <10> | <11>\n"
-		   "<11> ::= <12> <13> | <12> <14> | <12> <15> | <12>\n"
-		   "<12> ::= <16> | <17> | <4> | <18>\n"
-		   "<13> ::= '?'\n"
-		   "<14> ::= '+'\n"
-		   "<15> ::= '*'\n"
-		   "<16> ::= \"'\" <19> \"'\" | '\"' <20> '\"'\n"
-		   "<17> ::= UPPER <17> | UPPER\n"
-		   "<18> ::= '(' <7> ')'\n"
-		   "<19> ::= <21> <19> | <21>\n"
-		   "<20> ::= <22> <20> | <22>\n"
-		   "<21> ::= <23> | '\"'\n"
-		   "<22> ::= <23> | \"'\"\n"
-		   "<23> ::= ALPHA | DIGIT | SYMBOL | ' '\n");
+		   "<file> ::= <ebnf> EOF\n"
+		   "<ebnf> ::= <rules>\n"
+		   "<rules> ::= <rule> <rules> | <rule>\n"
+		   "<rule> ::= <rname> <spaces> '=' <space> <alt> NL\n"
+		   "<rname> ::= LOWER <rchars> | LOWER\n"
+		   "<spaces> ::= <space> <spaces> | <space>\n"
+		   "<space> ::= ' '\n"
+		   "<alt> ::= <concat> <space> '|' <space> <alt> | <concat>\n"
+		   "<rchars> ::= <rchar> <rchars> | <rchar>\n"
+		   "<rchar> ::= LOWER | '_'\n"
+		   "<concat> ::= <factor> <space> <concat> | <factor>\n"
+		   "<factor> ::= <term> <opt> | <term> <rep> | <term> <opt-rep> | <term>\n"
+		   "<term> ::= <literal> | <token> | <rname> | <group>\n"
+		   "<opt> ::= '?'\n"
+		   "<rep> ::= '+'\n"
+		   "<opt-rep> ::= '*'\n"
+		   "<literal> ::= \"'\" <tdouble> \"'\" | '\"' <tsingle> '\"'\n"
+		   "<token> ::= UPPER <token> | UPPER\n"
+		   "<group> ::= '(' <alt> ')'\n"
+		   "<tdouble> ::= <cdouble> <tdouble> | <cdouble>\n"
+		   "<tsingle> ::= <csingle> <tsingle> | <csingle>\n"
+		   "<cdouble> ::= <char> | '\"'\n"
+		   "<csingle> ::= <char> | \"'\"\n"
+		   "<char> ::= ALPHA | DIGIT | SYMBOL | ' '\n");
 
 	ebnf_free(&ebnf);
 
@@ -136,6 +136,8 @@ TEST(stx_from_ebnf_custom)
 
 	estx_t new_stx = {0};
 	estx_init(&new_stx, 10, 10, ALLOC_STD);
+
+	prs.stx = &ebnf.stx;
 
 	prs_node_t file, pebnf, rs_lit, r_lit, a_lit, c_lit, f_lit, t_lit, node;
 	prs_node_rule(&prs, ebnf.file, &file);

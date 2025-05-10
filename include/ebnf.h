@@ -6,23 +6,23 @@
 
 typedef struct ebnf_s {
 	stx_t stx;
-	stx_rule_t file;
-	stx_rule_t ebnf;
-	stx_rule_t rules;
-	stx_rule_t rule;
-	stx_rule_t rname;
-	stx_rule_t alt;
-	stx_rule_t concat;
-	stx_rule_t factor;
-	stx_rule_t term;
-	stx_rule_t literal;
-	stx_rule_t tok;
-	stx_rule_t tdouble;
-	stx_rule_t tsingle;
-	stx_rule_t group;
-	stx_rule_t opt;
-	stx_rule_t rep;
-	stx_rule_t opt_rep;
+	stx_node_t file;
+	stx_node_t ebnf;
+	stx_node_t rules;
+	stx_node_t rule;
+	stx_node_t rname;
+	stx_node_t alt;
+	stx_node_t concat;
+	stx_node_t factor;
+	stx_node_t term;
+	stx_node_t literal;
+	stx_node_t tok;
+	stx_node_t tdouble;
+	stx_node_t tsingle;
+	stx_node_t group;
+	stx_node_t opt;
+	stx_node_t rep;
+	stx_node_t opt_rep;
 } ebnf_t;
 
 ebnf_t *ebnf_init(ebnf_t *ebnf, alloc_t alloc);

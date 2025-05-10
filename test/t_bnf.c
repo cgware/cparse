@@ -32,28 +32,28 @@ TEST(bnf_get_stx)
 	EXPECT_EQ(bnf_get_stx(NULL), NULL);
 	EXPECT_NE(bnf_get_stx(&bnf), NULL);
 
-	char buf[512] = {0};
-	EXPECT_EQ(stx_print(&bnf.stx, DST_BUF(buf)), 493);
+	char buf[1024] = {0};
+	EXPECT_EQ(stx_print(&bnf.stx, DST_BUF(buf)), 715);
 	EXPECT_STR(buf,
-		   "<0> ::= <1> EOF\n"
-		   "<1> ::= <2>\n"
-		   "<2> ::= <3> <2> | <3>\n"
-		   "<3> ::= '<' <4> '>' <17> '::=' <18> <7> NL\n"
-		   "<4> ::= LOWER <5> | LOWER\n"
-		   "<5> ::= <6> <5> | <6>\n"
-		   "<6> ::= LOWER | '-'\n"
-		   "<7> ::= <8> <18> '|' <18> <7> | <8>\n"
-		   "<8> ::= <9> <18> <8> | <9>\n"
-		   "<9> ::= <10> | <11> | '<' <4> '>'\n"
-		   "<10> ::= \"'\" <12> \"'\" | '\"' <13> '\"'\n"
-		   "<11> ::= UPPER <11> | UPPER\n"
-		   "<12> ::= <14> <12> | <14>\n"
-		   "<13> ::= <15> <13> | <15>\n"
-		   "<14> ::= <16> | '\"'\n"
-		   "<15> ::= <16> | \"'\"\n"
-		   "<16> ::= ALPHA | DIGIT | SYMBOL | <18>\n"
-		   "<17> ::= <18> <17> | <18>\n"
-		   "<18> ::= ' '\n");
+		   "<file> ::= <bnf> EOF\n"
+		   "<bnf> ::= <rules>\n"
+		   "<rules> ::= <rule> <rules> | <rule>\n"
+		   "<rule> ::= '<' <rname> '>' <spaces> '::=' <space> <expr> NL\n"
+		   "<rname> ::= LOWER <rchars> | LOWER\n"
+		   "<rchars> ::= <rchar> <rchars> | <rchar>\n"
+		   "<rchar> ::= LOWER | '-'\n"
+		   "<expr> ::= <terms> <space> '|' <space> <expr> | <terms>\n"
+		   "<terms> ::= <term> <space> <terms> | <term>\n"
+		   "<term> ::= <literal> | <token> | '<' <rname> '>'\n"
+		   "<literal> ::= \"'\" <tdouble> \"'\" | '\"' <tsingle> '\"'\n"
+		   "<token> ::= UPPER <token> | UPPER\n"
+		   "<tdouble> ::= <cdouble> <tdouble> | <cdouble>\n"
+		   "<tsingle> ::= <csingle> <tsingle> | <csingle>\n"
+		   "<cdouble> ::= <char> | '\"'\n"
+		   "<csingle> ::= <char> | \"'\"\n"
+		   "<char> ::= ALPHA | DIGIT | SYMBOL | <space>\n"
+		   "<spaces> ::= <space> <spaces> | <space>\n"
+		   "<space> ::= ' '\n");
 
 	bnf_free(&bnf);
 
@@ -98,26 +98,21 @@ TEST(stx_from_bnf)
 	prs_node_t prs_root;
 	prs_parse(&prs, &lex, &bnf.stx, bnf.file, &prs_root, DST_STD());
 
-	strbuf_t names = {0};
-	strbuf_init(&names, 16, 16, ALLOC_STD);
-
 	stx_t new_stx = {0};
-	stx_init(&new_stx, 10, 10, ALLOC_STD);
-	stx_rule_t root;
-	EXPECT_EQ(stx_from_bnf(NULL, &prs, prs_root, &new_stx, &names, &root), 0);
-	EXPECT_EQ(stx_from_bnf(&bnf, &prs, prs_root, &new_stx, &names, &root), 0);
+	stx_init(&new_stx, 10, ALLOC_STD);
+	stx_node_t root;
+	EXPECT_EQ(stx_from_bnf(NULL, &prs, prs_root, &new_stx, &root), 1);
+	EXPECT_EQ(stx_from_bnf(&bnf, &prs, prs_root, &new_stx, &root), 0);
 	EXPECT_EQ(root, 0);
 
 	uint file, bnfr, rules;
-	strbuf_find(&names, STRV("file"), &file);
-	strbuf_find(&names, STRV("bnf"), &bnfr);
-	strbuf_find(&names, STRV("rules"), &rules);
+	stx_find_rule(&new_stx, STRV("file"), &file);
+	stx_find_rule(&new_stx, STRV("bnf"), &bnfr);
+	stx_find_rule(&new_stx, STRV("rules"), &rules);
 
 	EXPECT_EQ(file, 0);
 	EXPECT_EQ(bnfr, 1);
-	EXPECT_EQ(rules, 2);
-
-	strbuf_free(&names);
+	EXPECT_EQ(rules, 4);
 
 	lex_free(&lex);
 	prs_free(&prs);
@@ -136,10 +131,11 @@ TEST(stx_from_bnf_custom)
 	bnf_get_stx(&bnf);
 
 	stx_t new_stx = {0};
-	stx_init(&new_stx, 10, 10, ALLOC_STD);
+	stx_init(&new_stx, 10, ALLOC_STD);
 
 	prs_t prs = {0};
 	prs_init(&prs, 100, ALLOC_STD);
+	prs.stx = &bnf.stx;
 
 	prs_node_t file, pbnf, rules, rule, expr, terms0, term0, terms1, node;
 	prs_node_rule(&prs, bnf.file, &file);
@@ -162,17 +158,12 @@ TEST(stx_from_bnf_custom)
 	prs_node_rule(&prs, bnf.term, &node);
 	prs_add_node(&prs, terms1, node);
 
-	strbuf_t names = {0};
-	strbuf_init(&names, 16, 16, ALLOC_STD);
-
-	stx_rule_t root;
+	stx_node_t root;
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(stx_from_bnf(&bnf, &prs, file, &new_stx, &names, &root), 0);
+	EXPECT_EQ(stx_from_bnf(&bnf, &prs, file, &new_stx, &root), 0);
 	EXPECT_EQ(root, 0);
 	log_set_quiet(0, 0);
-
-	strbuf_free(&names);
 
 	prs_free(&prs);
 	stx_free(&new_stx);
