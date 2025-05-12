@@ -239,7 +239,7 @@ TEST(eprs_parse_gen)
 	estx_rule(&estx, STRV("rule"), &rule);
 
 	estx_node_t term;
-	estx_term_con(&estx, &term);
+	estx_term_tok(&estx, TOK_NULL, ESTX_TERM_OCC_ONE, &term);
 	estx_add_term(&estx, rule, term);
 	estx_node_data_t *data = estx_get_node(&estx, term);
 	data->type	       = -1;
@@ -508,14 +508,13 @@ TEST(eprs_parse_alt_failed)
 
 	estx_node_t rule;
 	estx_rule(&estx, STRV("rule"), &rule);
-	estx_node_t alt;
-	estx_term_alt(&estx, &alt);
-	estx_add_term(&estx, rule, alt);
-	estx_node_t term;
-	estx_term_lit(&estx, STRV("a"), ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, alt, term);
+	estx_node_t terms, term;
+	estx_term_lit(&estx, STRV("a"), ESTX_TERM_OCC_ONE, &terms);
 	estx_term_lit(&estx, STRV("b"), ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, alt, term);
+	estx_add_term(&estx, terms, term);
+	estx_node_t alt;
+	estx_term_alt(&estx, terms, &alt);
+	estx_add_term(&estx, rule, alt);
 
 	char buf[256] = {0};
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_BUF(buf)), 1);
@@ -549,14 +548,13 @@ TEST(eprs_parse_alt)
 
 	estx_node_t rule;
 	estx_rule(&estx, STRV("rule"), &rule);
-	estx_node_t alt;
-	estx_term_alt(&estx, &alt);
-	estx_add_term(&estx, rule, alt);
-	estx_node_t term;
-	estx_term_lit(&estx, STRV("a"), ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, alt, term);
+	estx_node_t terms, term;
+	estx_term_lit(&estx, STRV("a"), ESTX_TERM_OCC_ONE, &terms);
 	estx_term_lit(&estx, STRV("b"), ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, alt, term);
+	estx_add_term(&estx, terms, term);
+	estx_node_t alt;
+	estx_term_alt(&estx, terms, &alt);
+	estx_add_term(&estx, rule, alt);
 
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_NONE()), 0);
 
@@ -584,14 +582,13 @@ TEST(eprs_parse_con_failed)
 
 	estx_node_t rule;
 	estx_rule(&estx, STRV("rule"), &rule);
-	estx_node_t con;
-	estx_term_con(&estx, &con);
-	estx_add_term(&estx, rule, con);
-	estx_node_t term;
-	estx_term_lit(&estx, STRV("a"), ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, con, term);
+	estx_node_t terms, term;
+	estx_term_lit(&estx, STRV("a"), ESTX_TERM_OCC_ONE, &terms);
 	estx_term_lit(&estx, STRV("b"), ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, con, term);
+	estx_add_term(&estx, terms, term);
+	estx_node_t con;
+	estx_term_con(&estx, terms, &con);
+	estx_add_term(&estx, rule, con);
 
 	char buf[256] = {0};
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_BUF(buf)), 1);
@@ -625,14 +622,13 @@ TEST(eprs_parse_con)
 
 	estx_node_t rule;
 	estx_rule(&estx, STRV("rule"), &rule);
-	estx_node_t con;
-	estx_term_con(&estx, &con);
-	estx_add_term(&estx, rule, con);
-	estx_node_t term;
-	estx_term_lit(&estx, STRV("a"), ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, con, term);
+	estx_node_t terms, term;
+	estx_term_lit(&estx, STRV("a"), ESTX_TERM_OCC_ONE, &terms);
 	estx_term_lit(&estx, STRV("b"), ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, con, term);
+	estx_add_term(&estx, terms, term);
+	estx_node_t con;
+	estx_term_con(&estx, terms, &con);
+	estx_add_term(&estx, rule, con);
 
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_NONE()), 0);
 
@@ -660,14 +656,13 @@ TEST(eprs_parse_group_failed)
 
 	estx_node_t rule;
 	estx_rule(&estx, STRV("rule"), &rule);
-	estx_node_t group;
-	estx_term_group(&estx, ESTX_TERM_OCC_ONE, &group);
-	estx_add_term(&estx, rule, group);
-	estx_node_t term;
-	estx_term_lit(&estx, STRV("a"), ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, group, term);
+	estx_node_t terms, term;
+	estx_term_lit(&estx, STRV("a"), ESTX_TERM_OCC_ONE, &terms);
 	estx_term_lit(&estx, STRV("b"), ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, group, term);
+	estx_add_term(&estx, terms, term);
+	estx_node_t group;
+	estx_term_group(&estx, terms, ESTX_TERM_OCC_ONE, &group);
+	estx_add_term(&estx, rule, group);
 
 	char buf[256] = {0};
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_BUF(buf)), 1);
@@ -701,14 +696,13 @@ TEST(eprs_parse_group)
 
 	estx_node_t rule;
 	estx_rule(&estx, STRV("rule"), &rule);
-	estx_node_t group;
-	estx_term_group(&estx, ESTX_TERM_OCC_ONE, &group);
-	estx_add_term(&estx, rule, group);
-	estx_node_t term;
-	estx_term_lit(&estx, STRV("a"), ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, group, term);
+	estx_node_t terms, term;
+	estx_term_lit(&estx, STRV("a"), ESTX_TERM_OCC_ONE, &terms);
 	estx_term_lit(&estx, STRV("b"), ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, group, term);
+	estx_add_term(&estx, terms, term);
+	estx_node_t group;
+	estx_term_group(&estx, terms, ESTX_TERM_OCC_ONE, &group);
+	estx_add_term(&estx, rule, group);
 
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_NONE()), 0);
 
@@ -878,14 +872,13 @@ TEST(eprs_parse_name)
 	estx_rule(&estx, STRV("vala"), &vala);
 	estx_rule(&estx, STRV("valb"), &valb);
 
-	estx_node_t file_alt;
-	estx_term_alt(&estx, &file_alt);
-	estx_add_term(&estx, file, file_alt);
-	estx_node_t term;
-	estx_term_rule(&estx, vala, ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, file_alt, term);
+	estx_node_t terms, term;
+	estx_term_rule(&estx, vala, ESTX_TERM_OCC_ONE, &terms);
 	estx_term_rule(&estx, valb, ESTX_TERM_OCC_ONE, &term);
-	estx_add_term(&estx, file_alt, term);
+	estx_add_term(&estx, terms, term);
+	estx_node_t file_alt;
+	estx_term_alt(&estx, terms, &file_alt);
+	estx_add_term(&estx, file, file_alt);
 
 	estx_term_lit(&estx, STRV("b"), ESTX_TERM_OCC_ONE, &term);
 	estx_add_term(&estx, valb, term);
@@ -978,7 +971,7 @@ TEST(eprs_parse_ebnf)
 		estx_rule(&estx, STRV("rule"), &rule);
 
 		estx_node_t term;
-		estx_term_con(&estx, &term);
+		estx_term_tok(&estx, TOK_NULL, ESTX_TERM_OCC_ONE, &term);
 		estx_add_term(&estx, rule, term);
 		estx_node_data_t *data = estx_get_node(&estx, term);
 		data->type	       = -1;
@@ -1107,7 +1100,7 @@ TEST(eprs_parse_ebnf)
 		EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, estx_root, &root, DST_NONE()), 0);
 
 		char *buf = mem_alloc(30000);
-		EXPECT_EQ(eprs_print(&eprs, root, DST_BUFN(buf, 30000)), 20026);
+		EXPECT_EQ(eprs_print(&eprs, root, DST_BUFN(buf, 30000)), 20010);
 		mem_free(buf, 30000);
 	}
 

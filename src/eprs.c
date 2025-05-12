@@ -199,7 +199,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 	switch (term->type) {
 	case ESTX_RULE: {
 		estx_node_t terms;
-		estx_node_data_t *data = tree_get_child(&eprs->estx->nodes, term_id, &terms);
+		estx_node_data_t *data = list_get_next(&eprs->estx->nodes, term_id, &terms);
 		return eprs_parse_terms(eprs, rule, terms, off, node, err, data);
 	}
 	case ESTX_TERM_RULE: {
@@ -288,12 +288,12 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 		return 0;
 	}
 	case ESTX_TERM_ALT: {
-		estx_node_t child_id;
-		estx_node_foreach(&eprs->estx->nodes, term_id, child_id, term)
+		estx_node_t terms = term->val.terms;
+		estx_node_foreach(&eprs->estx->nodes, terms, term)
 		{
 			uint cur       = *off;
 			uint nodes_cnt = eprs->nodes.cnt;
-			if (eprs_parse_terms(eprs, rule, child_id, off, node, err, term)) {
+			if (eprs_parse_terms(eprs, rule, terms, off, node, err, term)) {
 				log_trace("cparse", "eprs", NULL, "alt: failed");
 				tree_set_cnt(&eprs->nodes, nodes_cnt);
 				*off = cur;
@@ -305,12 +305,12 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 		break;
 	}
 	case ESTX_TERM_CON: {
-		uint cur = *off;
-		estx_node_t child_id;
-		estx_node_foreach(&eprs->estx->nodes, term_id, child_id, term)
+		uint cur	  = *off;
+		estx_node_t terms = term->val.terms;
+		estx_node_foreach(&eprs->estx->nodes, terms, term)
 		{
 			uint nodes_cnt = eprs->nodes.cnt;
-			if (eprs_parse_terms(eprs, rule, child_id, off, node, err, term)) {
+			if (eprs_parse_terms(eprs, rule, terms, off, node, err, term)) {
 				log_trace("cparse", "eprs", NULL, "con: failed");
 				tree_set_cnt(&eprs->nodes, nodes_cnt);
 				*off = cur;
@@ -322,12 +322,12 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 		return 0;
 	}
 	case ESTX_TERM_GROUP: {
-		uint cur = *off;
-		estx_node_t child_id;
-		estx_node_foreach(&eprs->estx->nodes, term_id, child_id, term)
+		uint cur	  = *off;
+		estx_node_t terms = term->val.terms;
+		estx_node_foreach(&eprs->estx->nodes, terms, term)
 		{
 			uint nodes_cnt = eprs->nodes.cnt;
-			if (eprs_parse_terms(eprs, rule, child_id, off, node, err, term)) {
+			if (eprs_parse_terms(eprs, rule, terms, off, node, err, term)) {
 				log_trace("cparse", "eprs", NULL, "group: failed");
 				tree_set_cnt(&eprs->nodes, nodes_cnt);
 				*off = cur;

@@ -1,5 +1,5 @@
-#ifndef EPARSER_H
-#define EPARSER_H
+#ifndef EPRS_H
+#define EPRS_H
 
 #include "estx.h"
 #include "lex.h"

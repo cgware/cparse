@@ -1,11 +1,11 @@
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef PRS_H
+#define PRS_H
 
 #include "lex.h"
 #include "stx.h"
 #include "tree.h"
 
-#define PRS_NODE_END ((uint)-1)
+#define PRS_NODE_END ((uint) - 1)
 
 typedef tnode_t prs_node_t;
 

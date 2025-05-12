@@ -68,7 +68,7 @@ TEST(ebnf_get_stx)
 	END;
 }
 
-TEST(stx_from_ebnf)
+TEST(estx_from_ebnf)
 {
 	START;
 
@@ -111,6 +111,129 @@ TEST(stx_from_ebnf)
 	EXPECT_EQ(estx_from_ebnf(&ebnf, &prs, prs_root, &new_stx, &root), 0);
 	EXPECT_EQ(root, 0);
 
+	char buf[2048] = {0};
+	estx_print(&new_stx, DST_BUF(buf));
+	EXPECT_STR(buf,
+		   "file = ebnf EOF\n"
+		   "ebnf = rule+\n"
+		   "rule = rname spaces '= ' alt NL\n"
+		   "rname = LOWER (LOWER | '_')*\n"
+		   "spaces = ' '+\n"
+		   "alt = concat (' | ' concat)*\n"
+		   "concat = factor (' ' factor)*\n"
+		   "factor = term (opt | rep | opt_rep)?\n"
+		   "term = literal | token | rname | group\n"
+		   "opt = '?'\n"
+		   "rep = '+'\n"
+		   "opt_rep = '*'\n"
+		   "literal = \"'\" (char | '\"')+ \"'\" | '\"' (char | \"'\")+ '\"'\n"
+		   "token = UPPER+\n"
+		   "group = '(' alt ')'\n"
+		   "char = ALPHA | DIGIT | SYMBOL | ' '\n");
+
+	estx_print_tree(&new_stx, DST_BUF(buf));
+	EXPECT_STR(buf,
+		   "<file>\n"
+		   "└─con\n"
+		   "  ├─<ebnf>\n"
+		   "  └─EOF\n"
+		   "\n"
+		   "<ebnf>\n"
+		   "└─<rule>+\n"
+		   "\n"
+		   "<rule>\n"
+		   "└─con\n"
+		   "  ├─<rname>\n"
+		   "  ├─<spaces>\n"
+		   "  ├─'= '\n"
+		   "  ├─<alt>\n"
+		   "  └─NL\n"
+		   "\n"
+		   "<rname>\n"
+		   "└─con\n"
+		   "  ├─LOWER\n"
+		   "  └─group*\n"
+		   "    └─alt\n"
+		   "      ├─LOWER\n"
+		   "      └─'_'\n"
+		   "\n"
+		   "<spaces>\n"
+		   "└─' '+\n"
+		   "\n"
+		   "<alt>\n"
+		   "└─con\n"
+		   "  ├─<concat>\n"
+		   "  └─group*\n"
+		   "    └─con\n"
+		   "      ├─' | '\n"
+		   "      └─<concat>\n"
+		   "\n"
+		   "<concat>\n"
+		   "└─con\n"
+		   "  ├─<factor>\n"
+		   "  └─group*\n"
+		   "    └─con\n"
+		   "      ├─' '\n"
+		   "      └─<factor>\n"
+		   "\n"
+		   "<factor>\n"
+		   "└─con\n"
+		   "  ├─<term>\n"
+		   "  └─group?\n"
+		   "    └─alt\n"
+		   "      ├─<opt>\n"
+		   "      ├─<rep>\n"
+		   "      └─<opt_rep>\n"
+		   "\n"
+		   "<term>\n"
+		   "└─alt\n"
+		   "  ├─<literal>\n"
+		   "  ├─<token>\n"
+		   "  ├─<rname>\n"
+		   "  └─<group>\n"
+		   "\n"
+		   "<opt>\n"
+		   "└─'?'\n"
+		   "\n"
+		   "<rep>\n"
+		   "└─'+'\n"
+		   "\n"
+		   "<opt_rep>\n"
+		   "└─'*'\n"
+		   "\n"
+		   "<literal>\n"
+		   "└─alt\n"
+		   "  ├─con\n"
+		   "  │ ├─\"'\"\n"
+		   "  │ ├─group+\n"
+		   "  │ │ └─alt\n"
+		   "  │ │   ├─<char>\n"
+		   "  │ │   └─'\"'\n"
+		   "  │ └─\"'\"\n"
+		   "  └─con\n"
+		   "    ├─'\"'\n"
+		   "    ├─group+\n"
+		   "    │ └─alt\n"
+		   "    │   ├─<char>\n"
+		   "    │   └─\"'\"\n"
+		   "    └─'\"'\n"
+		   "\n"
+		   "<token>\n"
+		   "└─UPPER+\n"
+		   "\n"
+		   "<group>\n"
+		   "└─con\n"
+		   "  ├─'('\n"
+		   "  ├─<alt>\n"
+		   "  └─')'\n"
+		   "\n"
+		   "<char>\n"
+		   "└─alt\n"
+		   "  ├─ALPHA\n"
+		   "  ├─DIGIT\n"
+		   "  ├─SYMBOL\n"
+		   "  └─' '\n");
+
 	estx_free(&new_stx);
 	lex_free(&lex);
 	prs_free(&prs);
@@ -119,7 +242,7 @@ TEST(stx_from_ebnf)
 	END;
 }
 
-TEST(stx_from_ebnf_custom)
+TEST(estx_from_ebnf_custom)
 {
 	START;
 
@@ -193,8 +316,8 @@ STEST(ebnf)
 
 	RUN(ebnf_init_free);
 	RUN(ebnf_get_stx);
-	RUN(stx_from_ebnf);
-	RUN(stx_from_ebnf_custom);
+	RUN(estx_from_ebnf);
+	RUN(estx_from_ebnf_custom);
 
 	SEND;
 }

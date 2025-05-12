@@ -74,10 +74,12 @@ TEST(stx_from_bnf)
 			   "<rules>       ::= <rule> <rules> | <rule>\n"
 			   "<rule>        ::= '<' <rule-name> '>' <spaces> '::=' <space> <expression> NL\n"
 			   "<rule-name>   ::= LOWER <rule-chars> | LOWER\n"
-			   "<rule-chars>  ::= <rule-char> <rule-chars> | <rule-char>\n"
-			   "<rule-char>   ::= LOWER | '-'\n"
+			   "<spaces>      ::= <space> <spaces> | <space>\n"
+			   "<space>       ::= ' '\n"
 			   "<expression>  ::= <terms> <space> '|' <space> <expression> | <terms>\n"
+			   "<rule-chars>  ::= <rule-char> <rule-chars> | <rule-char>\n"
 			   "<terms>       ::= <term> <terms> | <term>\n"
+			   "<rule-char>   ::= LOWER | '-'\n"
 			   "<term>        ::= <literal> | <token> | '<' <rule-name> '>'\n"
 			   "<literal>     ::= \"'\" <text-double> \"'\" | '\"' <text-single> '\"'\n"
 			   "<token>       ::= UPPER <token> | UPPER\n"
@@ -85,9 +87,7 @@ TEST(stx_from_bnf)
 			   "<text-single> ::= <char-single> <text-single> | <char-single>\n"
 			   "<char-double> ::= <character> | '\"'\n"
 			   "<char-single> ::= <character> | \"'\"\n"
-			   "<character>   ::= ALPHA | DIGIT | SYMBOL | ' '\n"
-			   "<spaces>      ::= <space> <spaces> | <space>\n"
-			   "<space>       ::= ' '\n");
+			   "<character>   ::= ALPHA | DIGIT | SYMBOL | ' '\n");
 
 	lex_t lex = {0};
 	lex_init(&lex, 0, 1, ALLOC_STD);
@@ -104,6 +104,29 @@ TEST(stx_from_bnf)
 	EXPECT_EQ(stx_from_bnf(NULL, &prs, prs_root, &new_stx, &root), 1);
 	EXPECT_EQ(stx_from_bnf(&bnf, &prs, prs_root, &new_stx, &root), 0);
 	EXPECT_EQ(root, 0);
+
+	char buf[1024] = {0};
+	stx_print(&new_stx, DST_BUF(buf));
+	EXPECT_STR(buf,
+		   "<file> ::= <bnf> EOF\n"
+		   "<bnf> ::= <rules>\n"
+		   "<rules> ::= <rule> <rules> | <rule>\n"
+		   "<rule> ::= '<' <rule-name> '>' <spaces> '::=' <space> <expression> NL\n"
+		   "<rule-name> ::= LOWER <rule-chars> | LOWER\n"
+		   "<spaces> ::= <space> <spaces> | <space>\n"
+		   "<space> ::= ' '\n"
+		   "<expression> ::= <terms> <space> '|' <space> <expression> | <terms>\n"
+		   "<rule-chars> ::= <rule-char> <rule-chars> | <rule-char>\n"
+		   "<terms> ::= <term> <terms> | <term>\n"
+		   "<rule-char> ::= LOWER | '-'\n"
+		   "<term> ::= <literal> | <token> | '<' <rule-name> '>'\n"
+		   "<literal> ::= \"'\" <text-double> \"'\" | '\"' <text-single> '\"'\n"
+		   "<token> ::= UPPER <token> | UPPER\n"
+		   "<text-double> ::= <char-double> <text-double> | <char-double>\n"
+		   "<text-single> ::= <char-single> <text-single> | <char-single>\n"
+		   "<char-double> ::= <character> | '\"'\n"
+		   "<char-single> ::= <character> | \"'\"\n"
+		   "<character> ::= ALPHA | DIGIT | SYMBOL | ' '\n");
 
 	uint file, bnfr, rules;
 	stx_find_rule(&new_stx, STRV("file"), &file);

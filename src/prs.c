@@ -404,7 +404,9 @@ static size_t print_nodes(void *data, dst_t dst, const void *priv)
 	const prs_node_data_t *node = data;
 	switch (node->type) {
 	case PRS_NODE_RULE: {
-		dst.off += dputf(dst, "%d\n", node->val.rule);
+		stx_node_data_t *rule = stx_get_node(prs->stx, node->val.rule);
+		strv_t name	      = STRVN(buf_get(&prs->stx->strs, rule->val.name.off), rule->val.name.len);
+		dst.off += dputf(dst, "%.*s\n", name.len, name.data);
 		break;
 	}
 	case PRS_NODE_TOKEN: {

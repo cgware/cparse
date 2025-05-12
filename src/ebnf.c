@@ -106,11 +106,9 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, dst_t dst)
 	return &ebnf->stx;
 }
 
-static void alt_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node, estx_t *estx, estx_node_t parent, estx_node_t rule,
-			  int is_rule, int recursive);
+static int alt_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node, estx_t *estx, int is_alt, estx_node_t *term);
 
-static void term_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node, estx_t *estx, estx_node_t parent, estx_node_occ_t occ,
-			   estx_node_t rule, int is_rule)
+static int term_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node, estx_t *estx, estx_node_occ_t occ, estx_node_t *term)
 {
 	prs_node_t prs_rname;
 	if (prs_get_rule(prs, node, ebnf->rname, &prs_rname) == 0) {
@@ -123,15 +121,7 @@ static void term_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 			estx_rule(estx, name, &new_rule);
 		}
 
-		estx_node_t term;
-		estx_term_rule(estx, new_rule, occ, &term);
-
-		if (is_rule) {
-			estx_add_term(estx, rule, term);
-		} else {
-			estx_add_term(estx, parent, term);
-		}
-		return;
+		return estx_term_rule(estx, new_rule, occ, term);
 	}
 
 	prs_node_t prs_literal;
@@ -144,59 +134,34 @@ static void term_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 		} else if (prs_get_rule(prs, prs_literal, ebnf->tsingle, &prs_text_single) == 0) {
 			prs_get_str(prs, prs_text_single, &str);
 		} else {
-			return;
+			return 1;
 		}
 
-		strv_t literal = lex_get_tok_val(prs->lex, str);
-
-		estx_node_t term;
-		estx_term_lit(estx, literal, occ, &term);
-
-		if (is_rule) {
-			estx_add_term(estx, rule, term);
-		} else {
-			estx_add_term(estx, parent, term);
-		}
-		return;
+		return estx_term_lit(estx, lex_get_tok_val(prs->lex, str), occ, term);
 	}
 
 	prs_node_t prs_tok;
 	if (prs_get_rule(prs, node, ebnf->tok, &prs_tok) == 0) {
 		tok_t str = {0};
 		prs_get_str(prs, prs_tok, &str);
-		strv_t tok = lex_get_tok_val(prs->lex, str);
-
-		estx_node_t term;
-		estx_term_tok(estx, tok_type_enum(tok), occ, &term);
-
-		if (is_rule) {
-			estx_add_term(estx, rule, term);
-		} else {
-			estx_add_term(estx, parent, term);
-		}
-		return;
+		return estx_term_tok(estx, tok_type_enum(lex_get_tok_val(prs->lex, str)), occ, term);
 	}
 
 	prs_node_t prs_group;
 	if (prs_get_rule(prs, node, ebnf->group, &prs_group) == 0) {
-		estx_node_t group;
-
-		estx_term_group(estx, occ, &group);
-
-		if (is_rule) {
-			estx_add_term(estx, rule, group);
-		} else {
-			estx_add_term(estx, parent, group);
-		}
-
 		prs_node_t prs_alt;
 		prs_get_rule(prs, prs_group, ebnf->alt, &prs_alt);
-		alt_from_ebnf(ebnf, prs, prs_alt, estx, group, 0, 0, 0);
+
+		estx_node_t alt;
+		alt_from_ebnf(ebnf, prs, prs_alt, estx, 0, &alt);
+
+		return estx_term_group(estx, alt, occ, term);
 	}
+
+	return 1;
 }
 
-static void factor_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node, estx_t *estx, estx_node_t parent, estx_node_t rule,
-			     int is_rule)
+static int factor_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node, estx_t *estx, estx_node_t *term)
 {
 	prs_node_t prs_term;
 	prs_get_rule(prs, node, ebnf->term, &prs_term);
@@ -214,56 +179,67 @@ static void factor_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t no
 		occ = ESTX_TERM_OCC_OPT | ESTX_TERM_OCC_REP;
 	}
 
-	term_from_ebnf(ebnf, prs, prs_term, estx, parent, occ, rule, is_rule);
+	return term_from_ebnf(ebnf, prs, prs_term, estx, occ, term);
 }
 
-static void concat_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node, estx_t *estx, estx_node_t parent, estx_node_t rule,
-			     int is_rule, int recursive)
+static int concat_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node, estx_t *estx, int is_con, estx_node_t *term)
 {
 	prs_node_t prs_factor;
 	prs_get_rule(prs, node, ebnf->factor, &prs_factor);
 
 	prs_node_t prs_concat;
 	if (prs_get_rule(prs, node, ebnf->concat, &prs_concat)) {
-		factor_from_ebnf(ebnf, prs, prs_factor, estx, parent, rule, is_rule);
-	} else {
-		estx_node_t concat = parent;
-
-		if (is_rule) {
-			estx_term_con(estx, &concat);
-			estx_add_term(estx, rule, concat);
-		} else if (!recursive) {
-			estx_term_con(estx, &concat);
-			estx_add_term(estx, parent, concat);
+		if (is_con) {
+			estx_node_t factor;
+			factor_from_ebnf(ebnf, prs, prs_factor, estx, &factor);
+			return estx_add_term(estx, *term, factor);
+		} else {
+			return factor_from_ebnf(ebnf, prs, prs_factor, estx, term);
 		}
-		factor_from_ebnf(ebnf, prs, prs_factor, estx, concat, 0, 0);
-		concat_from_ebnf(ebnf, prs, prs_concat, estx, concat, 0, 0, 1);
 	}
+
+	estx_node_t factor;
+	factor_from_ebnf(ebnf, prs, prs_factor, estx, &factor);
+
+	if (is_con) {
+		estx_add_term(estx, *term, factor);
+		concat_from_ebnf(ebnf, prs, prs_concat, estx, 1, term);
+	} else {
+		concat_from_ebnf(ebnf, prs, prs_concat, estx, 1, &factor);
+		estx_term_con(estx, factor, term);
+	}
+
+	return 0;
 }
 
-static void alt_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node, estx_t *estx, estx_node_t parent, estx_node_t rule,
-			  int is_rule, int recursive)
+static int alt_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node, estx_t *estx, int is_alt, estx_node_t *term)
 {
 	prs_node_t prs_concat;
 	prs_get_rule(prs, node, ebnf->concat, &prs_concat);
 
 	prs_node_t prs_alt;
 	if (prs_get_rule(prs, node, ebnf->alt, &prs_alt)) {
-		concat_from_ebnf(ebnf, prs, prs_concat, estx, parent, rule, is_rule, 0);
-	} else {
-		estx_node_t alt = parent;
-
-		if (is_rule) {
-			estx_term_alt(estx, &alt);
-			estx_add_term(estx, rule, alt);
-		} else if (!recursive) {
-			estx_term_alt(estx, &alt);
-			estx_add_term(estx, parent, alt);
+		if (is_alt) {
+			estx_node_t concat;
+			concat_from_ebnf(ebnf, prs, prs_concat, estx, 0, &concat);
+			return estx_add_term(estx, *term, concat);
+		} else {
+			return concat_from_ebnf(ebnf, prs, prs_concat, estx, 0, term);
 		}
-
-		concat_from_ebnf(ebnf, prs, prs_concat, estx, alt, 0, 0, 0);
-		alt_from_ebnf(ebnf, prs, prs_alt, estx, alt, 0, 0, 1);
 	}
+
+	estx_node_t concat;
+	concat_from_ebnf(ebnf, prs, prs_concat, estx, 0, &concat);
+
+	if (is_alt) {
+		estx_add_term(estx, *term, concat);
+		alt_from_ebnf(ebnf, prs, prs_alt, estx, 1, term);
+	} else {
+		alt_from_ebnf(ebnf, prs, prs_alt, estx, 1, &concat);
+		estx_term_alt(estx, concat, term);
+	}
+
+	return 0;
 }
 
 static int rules_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node, estx_t *estx, estx_node_t *root)
@@ -283,7 +259,9 @@ static int rules_from_ebnf(const ebnf_t *ebnf, const prs_t *prs, prs_node_t node
 
 	prs_node_t prs_alt;
 	prs_get_rule(prs, prs_rule, ebnf->alt, &prs_alt);
-	alt_from_ebnf(ebnf, prs, prs_alt, estx, (uint)-1, rule, 1, 0);
+	estx_node_t alt;
+	alt_from_ebnf(ebnf, prs, prs_alt, estx, 0, &alt);
+	estx_add_term(estx, rule, alt);
 
 	if (root) {
 		*root = rule;

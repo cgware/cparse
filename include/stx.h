@@ -1,5 +1,5 @@
-#ifndef SYNTAX_H
-#define SYNTAX_H
+#ifndef STX_H
+#define STX_H
 
 #include "buf.h"
 #include "list.h"

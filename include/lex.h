@@ -1,12 +1,12 @@
-#ifndef LEXER_H
-#define LEXER_H
+#ifndef LEX_H
+#define LEX_H
 
 #include "arr.h"
 #include "str.h"
 #include "strbuf.h"
 #include "tok.h"
 
-#define LEX_TOK_END ((uint)-1)
+#define LEX_TOK_END ((uint) - 1)
 
 typedef struct lex_s {
 	const uint *chars;
@@ -23,8 +23,7 @@ void lex_free(lex_t *lex);
 
 #define lex_add_word(_lex, _str, _index) strbuf_add(&(_lex)->words, _str, _index)
 
-#define lex_get_tok(_lex, _index)                                                                                                        \
-	(_index < (_lex)->toks.cnt ? *(tok_t *)arr_get(&(_lex)->toks, _index) : ((tok_t){.type = (1 << TOK_EOF)}))
+#define lex_get_tok(_lex, _index) (_index < (_lex)->toks.cnt ? *(tok_t *)arr_get(&(_lex)->toks, _index) : ((tok_t){.type = (1 << TOK_EOF)}))
 strv_t lex_get_tok_val(const lex_t *lex, tok_t tok);
 tok_loc_t lex_get_tok_loc(const lex_t *lex, uint index);
 

@@ -669,11 +669,11 @@ TEST(prs_parse_cache)
 	EXPECT_EQ(prs_parse(&prs, &lex, &stx, file, &root, DST_NONE()), 0);
 
 	char buf[64] = {0};
-	EXPECT_EQ(prs_print(&prs, root, DST_BUF(buf)), 50);
+	EXPECT_EQ(prs_print(&prs, root, DST_BUF(buf)), 57);
 	EXPECT_STR(buf,
-		   "0\n"
-		   "├─1\n"
-		   "│ └─2\n"
+		   "file\n"
+		   "├─line\n"
+		   "│ └─ra\n"
 		   "│   └─'a'\n"
 		   "└─EOF()\n");
 
@@ -752,7 +752,7 @@ TEST(prs_parse_bnf)
 		prs_parse(&prs, &lex, &bnf.stx, bnf.file, &root, DST_STD());
 		EXPECT_EQ(root, 0);
 		char *buf = mem_alloc(160000);
-		EXPECT_EQ(prs_print(&prs, root, DST_BUFN(buf, 160000)), 89752);
+		EXPECT_EQ(prs_print(&prs, root, DST_BUFN(buf, 160000)), 93963);
 		mem_free(buf, 160000);
 	}
 
@@ -810,12 +810,14 @@ TEST(prs_print)
 	char buf[64] = {0};
 	EXPECT_EQ(prs_print(NULL, prs.nodes.cnt, DST_BUF(buf)), 0);
 
-	EXPECT_EQ(prs_print(&prs, root, DST_BUF(buf)), 33);
+	log_set_quiet(0, 1);
+	EXPECT_EQ(prs_print(&prs, root, DST_BUF(buf)), 32);
 	EXPECT_STR(buf,
-		   "0\n"
+		   "\n"
 		   "├─UNKNOWN()\n"
 		   "├─''\n"
 		   "└─");
+	log_set_quiet(0, 0);
 
 	stx_free(&stx);
 	prs_free(&prs);
