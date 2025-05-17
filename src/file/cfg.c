@@ -56,7 +56,7 @@ cfg_var_t cfg_var_init(cfg_t *cfg, strv_t key, cfg_val_t val)
 	}
 
 	cfg_var_t var_id;
-	var_data_t *data = list_add(&cfg->vars, &var_id);
+	var_data_t *data = list_node(&cfg->vars, &var_id);
 	if (data == NULL) {
 		log_error("cparse", "cfg", NULL, "failed to add value");
 		return CFG_VAR_END;
@@ -129,7 +129,7 @@ cfg_var_t cfg_add_var(cfg_t *cfg, cfg_var_t parent, cfg_var_t var)
 	}
 
 	if (data->val.child < cfg->vars.cnt) {
-		list_set_next(&cfg->vars, data->val.child, var);
+		list_app(&cfg->vars, data->val.child, var);
 	} else {
 		data->val.child = var;
 	}

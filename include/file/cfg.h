@@ -7,7 +7,7 @@
 
 #define CFG_VAR_END ((uint)-1)
 
-typedef lnode_t cfg_var_t;
+typedef list_node_t cfg_var_t;
 
 typedef enum cfg_val_type_e {
 	CFG_VAL_UNKNOWN,

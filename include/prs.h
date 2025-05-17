@@ -5,9 +5,9 @@
 #include "stx.h"
 #include "tree.h"
 
-#define PRS_NODE_END ((uint) - 1)
+#define PRS_NODE_END ((uint)-1)
 
-typedef tnode_t prs_node_t;
+typedef tree_node_t prs_node_t;
 
 typedef struct prs_s {
 	const lex_t *lex;

@@ -52,7 +52,7 @@ int prs_node_rule(prs_t *prs, stx_node_t rule, prs_node_t *node)
 		return 1;
 	}
 
-	prs_node_data_t *data = tree_add(&prs->nodes, node);
+	prs_node_data_t *data = tree_node(&prs->nodes, node);
 	if (data == NULL) {
 		log_error("cparse", "prs", NULL, "failed to add rule node");
 		return 1;
@@ -72,7 +72,7 @@ int prs_node_tok(prs_t *prs, tok_t tok, prs_node_t *node)
 		return 1;
 	}
 
-	prs_node_data_t *data = tree_add(&prs->nodes, node);
+	prs_node_data_t *data = tree_node(&prs->nodes, node);
 	if (data == NULL) {
 		log_error("cparse", "prs", NULL, "failed to add tok node");
 		return 1;
@@ -92,7 +92,7 @@ int prs_node_lit(prs_t *prs, size_t start, uint len, prs_node_t *node)
 		return 1;
 	}
 
-	prs_node_data_t *data = tree_add(&prs->nodes, node);
+	prs_node_data_t *data = tree_node(&prs->nodes, node);
 	if (data == NULL) {
 		log_error("cparse", "prs", NULL, "failed to add tok node");
 		return 1;
@@ -112,7 +112,7 @@ int prs_add_node(prs_t *prs, prs_node_t parent, prs_node_t node)
 		return 1;
 	}
 
-	return tree_set_child(&prs->nodes, parent, node);
+	return tree_add(&prs->nodes, parent, node);
 }
 
 int prs_remove_node(prs_t *prs, prs_node_t node)
@@ -293,7 +293,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 		}
 
 		log_trace("cparse", "prs", NULL, "left: failed");
-		tree_set_cnt(&prs->nodes, nodes_cnt);
+		tree_reset(&prs->nodes, nodes_cnt);
 
 		if (!prs_parse_terms(prs, rule, term->val.orv.r, off, node, err)) {
 			log_trace("cparse", "prs", NULL, "right: success");
@@ -301,7 +301,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 		}
 
 		log_trace("cparse", "prs", NULL, "right: failed");
-		tree_set_cnt(&prs->nodes, nodes_cnt);
+		tree_reset(&prs->nodes, nodes_cnt);
 		*off = cur;
 		return 1;
 	}

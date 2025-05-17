@@ -41,7 +41,7 @@ int estx_rule(estx_t *estx, strv_t name, estx_node_t *rule)
 		return 1;
 	}
 
-	estx_node_data_t *data = list_add(&estx->nodes, rule);
+	estx_node_data_t *data = list_node(&estx->nodes, rule);
 	if (data == NULL) {
 		buf_reset(&estx->strs, used);
 		log_error("cparse", "stx", NULL, "failed to add rule");
@@ -72,7 +72,7 @@ int estx_term_rule(estx_t *estx, estx_node_t rule, estx_node_occ_t occ, estx_nod
 		return 1;
 	}
 
-	data = list_add(&estx->nodes, term);
+	data = list_node(&estx->nodes, term);
 	if (data == NULL) {
 		log_error("cparse", "estx", NULL, "failed to create rule term");
 		return 1;
@@ -97,7 +97,7 @@ int estx_term_tok(estx_t *estx, tok_type_t tok, estx_node_occ_t occ, estx_node_t
 		return 1;
 	}
 
-	estx_node_data_t *data = list_add(&estx->nodes, term);
+	estx_node_data_t *data = list_node(&estx->nodes, term);
 	if (data == NULL) {
 		log_error("cparse", "estx", NULL, "failed to create tok term");
 		return 1;
@@ -130,7 +130,7 @@ int estx_term_lit(estx_t *estx, strv_t str, estx_node_occ_t occ, estx_node_t *te
 		return 1;
 	}
 
-	estx_node_data_t *data = list_add(&estx->nodes, term);
+	estx_node_data_t *data = list_node(&estx->nodes, term);
 	if (data == NULL) {
 		buf_reset(&estx->strs, used);
 		log_error("cparse", "estx", NULL, "failed to create literal term");
@@ -156,7 +156,7 @@ int estx_term_alt(estx_t *estx, estx_node_t terms, estx_node_t *term)
 		return 1;
 	}
 
-	estx_node_data_t *data = list_add(&estx->nodes, term);
+	estx_node_data_t *data = list_node(&estx->nodes, term);
 	if (data == NULL) {
 		log_error("cparse", "estx", NULL, "failed to create alt term");
 		return 1;
@@ -180,7 +180,7 @@ int estx_term_con(estx_t *estx, estx_node_t terms, estx_node_t *term)
 		return 1;
 	}
 
-	estx_node_data_t *data = list_add(&estx->nodes, term);
+	estx_node_data_t *data = list_node(&estx->nodes, term);
 	if (data == NULL) {
 		log_error("cparse", "estx", NULL, "failed to create con term");
 		return 1;
@@ -204,7 +204,7 @@ int estx_term_group(estx_t *estx, estx_node_t terms, estx_node_occ_t occ, estx_n
 		return 1;
 	}
 
-	estx_node_data_t *data = list_add(&estx->nodes, term);
+	estx_node_data_t *data = list_node(&estx->nodes, term);
 	if (data == NULL) {
 		log_error("cparse", "estx", NULL, "failed to create group term");
 		return 1;
@@ -276,7 +276,7 @@ int estx_add_term(estx_t *estx, estx_node_t node, estx_node_t term)
 		return 1;
 	}
 
-	if (list_set_next(&estx->nodes, node, term)) {
+	if (list_app(&estx->nodes, node, term)) {
 		log_error("cparse", "estx", NULL, "failed to add term %d to node %d", term, node);
 		return 1;
 	}

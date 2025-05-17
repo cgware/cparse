@@ -48,7 +48,7 @@ int eprs_node_rule(eprs_t *eprs, estx_node_t rule, eprs_node_t *node)
 		return 1;
 	}
 
-	eprs_node_data_t *data = tree_add(&eprs->nodes, node);
+	eprs_node_data_t *data = tree_node(&eprs->nodes, node);
 	if (data == NULL) {
 		log_error("cparse", "eprs", NULL, "failed to add rule node");
 		return 1;
@@ -68,7 +68,7 @@ int eprs_node_tok(eprs_t *eprs, tok_t tok, eprs_node_t *node)
 		return 1;
 	}
 
-	eprs_node_data_t *data = tree_add(&eprs->nodes, node);
+	eprs_node_data_t *data = tree_node(&eprs->nodes, node);
 	if (data == NULL) {
 		log_error("cparse", "eprs", NULL, "failed to add tok node");
 		return 1;
@@ -88,7 +88,7 @@ int eprs_node_lit(eprs_t *eprs, size_t start, uint len, eprs_node_t *node)
 		return 1;
 	}
 
-	eprs_node_data_t *data = tree_add(&eprs->nodes, node);
+	eprs_node_data_t *data = tree_node(&eprs->nodes, node);
 	if (data == NULL) {
 		log_error("cparse", "eprs", NULL, "failed to add literal node");
 		return 1;
@@ -108,7 +108,7 @@ int eprs_add_node(eprs_t *eprs, eprs_node_t parent, eprs_node_t node)
 		return 1;
 	}
 
-	return tree_set_child(&eprs->nodes, parent, node);
+	return tree_add(&eprs->nodes, parent, node);
 }
 
 int eprs_remove_node(eprs_t *eprs, eprs_node_t node)
@@ -207,7 +207,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 		eprs_node_t child;
 		uint cur = *off;
 		if (eprs_node_rule(eprs, term->val.rule, &child) || eprs_parse_rule(eprs, term->val.rule, off, child, err)) {
-			tree_set_cnt(&eprs->nodes, nodes_cnt);
+			tree_reset(&eprs->nodes, nodes_cnt);
 			*off = cur;
 			return 1;
 		}
@@ -295,7 +295,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 			uint nodes_cnt = eprs->nodes.cnt;
 			if (eprs_parse_terms(eprs, rule, terms, off, node, err, term)) {
 				log_trace("cparse", "eprs", NULL, "alt: failed");
-				tree_set_cnt(&eprs->nodes, nodes_cnt);
+				tree_reset(&eprs->nodes, nodes_cnt);
 				*off = cur;
 			} else {
 				log_trace("cparse", "eprs", NULL, "alt: success");
@@ -312,7 +312,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 			uint nodes_cnt = eprs->nodes.cnt;
 			if (eprs_parse_terms(eprs, rule, terms, off, node, err, term)) {
 				log_trace("cparse", "eprs", NULL, "con: failed");
-				tree_set_cnt(&eprs->nodes, nodes_cnt);
+				tree_reset(&eprs->nodes, nodes_cnt);
 				*off = cur;
 				return 1;
 			} else {
@@ -329,7 +329,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 			uint nodes_cnt = eprs->nodes.cnt;
 			if (eprs_parse_terms(eprs, rule, terms, off, node, err, term)) {
 				log_trace("cparse", "eprs", NULL, "group: failed");
-				tree_set_cnt(&eprs->nodes, nodes_cnt);
+				tree_reset(&eprs->nodes, nodes_cnt);
 				*off = cur;
 				return 1;
 			} else {

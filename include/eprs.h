@@ -5,7 +5,7 @@
 #include "lex.h"
 #include "tree.h"
 
-typedef tnode_t eprs_node_t;
+typedef tree_node_t eprs_node_t;
 
 typedef struct eprs_s {
 	const estx_t *estx;

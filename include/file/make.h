@@ -7,9 +7,9 @@
 
 #define MAKE_END ((uint)-1)
 
-typedef lnode_t make_str_t;
+typedef list_node_t make_str_t;
 
-typedef lnode_t make_act_t;
+typedef list_node_t make_act_t;
 typedef make_act_t make_empty_t;
 typedef make_act_t make_var_t;
 typedef make_act_t make_rule_t;

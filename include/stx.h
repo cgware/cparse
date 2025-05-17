@@ -6,7 +6,7 @@
 #include "loc.h"
 #include "tok.h"
 
-typedef lnode_t stx_node_t;
+typedef list_node_t stx_node_t;
 
 typedef enum stx_node_type_e {
 	STX_UNKNOWN,
