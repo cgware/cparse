@@ -7,17 +7,7 @@
 
 #define MAKE_END ((uint)-1)
 
-typedef list_node_t make_str_t;
-
 typedef list_node_t make_act_t;
-typedef make_act_t make_empty_t;
-typedef make_act_t make_var_t;
-typedef make_act_t make_rule_t;
-typedef make_act_t make_cmd_t;
-typedef make_act_t make_if_t;
-typedef make_act_t make_def_t;
-typedef make_act_t make_eval_def_t;
-typedef make_act_t make_inc_t;
 
 typedef enum make_var_type_e {
 	MAKE_VAR_INST, //:=
@@ -41,7 +31,7 @@ typedef struct make_create_str_s {
 	make_str_type_t type;
 	union {
 		strv_t str;
-		make_var_t var;
+		make_act_t var;
 	} val;
 } make_create_str_t;
 
@@ -82,22 +72,22 @@ int make_phony(make_t *make, make_act_t *act);
 int make_cmd(make_t *make, make_create_cmd_t cmd, make_act_t *act);
 int make_if(make_t *make, make_create_str_t l, make_create_str_t r, make_act_t *act);
 int make_def(make_t *make, strv_t name, make_act_t *act);
-int make_eval_def(make_t *make, make_def_t def, make_act_t *act);
+int make_eval_def(make_t *make, make_act_t def, make_act_t *act);
 int make_inc(make_t *make, strv_t path, make_act_t *act);
 
-make_act_t make_add_act(make_t *make, make_act_t act);
-make_var_t make_var_add_val(make_t *make, make_var_t var, make_create_str_t val);
-make_str_t make_rule_add_depend(make_t *make, make_rule_t rule, make_create_rule_t depend);
-make_act_t make_rule_add_act(make_t *make, make_rule_t rule, make_act_t act);
-make_act_t make_if_add_true_act(make_t *make, make_if_t mif, make_act_t act);
-make_act_t make_if_add_false_act(make_t *make, make_if_t mif, make_act_t act);
-make_act_t make_def_add_act(make_t *make, make_def_t def, make_act_t act);
-make_var_t make_eval_def_add_arg(make_t *make, make_eval_def_t def, make_create_str_t arg);
-make_act_t make_inc_add_act(make_t *make, make_inc_t inc, make_act_t act);
+int make_add_act(make_t *make, make_act_t act);
+int make_var_add_val(make_t *make, make_act_t var, make_create_str_t val);
+int make_rule_add_depend(make_t *make, make_act_t rule, make_create_rule_t depend);
+int make_rule_add_act(make_t *make, make_act_t rule, make_act_t act);
+int make_if_add_true_act(make_t *make, make_act_t mif, make_act_t act);
+int make_if_add_false_act(make_t *make, make_act_t mif, make_act_t act);
+int make_def_add_act(make_t *make, make_act_t def, make_act_t act);
+int make_eval_def_add_arg(make_t *make, make_act_t def, make_create_str_t arg);
+int make_inc_add_act(make_t *make, make_act_t inc, make_act_t act);
 
-make_str_t make_ext_set_val(make_t *make, uint id, make_create_str_t val);
+int make_ext_set_val(make_t *make, uint id, make_create_str_t val);
 
-make_rule_t make_rule_get_target(const make_t *make, make_create_rule_t target);
+int make_rule_get_target(const make_t *make, make_create_rule_t target, make_act_t *act);
 
 make_vars_t *make_vars_init(const make_t *make, make_vars_t *vars, alloc_t alloc);
 void make_vars_free(make_vars_t *vars);
@@ -109,7 +99,7 @@ strv_t make_vars_get_resolved(const make_vars_t *vars, uint id);
 
 size_t make_vars_print(const make_vars_t *vars, dst_t dst);
 
-size_t make_inc_print(const make_t *make, make_inc_t inc, dst_t dst);
+size_t make_inc_print(const make_t *make, make_act_t inc, dst_t dst);
 size_t make_print(const make_t *make, dst_t dst);
 
 size_t make_dbg(const make_t *make, dst_t dst);
