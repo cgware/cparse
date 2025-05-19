@@ -41,6 +41,15 @@ void prs_free(prs_t *prs)
 	tree_free(&prs->nodes);
 }
 
+void prs_reset(prs_t *prs, uint cnt)
+{
+	if (prs == NULL) {
+		return;
+	}
+
+	tree_reset(&prs->nodes, cnt);
+}
+
 int prs_node_rule(prs_t *prs, stx_node_t rule, prs_node_t *node)
 {
 	if (prs == NULL) {
@@ -183,7 +192,7 @@ typedef struct prs_parse_err_s {
 	stx_node_t rule;
 	uint tok;
 	stx_node_t exp;
-	byte has_exp : 1;
+	byte failed : 1;
 } prs_parse_err_t;
 
 static int prs_parse_rule(prs_t *prs, stx_node_t rule_id, uint *off, prs_node_t node, prs_parse_err_t *err);
@@ -200,8 +209,8 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 		uint cur       = *off;
 		prs_node_t child;
 		if (prs_node_rule(prs, term->val.rule, &child) || prs_parse_rule(prs, term->val.rule, off, child, err)) {
-			prs->nodes.cnt = nodes_cnt;
-			*off	       = cur;
+			prs_reset(prs, nodes_cnt);
+			*off = cur;
 			return 1;
 		}
 
@@ -226,11 +235,11 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 			return 0;
 		}
 
-		if (err->tok == LEX_TOK_END || *off >= err->tok) {
-			err->rule    = rule;
-			err->tok     = *off;
-			err->exp     = term_id;
-			err->has_exp = 1;
+		if (!err->failed || *off >= err->tok) {
+			err->rule   = rule;
+			err->tok    = *off;
+			err->exp    = term_id;
+			err->failed = 1;
 		}
 		char act[32]   = {0};
 		size_t act_len = lex_print_tok(prs->lex, tok, DST_BUF(act));
@@ -244,10 +253,10 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 			tok_t tok = lex_get_tok(prs->lex, *off + i);
 
 			if (tok.type & (1 << TOK_EOF)) {
-				err->rule    = rule;
-				err->tok     = *off + i;
-				err->exp     = term_id;
-				err->has_exp = 1;
+				err->rule   = rule;
+				err->tok    = *off + i;
+				err->exp    = term_id;
+				err->failed = 1;
 				log_trace("cparse", "prs", NULL, "\'%*s\': failed: end of toks", literal.len, literal.data);
 				return 1;
 			}
@@ -255,11 +264,11 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 			strv_t c       = STRVN(&literal.data[i], 1);
 			strv_t tok_val = lex_get_tok_val(prs->lex, tok);
 			if (!strv_eq(tok_val, c)) {
-				if (err->tok == LEX_TOK_END || *off + i >= err->tok) {
-					err->rule    = rule;
-					err->tok     = *off + i;
-					err->exp     = term_id;
-					err->has_exp = 1;
+				if (!err->failed || *off + i >= err->tok) {
+					err->rule   = rule;
+					err->tok    = *off + i;
+					err->exp    = term_id;
+					err->failed = 1;
 				}
 
 				char buf[256] = {0};
@@ -293,7 +302,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 		}
 
 		log_trace("cparse", "prs", NULL, "left: failed");
-		tree_reset(&prs->nodes, nodes_cnt);
+		prs_reset(prs, nodes_cnt);
 
 		if (!prs_parse_terms(prs, rule, term->val.orv.r, off, node, err)) {
 			log_trace("cparse", "prs", NULL, "right: success");
@@ -301,7 +310,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 		}
 
 		log_trace("cparse", "prs", NULL, "right: failed");
-		tree_reset(&prs->nodes, nodes_cnt);
+		prs_reset(prs, nodes_cnt);
 		*off = cur;
 		return 1;
 	}
@@ -350,19 +359,15 @@ int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_node_t rule, p
 	prs->lex = lex;
 	prs->stx = stx;
 
-	prs->nodes.cnt = 0;
+	prs_reset(prs, 0);
 
-	prs_parse_err_t err = {
-		.rule = (uint)-1,
-		.tok  = LEX_TOK_END,
-		.exp  = (uint)-1,
-	};
+	prs_parse_err_t err = {0};
 
 	prs_node_t tmp;
 	prs_node_rule(prs, rule, &tmp);
 	uint parsed = 0;
 	if (prs_parse_rule(prs, rule, &parsed, tmp, &err) || parsed != prs->lex->src.len) {
-		if (!err.has_exp) {
+		if (!err.failed) {
 			log_error("cparse", "prs", NULL, "wrong syntax");
 			return 1;
 		}

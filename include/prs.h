@@ -5,8 +5,6 @@
 #include "stx.h"
 #include "tree.h"
 
-#define PRS_NODE_END ((uint)-1)
-
 typedef tree_node_t prs_node_t;
 
 typedef struct prs_s {
@@ -17,6 +15,8 @@ typedef struct prs_s {
 
 prs_t *prs_init(prs_t *prs, uint nodes_cap, alloc_t alloc);
 void prs_free(prs_t *prs);
+
+void prs_reset(prs_t *prs, uint cnt);
 
 int prs_node_rule(prs_t *prs, stx_node_t rule, prs_node_t *node);
 int prs_node_tok(prs_t *prs, tok_t tok, prs_node_t *node);

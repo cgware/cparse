@@ -6,8 +6,6 @@
 #include "strbuf.h"
 #include "tok.h"
 
-#define LEX_TOK_END ((uint) - 1)
-
 typedef struct lex_s {
 	const uint *chars;
 	uint chars_len;

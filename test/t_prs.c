@@ -29,6 +29,24 @@ TEST(prs_init_free)
 	END;
 }
 
+TEST(prs_reset)
+{
+	START;
+
+	prs_t prs = {0};
+	prs_init(&prs, 1, ALLOC_STD);
+
+	prs_node_lit(&prs, 0, 0, NULL);
+
+	prs_reset(NULL, 0);
+	prs_reset(&prs, 0);
+	EXPECT_EQ(prs.nodes.cnt, 0);
+
+	prs_free(&prs);
+
+	END;
+}
+
 TEST(prs_node_rule)
 {
 	START;
@@ -830,6 +848,7 @@ STEST(prs)
 	SSTART;
 
 	RUN(prs_init_free);
+	RUN(prs_reset);
 	RUN(prs_node_rule);
 	RUN(prs_node_tok);
 	RUN(prs_node_lit);

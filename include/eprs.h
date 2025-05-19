@@ -16,6 +16,8 @@ typedef struct eprs_s {
 eprs_t *eprs_init(eprs_t *eprs, uint nodes_cap, alloc_t alloc);
 void eprs_free(eprs_t *eprs);
 
+void eprs_reset(eprs_t *eprs, uint cnt);
+
 int eprs_node_rule(eprs_t *eprs, estx_node_t rule, eprs_node_t *node);
 int eprs_node_tok(eprs_t *eprs, tok_t tok, eprs_node_t *node);
 int eprs_node_lit(eprs_t *eprs, size_t start, uint len, eprs_node_t *node);

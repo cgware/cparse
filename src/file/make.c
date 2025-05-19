@@ -401,13 +401,15 @@ static make_var_t eval_def_add_arg(make_t *make, make_eval_def_t def, make_str_d
 	if (data->args < make->arrs.cnt) {
 		list_node_t a;
 		target = list_node(&make->arrs, &a);
+		if (target == NULL) {
+			return MAKE_END;
+		}
 		list_app(&make->arrs, data->args, a);
 	} else {
 		target = list_node(&make->arrs, &data->args);
-	}
-
-	if (target == NULL) {
-		return MAKE_END;
+		if (target == NULL) {
+			return MAKE_END;
+		}
 	}
 
 	*target = arg;
@@ -420,6 +422,8 @@ make_var_t make_create_eval_def(make_t *make, make_def_t def)
 	if (make == NULL) {
 		return MAKE_END;
 	}
+
+	uint acts_cnt = make->acts.cnt;
 
 	make_act_t act;
 	make_act_data_t *data = list_node(&make->acts, &act);
@@ -442,7 +446,12 @@ make_var_t make_create_eval_def(make_t *make, make_def_t def)
 		return MAKE_END;
 	}
 
-	return eval_def_add_arg(make, act, (make_str_data_t){.type = MAKE_STR_STR, .val.id = def_data->name});
+	if (eval_def_add_arg(make, act, (make_str_data_t){.type = MAKE_STR_STR, .val.id = def_data->name}) == MAKE_END){
+		list_reset(&make->acts, acts_cnt);
+		return MAKE_END;
+	}
+
+	return act;
 }
 
 make_inc_t make_create_inc(make_t *make, strv_t path)

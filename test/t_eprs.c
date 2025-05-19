@@ -29,6 +29,24 @@ TEST(eprs_init_free)
 	END;
 }
 
+TEST(eprs_reset)
+{
+	START;
+
+	eprs_t eprs = {0};
+	eprs_init(&eprs, 1, ALLOC_STD);
+
+	eprs_node_lit(&eprs, 0, 0, NULL);
+
+	eprs_reset(NULL, 0);
+	eprs_reset(&eprs, 0);
+	EXPECT_EQ(eprs.nodes.cnt, 0);
+
+	eprs_free(&eprs);
+
+	END;
+}
+
 TEST(eprs_node_rule)
 {
 	START;
@@ -1178,6 +1196,7 @@ STEST(eprs)
 	SSTART;
 
 	RUN(eprs_init_free);
+	RUN(eprs_reset);
 	RUN(eprs_node_rule);
 	RUN(eprs_node_tok);
 	RUN(eprs_node_lit);

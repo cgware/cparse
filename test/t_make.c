@@ -681,12 +681,14 @@ TEST(make_eval_def_add_arg)
 
 	make_t make = {0};
 	log_set_quiet(0, 1);
-	make_init(&make, 0, 0, 0, 0, ALLOC_STD);
+	make_init(&make, 0, 2, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	const make_def_t def	   = make_create_def(&make, STRV("def"));
+	const make_def_t def = make_create_def(&make, STRV("def"));
+	mem_oom(1);
+	EXPECT_EQ(make_create_eval_def(&make, def), MAKE_END);
+	mem_oom(0);
 	const make_eval_def_t eval = make_create_eval_def(&make, def);
-
 	EXPECT_EQ(make_eval_def_add_arg(NULL, MAKE_END, MSTR(STRV_NULL)), MAKE_END);
 	log_set_quiet(0, 1);
 	EXPECT_EQ(make_eval_def_add_arg(&make, MAKE_END, MSTR(STRV_NULL)), MAKE_END);

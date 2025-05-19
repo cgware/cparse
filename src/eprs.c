@@ -42,6 +42,15 @@ void eprs_free(eprs_t *eprs)
 	tree_free(&eprs->nodes);
 }
 
+void eprs_reset(eprs_t *eprs, uint cnt)
+{
+	if (eprs == NULL) {
+		return;
+	}
+
+	tree_reset(&eprs->nodes, cnt);
+}
+
 int eprs_node_rule(eprs_t *eprs, estx_node_t rule, eprs_node_t *node)
 {
 	if (eprs == NULL) {
@@ -187,6 +196,7 @@ typedef struct eprs_parse_err_s {
 	estx_node_t rule;
 	uint tok;
 	estx_node_t exp;
+	byte failed : 1;
 } eprs_parse_err_t;
 
 static int eprs_parse_rule(eprs_t *prs, const estx_node_t rule_id, uint *off, eprs_node_t node, eprs_parse_err_t *err);
@@ -207,7 +217,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 		eprs_node_t child;
 		uint cur = *off;
 		if (eprs_node_rule(eprs, term->val.rule, &child) || eprs_parse_rule(eprs, term->val.rule, off, child, err)) {
-			tree_reset(&eprs->nodes, nodes_cnt);
+			eprs_reset(eprs, nodes_cnt);
 			*off = cur;
 			return 1;
 		}
@@ -232,10 +242,11 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 			return 0;
 		}
 
-		if (err->tok == LEX_TOK_END || *off >= err->tok) {
-			err->rule = rule;
-			err->tok  = *off;
-			err->exp  = term_id;
+		if (!err->failed || *off >= err->tok) {
+			err->rule   = rule;
+			err->tok    = *off;
+			err->exp    = term_id;
+			err->failed = 1;
 		}
 		char act[32]   = {0};
 		size_t act_len = lex_print_tok(eprs->lex, tok, DST_BUF(act));
@@ -249,9 +260,10 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 			tok_t tok = lex_get_tok(eprs->lex, *off + i);
 
 			if (tok.type & (1 << TOK_EOF)) {
-				err->rule = rule;
-				err->tok  = *off + i;
-				err->exp  = term_id;
+				err->rule   = rule;
+				err->tok    = *off + i;
+				err->exp    = term_id;
+				err->failed = 1;
 				log_trace("cparse", "eprs", NULL, "\'%*s\': failed: end of toks", literal.len, literal.data);
 				return 1;
 			}
@@ -259,10 +271,11 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 			strv_t c       = STRVN(&literal.data[i], 1);
 			strv_t tok_val = lex_get_tok_val(eprs->lex, tok);
 			if (!strv_eq(tok_val, c)) {
-				if (err->tok == LEX_TOK_END || *off + i >= err->tok) {
-					err->rule = rule;
-					err->tok  = *off + i;
-					err->exp  = term_id;
+				if (!err->failed || *off + i >= err->tok) {
+					err->rule   = rule;
+					err->tok    = *off + i;
+					err->exp    = term_id;
+					err->failed = 1;
 				}
 
 				char buf[256] = {0};
@@ -295,7 +308,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 			uint nodes_cnt = eprs->nodes.cnt;
 			if (eprs_parse_terms(eprs, rule, terms, off, node, err, term)) {
 				log_trace("cparse", "eprs", NULL, "alt: failed");
-				tree_reset(&eprs->nodes, nodes_cnt);
+				eprs_reset(eprs, nodes_cnt);
 				*off = cur;
 			} else {
 				log_trace("cparse", "eprs", NULL, "alt: success");
@@ -312,7 +325,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 			uint nodes_cnt = eprs->nodes.cnt;
 			if (eprs_parse_terms(eprs, rule, terms, off, node, err, term)) {
 				log_trace("cparse", "eprs", NULL, "con: failed");
-				tree_reset(&eprs->nodes, nodes_cnt);
+				eprs_reset(eprs, nodes_cnt);
 				*off = cur;
 				return 1;
 			} else {
@@ -329,7 +342,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 			uint nodes_cnt = eprs->nodes.cnt;
 			if (eprs_parse_terms(eprs, rule, terms, off, node, err, term)) {
 				log_trace("cparse", "eprs", NULL, "group: failed");
-				tree_reset(&eprs->nodes, nodes_cnt);
+				eprs_reset(eprs, nodes_cnt);
 				*off = cur;
 				return 1;
 			} else {
@@ -411,19 +424,15 @@ int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_node_t r
 	eprs->lex  = lex;
 	eprs->estx = estx;
 
-	eprs->nodes.cnt = 0;
+	eprs_reset(eprs, 0);
 
-	eprs_parse_err_t err = {
-		.rule = (uint)-1,
-		.tok  = LEX_TOK_END,
-		.exp  = (uint)-1,
-	};
+	eprs_parse_err_t err = {0};
 
 	eprs_node_t tmp;
 	eprs_node_rule(eprs, rule, &tmp);
 	uint parsed = 0;
 	if (eprs_parse_rule(eprs, rule, &parsed, tmp, &err) || parsed != eprs->lex->toks.cnt) {
-		if (err.exp == (uint)-1) {
+		if (!err.failed) {
 			log_error("cparse", "eprs", NULL, "wrong syntax");
 			return 1;
 		}
