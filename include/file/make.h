@@ -74,16 +74,16 @@ typedef struct make_vars_s {
 make_t *make_init(make_t *make, uint arrs_cap, uint acts_cap, uint targets_cap, uint strs_cap, alloc_t alloc);
 void make_free(make_t *make);
 
-make_empty_t make_create_empty(make_t *make);
-make_var_t make_create_var(make_t *make, strv_t name, make_var_type_t type, uint *id);
-make_var_t make_create_var_ext(make_t *make, strv_t name, uint *id);
-make_rule_t make_create_rule(make_t *make, make_create_rule_t target, int file);
-make_rule_t make_create_phony(make_t *make);
-make_cmd_t make_create_cmd(make_t *make, make_create_cmd_t cmd);
-make_if_t make_create_if(make_t *make, make_create_str_t l, make_create_str_t r);
-make_def_t make_create_def(make_t *make, strv_t name);
-make_eval_def_t make_create_eval_def(make_t *make, make_def_t def);
-make_inc_t make_create_inc(make_t *make, strv_t path);
+int make_empty(make_t *make, make_act_t *act);
+int make_var(make_t *make, strv_t name, make_var_type_t type, uint *id, make_act_t *act);
+int make_var_ext(make_t *make, strv_t name, uint *id, make_act_t *act);
+int make_rule(make_t *make, make_create_rule_t target, int file, make_act_t *act);
+int make_phony(make_t *make, make_act_t *act);
+int make_cmd(make_t *make, make_create_cmd_t cmd, make_act_t *act);
+int make_if(make_t *make, make_create_str_t l, make_create_str_t r, make_act_t *act);
+int make_def(make_t *make, strv_t name, make_act_t *act);
+int make_eval_def(make_t *make, make_def_t def, make_act_t *act);
+int make_inc(make_t *make, strv_t path, make_act_t *act);
 
 make_act_t make_add_act(make_t *make, make_act_t act);
 make_var_t make_var_add_val(make_t *make, make_var_t var, make_create_str_t val);

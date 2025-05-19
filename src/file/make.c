@@ -166,44 +166,40 @@ void make_free(make_t *make)
 	make->root = MAKE_END;
 }
 
-make_empty_t make_create_empty(make_t *make)
+int make_empty(make_t *make, make_act_t *act)
 {
 	if (make == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
-	make_act_t act;
-	make_act_data_t *data = list_node(&make->acts, &act);
-
+	make_act_data_t *data = list_node(&make->acts, act);
 	if (data == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
 	*data = (make_act_data_t){
 		.type = MAKE_ACT_EMPTY,
 	};
 
-	return act;
+	return 0;
 }
 
-static make_var_t make_create_var_ex(make_t *make, strv_t name, make_var_type_t type, uint *id, int ext)
+static int make_var_ex(make_t *make, strv_t name, make_var_type_t type, uint *id, int ext, make_act_t *act)
 {
 	if (make == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
-	make_act_t act;
-	make_act_data_t *data = list_node(&make->acts, &act);
-
+	make_act_data_t *data = list_node(&make->acts, act);
 	if (data == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
 	uint index;
 	if (id && *id < make->strs.off.cnt) {
 		index = *id;
 	} else if (strbuf_add(&make->strs, name, &index)) {
-		return MAKE_END;
+		return 1;
 	}
 
 	*data = (make_act_data_t){
@@ -222,17 +218,17 @@ static make_var_t make_create_var_ex(make_t *make, strv_t name, make_var_type_t 
 		*id = index;
 	}
 
-	return act;
+	return 0;
 }
 
-make_var_t make_create_var(make_t *make, strv_t name, make_var_type_t type, uint *id)
+int make_var(make_t *make, strv_t name, make_var_type_t type, uint *id, make_act_t *act)
 {
-	return make_create_var_ex(make, name, type, id, 0);
+	return make_var_ex(make, name, type, id, 0, act);
 }
 
-make_var_t make_create_var_ext(make_t *make, strv_t name, uint *id)
+int make_var_ext(make_t *make, strv_t name, uint *id, make_act_t *act)
 {
-	return make_create_var_ex(make, name, MAKE_VAR_REF, id, 1);
+	return make_var_ex(make, name, MAKE_VAR_REF, id, 1, act);
 }
 
 static int create_str(make_t *make, make_create_str_t str, make_str_data_t *data)
@@ -251,17 +247,15 @@ static int create_str(make_t *make, make_create_str_t str, make_str_data_t *data
 	return 0;
 }
 
-make_rule_t make_create_rule(make_t *make, make_create_rule_t target, int file)
+int make_rule(make_t *make, make_create_rule_t target, int file, make_act_t *act)
 {
 	if (make == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
-	make_act_t act;
-	make_act_data_t *data = list_node(&make->acts, &act);
-
+	make_act_data_t *data = list_node(&make->acts, act);
 	if (data == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
 	*data = (make_act_data_t){
@@ -275,35 +269,33 @@ make_rule_t make_create_rule(make_t *make, make_create_rule_t target, int file)
 	};
 
 	if (create_str(make, target.target, &data->val.rule.target.target)) {
-		return MAKE_END;
+		return 1;
 	}
 
 	if (target.action.data) {
 		if (strbuf_add(&make->strs, target.action, &data->val.rule.target.action)) {
-			return MAKE_END;
+			return 1;
 		}
 		data->val.rule.target.has_action = 1;
 	}
 
-	return act;
+	return 0;
 }
 
-make_rule_t make_create_phony(make_t *make)
+int make_phony(make_t *make, make_act_t *act)
 {
-	return make_create_rule(make, MRULE(MSTR(STRV(".PHONY"))), 1);
+	return make_rule(make, MRULE(MSTR(STRV(".PHONY"))), 1, act);
 }
 
-make_cmd_t make_create_cmd(make_t *make, make_create_cmd_t cmd)
+int make_cmd(make_t *make, make_create_cmd_t cmd, make_act_t *act)
 {
 	if (make == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
-	make_act_t act;
-	make_act_data_t *data = list_node(&make->acts, &act);
-
+	make_act_data_t *data = list_node(&make->acts, act);
 	if (data == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
 	*data = (make_act_data_t){
@@ -313,32 +305,30 @@ make_cmd_t make_create_cmd(make_t *make, make_create_cmd_t cmd)
 
 	if (cmd.arg1.data) {
 		if (strbuf_add(&make->strs, cmd.arg1, &data->val.cmd.arg[0])) {
-			return MAKE_END;
+			return 1;
 		}
 		data->val.cmd.args = 1;
 	}
 
 	if (cmd.arg2.data) {
 		if (strbuf_add(&make->strs, cmd.arg2, &data->val.cmd.arg[1])) {
-			return MAKE_END;
+			return 1;
 		}
 		data->val.cmd.args = 2;
 	}
 
-	return act;
+	return 0;
 }
 
-make_if_t make_create_if(make_t *make, make_create_str_t l, make_create_str_t r)
+int make_if(make_t *make, make_create_str_t l, make_create_str_t r, make_act_t *act)
 {
 	if (make == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
-	make_act_t act;
-	make_act_data_t *data = list_node(&make->acts, &act);
-
+	make_act_data_t *data = list_node(&make->acts, act);
 	if (data == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
 	*data = (make_act_data_t){
@@ -351,27 +341,25 @@ make_if_t make_create_if(make_t *make, make_create_str_t l, make_create_str_t r)
 	};
 
 	if (create_str(make, l, &data->val.mif.l)) {
-		return MAKE_END;
+		return 1;
 	}
 
 	if (create_str(make, r, &data->val.mif.r)) {
-		return MAKE_END;
+		return 1;
 	}
 
-	return act;
+	return 0;
 }
 
-make_def_t make_create_def(make_t *make, strv_t name)
+int make_def(make_t *make, strv_t name, make_act_t *act)
 {
 	if (make == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
-	make_act_t act;
-	make_act_data_t *data = list_node(&make->acts, &act);
-
+	make_act_data_t *data = list_node(&make->acts, act);
 	if (data == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
 	*data = (make_act_data_t){
@@ -383,10 +371,10 @@ make_def_t make_create_def(make_t *make, strv_t name)
 	};
 
 	if (strbuf_add(&make->strs, name, &data->val.def.name)) {
-		return MAKE_END;
+		return 1;
 	}
 
-	return act;
+	return 0;
 }
 
 static make_var_t eval_def_add_arg(make_t *make, make_eval_def_t def, make_str_data_t arg)
@@ -417,19 +405,18 @@ static make_var_t eval_def_add_arg(make_t *make, make_eval_def_t def, make_str_d
 	return def;
 }
 
-make_var_t make_create_eval_def(make_t *make, make_def_t def)
+int make_eval_def(make_t *make, make_def_t def, make_act_t *act)
 {
 	if (make == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
 	uint acts_cnt = make->acts.cnt;
 
-	make_act_t act;
-	make_act_data_t *data = list_node(&make->acts, &act);
-
+	make_act_t tmp;
+	make_act_data_t *data = list_node(&make->acts, &tmp);
 	if (data == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
 	*data = (make_act_data_t){
@@ -443,28 +430,30 @@ make_var_t make_create_eval_def(make_t *make, make_def_t def)
 
 	make_def_data_t *def_data = make_act_get_type(make, def, MAKE_ACT_DEF);
 	if (def_data == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
-	if (eval_def_add_arg(make, act, (make_str_data_t){.type = MAKE_STR_STR, .val.id = def_data->name}) == MAKE_END){
+	if (eval_def_add_arg(make, tmp, (make_str_data_t){.type = MAKE_STR_STR, .val.id = def_data->name}) == MAKE_END) {
 		list_reset(&make->acts, acts_cnt);
-		return MAKE_END;
+		return 1;
 	}
 
-	return act;
+	if (act) {
+		*act = tmp;
+	}
+
+	return 0;
 }
 
-make_inc_t make_create_inc(make_t *make, strv_t path)
+int make_inc(make_t *make, strv_t path, make_act_t *act)
 {
 	if (make == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
-	make_act_t act;
-	make_act_data_t *data = list_node(&make->acts, &act);
-
+	make_act_data_t *data = list_node(&make->acts, act);
 	if (data == NULL) {
-		return MAKE_END;
+		return 1;
 	}
 
 	*data = (make_act_data_t){
@@ -476,10 +465,10 @@ make_inc_t make_create_inc(make_t *make, strv_t path)
 	};
 
 	if (strbuf_add(&make->strs, path, &data->val.inc.path)) {
-		return MAKE_END;
+		return 1;
 	}
 
-	return act;
+	return 0;
 }
 
 static make_str_t rule_add_depend(make_t *make, make_rule_t rule, make_rule_target_data_t depend)
@@ -519,7 +508,8 @@ make_act_t make_add_act(make_t *make, make_act_t act)
 	if (data->type == MAKE_ACT_RULE && !data->val.rule.file) {
 		make_rule_t phony = make_rule_get_target(make, MRULE(MSTR(STRV(".PHONY"))));
 		if (phony == MAKE_END) {
-			phony = make_add_act(make, make_create_phony(make));
+			make_phony(make, &phony);
+			make_add_act(make, phony);
 		}
 		rule_add_depend(make, phony, data->val.rule.target);
 	}
