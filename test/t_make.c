@@ -61,21 +61,18 @@ TEST(make_var)
 	make_init(&make, 0, 0, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	uint id = MAKE_END;
 	make_act_t var;
 
-	EXPECT_EQ(make_var(NULL, STRV(""), -1, NULL, NULL), 1);
+	EXPECT_EQ(make_var(NULL, STRV(""), -1, NULL), 1);
 	mem_oom(1);
-	EXPECT_EQ(make_var(&make, STRV(""), -1, NULL, NULL), 1);
+	EXPECT_EQ(make_var(&make, STRV(""), -1, NULL), 1);
 	mem_oom(0);
-	EXPECT_EQ(make_var(&make, STRV(""), -1, NULL, &var), 0);
+	EXPECT_EQ(make_var(&make, STRV(""), -1, &var), 0);
 	EXPECT_EQ(var, 0);
-	EXPECT_EQ(make_var(&make, STRV(""), MAKE_VAR_INST, NULL, &var), 0);
+	EXPECT_EQ(make_var(&make, STRV(""), MAKE_VAR_INST, &var), 0);
 	EXPECT_EQ(var, 1);
-	EXPECT_EQ(make_var(&make, STRV(""), MAKE_VAR_APP, &id, &var), 0);
+	EXPECT_EQ(make_var(&make, STRV(""), MAKE_VAR_APP, &var), 0);
 	EXPECT_EQ(var, 2);
-
-	EXPECT_EQ(id, 2);
 
 	make_free(&make);
 
@@ -92,8 +89,34 @@ TEST(make_var_oom)
 	log_set_quiet(0, 0);
 
 	mem_oom(1);
-	EXPECT_EQ(make_var(&make, STRV(""), -1, NULL, NULL), 1);
+	EXPECT_EQ(make_var(&make, STRV("a"), -1, NULL), 1);
 	mem_oom(0);
+
+	make_free(&make);
+
+	END;
+}
+
+TEST(make_var_var)
+{
+	START;
+
+	make_t make = {0};
+	log_set_quiet(0, 1);
+	make_init(&make, 0, 0, 0, 0, ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	make_act_t var;
+	make_var(&make, STRV(""), MAKE_VAR_INST, &var);
+
+	EXPECT_EQ(make_var_var(NULL, make.acts.cnt, -1, NULL), 1);
+	mem_oom(1);
+	EXPECT_EQ(make_var_var(&make, make.acts.cnt, -1, NULL), 1);
+	mem_oom(0);
+	EXPECT_EQ(make_var_var(&make, var, -1, &var), 0);
+	EXPECT_EQ(var, 1);
+	EXPECT_EQ(make_var_var(&make, var, MAKE_VAR_INST, &var), 0);
+	EXPECT_EQ(var, 2);
 
 	make_free(&make);
 
@@ -109,21 +132,18 @@ TEST(make_var_ext)
 	make_init(&make, 0, 0, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	uint id = MAKE_END;
 	make_act_t var;
 
-	EXPECT_EQ(make_var_ext(NULL, STRV(""), NULL, NULL), 1);
+	EXPECT_EQ(make_var_ext(NULL, STRV(""), NULL), 1);
 	mem_oom(1);
-	EXPECT_EQ(make_var_ext(&make, STRV(""), NULL, NULL), 1);
+	EXPECT_EQ(make_var_ext(&make, STRV("a"), NULL), 1);
 	mem_oom(0);
-	EXPECT_EQ(make_var_ext(&make, STRV(""), NULL, &var), 0);
+	EXPECT_EQ(make_var_ext(&make, STRV(""), &var), 0);
 	EXPECT_EQ(var, 0);
-	EXPECT_EQ(make_var_ext(&make, STRV(""), NULL, &var), 0);
+	EXPECT_EQ(make_var_ext(&make, STRV(""), &var), 0);
 	EXPECT_EQ(var, 1);
-	EXPECT_EQ(make_var_ext(&make, STRV(""), &id, &var), 0);
+	EXPECT_EQ(make_var_ext(&make, STRV(""), &var), 0);
 	EXPECT_EQ(var, 2);
-
-	EXPECT_EQ(id, 2);
 
 	make_free(&make);
 
@@ -168,7 +188,7 @@ TEST(make_rule_oom_target)
 	log_set_quiet(0, 0);
 
 	mem_oom(1);
-	EXPECT_EQ(make_rule(&make, MRULE(MSTR(STRV(""))), 0, NULL), 1);
+	EXPECT_EQ(make_rule(&make, MRULE(MSTR(STRV("a"))), 0, NULL), 1);
 	mem_oom(0);
 
 	make_free(&make);
@@ -186,7 +206,7 @@ TEST(make_rule_oom_action)
 	log_set_quiet(0, 0);
 
 	mem_oom(1);
-	EXPECT_EQ(make_rule(&make, MRULEACT(MSTR(STRV("")), STRV("")), 0, NULL), 1);
+	EXPECT_EQ(make_rule(&make, MRULEACT(MSTR(STRV("aaaaaaaa")), STRV("a")), 0, NULL), 1);
 	mem_oom(0);
 
 	make_free(&make);
@@ -250,7 +270,7 @@ TEST(make_cmd_oom_arg1)
 	log_set_quiet(0, 0);
 
 	mem_oom(1);
-	EXPECT_EQ(make_cmd(&make, MCMD(STRV("")), NULL), 1);
+	EXPECT_EQ(make_cmd(&make, MCMD(STRV("a")), NULL), 1);
 	mem_oom(0);
 
 	make_free(&make);
@@ -268,7 +288,7 @@ TEST(make_cmd_oom_arg2)
 	log_set_quiet(0, 0);
 
 	mem_oom(1);
-	EXPECT_EQ(make_cmd(&make, MCMDCHILD(STRV(""), STRV("")), NULL), 1);
+	EXPECT_EQ(make_cmd(&make, MCMDCHILD(STRV("aaaaaaaa"), STRV("a")), NULL), 1);
 	mem_oom(0);
 
 	make_free(&make);
@@ -311,7 +331,7 @@ TEST(make_if_oom_l)
 	log_set_quiet(0, 0);
 
 	mem_oom(1);
-	EXPECT_EQ(make_if(&make, MSTR(STRV("")), MSTR(STRV("")), NULL), 1);
+	EXPECT_EQ(make_if(&make, MSTR(STRV("a")), MSTR(STRV("")), NULL), 1);
 	mem_oom(0);
 
 	make_free(&make);
@@ -329,7 +349,7 @@ TEST(make_if_oom_r)
 	log_set_quiet(0, 0);
 
 	mem_oom(1);
-	EXPECT_EQ(make_if(&make, MSTR(STRV("")), MSTR(STRV("")), NULL), 1);
+	EXPECT_EQ(make_if(&make, MSTR(STRV("aaaaaaaa")), MSTR(STRV("a")), NULL), 1);
 	mem_oom(0);
 
 	make_free(&make);
@@ -370,7 +390,7 @@ TEST(make_def_oom_name)
 	log_set_quiet(0, 0);
 
 	mem_oom(1);
-	EXPECT_EQ(make_def(&make, STRV(""), NULL), 1);
+	EXPECT_EQ(make_def(&make, STRV("a"), NULL), 1);
 	mem_oom(0);
 
 	make_free(&make);
@@ -437,7 +457,7 @@ TEST(make_inc_oom_name)
 	log_set_quiet(0, 0);
 
 	mem_oom(1);
-	EXPECT_EQ(make_inc(&make, STRV(""), NULL), 1);
+	EXPECT_EQ(make_inc(&make, STRV("a"), NULL), 1);
 	mem_oom(0);
 
 	make_free(&make);
@@ -451,6 +471,7 @@ TEST(make_create)
 	RUN(make_empty);
 	RUN(make_var);
 	RUN(make_var_oom);
+	RUN(make_var_var);
 	RUN(make_var_ext);
 	RUN(make_rule);
 	RUN(make_rule_oom_target);
@@ -485,7 +506,7 @@ TEST(make_add_act)
 	log_set_quiet(0, 0);
 	make_empty(&make, &act);
 	EXPECT_EQ(make_add_act(&make, act), 0);
-	make_rule(&make, MRULE(MSTR(STRV(""))), 0, &act);
+	make_rule(&make, MRULE(MSTR(STRV("rule"))), 0, &act);
 	EXPECT_EQ(make_add_act(&make, act), 0);
 
 	make_free(&make);
@@ -505,18 +526,21 @@ TEST(make_var_add_val)
 	make_act_t empty, var, ext;
 
 	make_empty(&make, &empty);
-	make_var(&make, STRV(""), MAKE_VAR_INST, NULL, &var);
+	make_var(&make, STRV(""), MAKE_VAR_INST, &var);
 
 	EXPECT_EQ(make_var_add_val(NULL, MAKE_END, MVAR(MAKE_END)), 1);
 	log_set_quiet(0, 1);
 	EXPECT_EQ(make_var_add_val(&make, MAKE_END, MVAR(MAKE_END)), 1);
 	log_set_quiet(0, 0);
 	EXPECT_EQ(make_var_add_val(&make, empty, MVAR(MAKE_END)), 1);
-	make_var_ext(&make, STRV(""), NULL, &ext);
+	make_var_ext(&make, STRV(""), &ext);
 	EXPECT_EQ(make_var_add_val(&make, ext, MVAR(MAKE_END)), 1);
+	mem_oom(1);
+	EXPECT_EQ(make_var_add_val(&make, var, MSTR(STRV("a"))), 1);
+	mem_oom(0);
 	EXPECT_EQ(make_var_add_val(&make, var, MVAR(MAKE_END)), 0);
 	mem_oom(1);
-	EXPECT_EQ(make_var_add_val(&make, var, MSTR(STRV(""))), 1);
+	EXPECT_EQ(make_var_add_val(&make, var, MSTR(STRV("a"))), 1);
 	mem_oom(0);
 	EXPECT_EQ(make_var_add_val(&make, var, MSTR(STRV(""))), 0);
 
@@ -536,10 +560,10 @@ TEST(make_var_add_val_oom_val)
 
 	make_act_t var;
 
-	make_var(&make, STRV(""), MAKE_VAR_INST, NULL, &var);
+	make_var(&make, STRV("aaaaaaaa"), MAKE_VAR_INST, &var);
 
 	mem_oom(1);
-	EXPECT_EQ(make_var_add_val(&make, var, MSTR(STRV(""))), 1);
+	EXPECT_EQ(make_var_add_val(&make, var, MSTR(STRV("a"))), 1);
 	mem_oom(0);
 
 	make_free(&make);
@@ -553,7 +577,7 @@ TEST(make_rule_add_depend)
 
 	make_t make = {0};
 	log_set_quiet(0, 1);
-	make_init(&make, 0, 0, 0, 0, ALLOC_STD);
+	make_init(&make, 0, 0, 0, 1, ALLOC_STD);
 	log_set_quiet(0, 0);
 
 	make_act_t empty, rule;
@@ -567,11 +591,35 @@ TEST(make_rule_add_depend)
 	log_set_quiet(0, 0);
 	EXPECT_EQ(make_rule_add_depend(&make, empty, MRULE(MVAR(MAKE_END))), 1);
 	EXPECT_EQ(make_rule_add_depend(&make, rule, MRULE(MVAR(MAKE_END))), 0);
-	mem_oom(1);
-	EXPECT_EQ(make_rule_add_depend(&make, rule, MRULE(MSTR(STRV("")))), 1);
-	mem_oom(0);
 	EXPECT_EQ(make_rule_add_depend(&make, rule, MRULE(MSTR(STRV("")))), 0);
 	EXPECT_EQ(make_rule_add_depend(&make, rule, MRULEACT(MSTR(STRV("")), STRV(""))), 0);
+
+	make_free(&make);
+
+	END;
+}
+
+TEST(make_rule_add_depend_oom_str)
+{
+	START;
+
+	make_t make = {0};
+	log_set_quiet(0, 1);
+	make_init(&make, 0, 1, 0, 1, ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	make_act_t rule;
+
+	make_rule(&make, MRULE(MSTR(STRV(""))), 0, &rule);
+
+	size_t strs_size = make.strs.size;
+	make.strs.size	 = 0;
+
+	mem_oom(1);
+	EXPECT_EQ(make_rule_add_depend(&make, rule, MRULE(MSTR(STRV("a")))), 1);
+	mem_oom(0);
+
+	make.strs.size = strs_size;
 
 	make_free(&make);
 
@@ -584,6 +632,33 @@ TEST(make_rule_add_depend_oom_action)
 
 	make_t make = {0};
 	log_set_quiet(0, 1);
+	make_init(&make, 0, 1, 0, 1, ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	make_act_t rule;
+
+	make_rule(&make, MRULE(MSTR(STRV(""))), 0, &rule);
+
+	size_t strs_size = make.strs.size;
+	make.strs.size	 = 0;
+
+	mem_oom(1);
+	EXPECT_EQ(make_rule_add_depend(&make, rule, MRULEACT(MSTR(STRV("")), STRV("a"))), 1);
+	mem_oom(0);
+
+	make.strs.size = strs_size;
+
+	make_free(&make);
+
+	END;
+}
+
+TEST(make_rule_add_depend_oom_depend)
+{
+	START;
+
+	make_t make = {0};
+	log_set_quiet(0, 1);
 	make_init(&make, 0, 1, 0, 2, ALLOC_STD);
 	log_set_quiet(0, 0);
 
@@ -591,9 +666,14 @@ TEST(make_rule_add_depend_oom_action)
 
 	make_rule(&make, MRULE(MSTR(STRV(""))), 0, &rule);
 
+	size_t targets_cap = make.targets.cap;
+	make.targets.cap   = 0;
+
 	mem_oom(1);
-	EXPECT_EQ(make_rule_add_depend(&make, rule, MRULEACT(MSTR(STRV("")), STRV(""))), 1);
+	EXPECT_EQ(make_rule_add_depend(&make, rule, MRULE(MSTR(STRV("")))), 1);
 	mem_oom(0);
+
+	make.targets.cap = targets_cap;
 
 	make_free(&make);
 
@@ -612,10 +692,16 @@ TEST(make_rule_add_depend_oom_depends)
 	make_act_t rule;
 
 	make_rule(&make, MRULE(MSTR(STRV(""))), 0, &rule);
+	make_rule_add_depend(&make, rule, MRULE(MSTR(STRV(""))));
+
+	size_t targets_cap = make.targets.cap;
+	make.targets.cap   = 0;
 
 	mem_oom(1);
 	EXPECT_EQ(make_rule_add_depend(&make, rule, MRULE(MSTR(STRV("")))), 1);
 	mem_oom(0);
+
+	make.targets.cap = targets_cap;
 
 	make_free(&make);
 
@@ -750,7 +836,10 @@ TEST(make_eval_def_add_arg)
 	log_set_quiet(0, 0);
 	EXPECT_EQ(make_eval_def_add_arg(&make, eval, MSTR(STRV(""))), 0);
 	mem_oom(1);
-	EXPECT_EQ(make_eval_def_add_arg(&make, eval, MSTR(STRV(""))), 1);
+	size_t strs_size = make.strs.size;
+	make.strs.size	 = 0;
+	EXPECT_EQ(make_eval_def_add_arg(&make, eval, MSTR(STRV("a"))), 1);
+	make.strs.size = strs_size;
 	mem_oom(0);
 	EXPECT_EQ(make_eval_def_add_arg(&make, eval, MSTR(STRV(""))), 0);
 
@@ -814,7 +903,9 @@ TEST(make_add)
 	RUN(make_var_add_val);
 	RUN(make_var_add_val_oom_val);
 	RUN(make_rule_add_depend);
+	RUN(make_rule_add_depend_oom_str);
 	RUN(make_rule_add_depend_oom_action);
+	RUN(make_rule_add_depend_oom_depend);
 	RUN(make_rule_add_depend_oom_depends);
 	RUN(make_rule_add_act);
 	RUN(make_if_add_true_act);
@@ -835,7 +926,7 @@ TEST(make_rule_get_target)
 
 	make_act_t var, rule, act;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, NULL, &var);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var);
 	make_rule(&make, MRULE(MVAR(var)), 0, &rule);
 	make_add_act(&make, rule);
 	make_rule(&make, MRULE(MSTR(STRV("a"))), 0, &rule);
@@ -868,7 +959,7 @@ TEST(make_vars_init_free)
 	make_vars_init(&make, &vars, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	make.strs.off.cnt = 1;
+	make.acts.cnt = 1;
 
 	mem_oom(1);
 	make_vars_init(&make, &vars, ALLOC_STD);
@@ -889,8 +980,9 @@ TEST(make_ext_set_val)
 	make_init(&make, 0, 0, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	uint ext = MAKE_END;
-	make_var_ext(&make, STRV("EXT"), &ext, NULL);
+	make_act_t ext;
+
+	make_var_ext(&make, STRV("EXT"), &ext);
 
 	EXPECT_EQ(make_ext_set_val(NULL, -1, MVAR(MAKE_END)), 1);
 	log_set_quiet(0, 1);
@@ -916,11 +1008,12 @@ TEST(make_ext_set_val_oom_val)
 	make_init(&make, 1, 1, 0, 1, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	uint ext = MAKE_END;
-	make_var_ext(&make, STRV("EXT"), &ext, NULL);
+	make_act_t ext;
+
+	make_var_ext(&make, STRV("EXT45678"), &ext);
 
 	mem_oom(1);
-	EXPECT_EQ(make_ext_set_val(&make, ext, MSTR(STRV(""))), 1);
+	EXPECT_EQ(make_ext_set_val(&make, ext, MSTR(STRV("a"))), 1);
 	mem_oom(0);
 
 	make_free(&make);
@@ -945,6 +1038,29 @@ TEST(make_vars_eval)
 	END;
 }
 
+TEST(make_vars_eval_loop)
+{
+	START;
+
+	make_t make = {0};
+	make_init(&make, 1, 1, 1, 1, ALLOC_STD);
+
+	make_vars_t vars = {0};
+
+	make_act_t empty;
+	make_empty(&make, &empty);
+	make_add_act(&make, empty);
+	list_app(&make.acts, empty, empty);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(make_vars_eval(&make, &vars), 1);
+	log_set_quiet(0, 0);
+
+	make_free(&make);
+
+	END;
+}
+
 TEST(make_vars_replace)
 {
 	START;
@@ -952,19 +1068,18 @@ TEST(make_vars_replace)
 	make_t make = {0};
 	make_init(&make, 4, 4, 1, 1, ALLOC_STD);
 
-	uint var = MAKE_END;
 	make_act_t act;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$(ABC")));
 	make_add_act(&make, act);
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var, &act);
+	make_var_var(&make, act, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$(ABC)")));
 	make_add_act(&make, act);
-	make_var(&make, STRV("A"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("A"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")));
 	make_add_act(&make, act);
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var, &act);
+	make_var_var(&make, act, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$(A) $(A) $(A) $(A) $(A) $(A) $(A) $(A)")));
 	make_add_act(&make, act);
 
@@ -995,7 +1110,7 @@ TEST(make_vars_eval_oom_add_var)
 
 	make_act_t var;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, NULL, &var);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var);
 	make_add_act(&make, var);
 
 	mem_oom(1);
@@ -1015,16 +1130,16 @@ TEST(make_vars_eval_oom_var_inst)
 	make_t make = {0};
 	make_init(&make, 1, 1, 1, 1, ALLOC_STD);
 
-	make.strs.off.cnt = 1;
+	make.acts.cnt = 1;
 
 	make_vars_t vars = {0};
 	make_vars_init(&make, &vars, ALLOC_STD);
 
-	make.strs.off.cnt = 0;
+	make.acts.cnt = 0;
 
 	make_act_t var;
 
-	make_var(&make, STRV("A"), MAKE_VAR_INST, NULL, &var);
+	make_var(&make, STRV("A"), MAKE_VAR_INST, &var);
 	make_var_add_val(&make, var, MSTR(STRV("AAAAAAAAAAAAAAAAA")));
 	make_add_act(&make, var);
 
@@ -1045,17 +1160,16 @@ TEST(make_vars_eval_oom_var_append)
 	make_t make = {0};
 	make_init(&make, 1, 1, 1, 1, ALLOC_STD);
 
-	make.strs.off.cnt = 1;
+	make.acts.cnt = 1;
 
 	make_vars_t vars = {0};
 	make_vars_init(&make, &vars, ALLOC_STD);
 
-	make.strs.off.cnt = 0;
+	make.acts.cnt = 0;
 
-	uint var = MAKE_END;
 	make_act_t act;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_APP, &var, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_APP, &act);
 	make_var_add_val(&make, act, MSTR(STRV("AAAAAAAAAAAAAAAAA")));
 	make_add_act(&make, act);
 
@@ -1134,7 +1248,7 @@ TEST(make_vars_eval_var_type)
 
 	make_act_t var;
 
-	make_var(&make, STRV("VAR"), -1, NULL, &var);
+	make_var(&make, STRV("VAR"), -1, &var);
 	make_var_add_val(&make, var, MSTR(STRV("A")));
 	make_add_act(&make, var);
 
@@ -1158,7 +1272,7 @@ TEST(make_vars_eval_ext_not_set)
 
 	make_act_t ext;
 
-	make_var_ext(&make, STRV("EXT"), NULL, &ext);
+	make_var_ext(&make, STRV("EXT"), &ext);
 	make_add_act(&make, ext);
 
 	make_vars_t vars = {0};
@@ -1254,9 +1368,33 @@ TEST(make_print)
 
 	EXPECT_EQ(make_print(&make, DST_BUF(buf)), 1);
 
-	make_var(&make, STRV(""), -1, NULL, &var);
+	make_var(&make, STRV(""), -1, &var);
 	make_add_act(&make, var);
 	EXPECT_EQ(make_print(&make, DST_BUF(buf)), 1);
+
+	make_free(&make);
+
+	END;
+}
+
+TEST(make_print_loop)
+{
+	START;
+
+	make_t make = {0};
+	make_init(&make, 1, 1, 1, 1, ALLOC_STD);
+
+	char buf[8] = {0};
+
+	make_act_t empty;
+
+	make_empty(&make, &empty);
+	make_add_act(&make, empty);
+	list_app(&make.acts, empty, empty);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(make_print(&make, DST_BUF(buf)), 1);
+	log_set_quiet(0, 0);
 
 	make_free(&make);
 
@@ -1280,6 +1418,82 @@ TEST(make_dbg)
 	make_add_act(&make, empty);
 
 	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 6);
+
+	make_free(&make);
+
+	END;
+}
+
+TEST(make_dbg_var_loop)
+{
+	START;
+
+	make_t make = {0};
+	make_init(&make, 1, 1, 1, 1, ALLOC_STD);
+
+	char buf[128] = {0};
+
+	make_act_t var;
+
+	make_var(&make, STRV(""), MAKE_VAR_INST, &var);
+	make_var_add_val(&make, var, MSTR(STRV("")));
+	list_app(&make.arrs, 0, 0);
+	make_add_act(&make, var);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 42);
+	log_set_quiet(0, 0);
+
+	make_free(&make);
+
+	END;
+}
+
+TEST(make_dbg_rule_loop)
+{
+	START;
+
+	make_t make = {0};
+	make_init(&make, 1, 1, 1, 1, ALLOC_STD);
+
+	char buf[128] = {0};
+
+	make_act_t rule;
+
+	make_rule(&make, MRULE(MSTR(STRV(""))), 0, &rule);
+	make_rule_add_depend(&make, rule, MRULE(MSTR(STRV(""))));
+	list_app(&make.targets, 0, 0);
+	make_add_act(&make, rule);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 86);
+	log_set_quiet(0, 0);
+
+	make_free(&make);
+
+	END;
+}
+
+TEST(make_dbg_eval_def_loop)
+{
+	START;
+
+	make_t make = {0};
+	make_init(&make, 1, 1, 1, 1, ALLOC_STD);
+
+	char buf[128] = {0};
+
+	make_act_t def, eval;
+
+	make_def(&make, STRV(""), &def);
+	make_eval_def(&make, def, &eval);
+	list_app(&make.arrs, 0, 0);
+	make_add_act(&make, def);
+	make_add_act(&make, eval);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 57);
+	log_set_quiet(0, 0);
 
 	make_free(&make);
 
@@ -1326,7 +1540,7 @@ TEST(make_eval_print_var_inst_empty)
 
 	make_act_t act;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_add_act(&make, act);
 
 	make_vars_t vars = {0};
@@ -1359,7 +1573,7 @@ TEST(make_eval_print_var_inst)
 
 	make_act_t act;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL")));
 	make_add_act(&make, act);
 
@@ -1391,7 +1605,7 @@ TEST(make_eval_print_var_inst2)
 
 	make_act_t var;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, NULL, &var);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var);
 	make_add_act(&make, var);
 	make_var_add_val(&make, var, MSTR(STRV("VAL1")));
 	make_var_add_val(&make, var, MSTR(STRV("VAL2")));
@@ -1424,10 +1638,10 @@ TEST(make_eval_print_var_inst_out)
 
 	make_act_t act;
 
-	make_var(&make, STRV("A"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("A"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("V")));
 	make_add_act(&make, act);
-	make_var(&make, STRV("B"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("B"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$$(A)")));
 	make_add_act(&make, act);
 
@@ -1464,7 +1678,7 @@ TEST(make_eval_print_var_ref)
 
 	make_act_t act;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_REF, NULL, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_REF, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL")));
 	make_add_act(&make, act);
 
@@ -1494,13 +1708,11 @@ TEST(make_eval_print_var_app)
 	make_t make = {0};
 	make_init(&make, 2, 2, 1, 4, ALLOC_STD);
 
-	uint var = MAKE_END;
 	make_act_t act;
-
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL1")));
 	make_add_act(&make, act);
-	make_var(&make, STRV("VAR"), MAKE_VAR_APP, &var, &act);
+	make_var_var(&make, act, MAKE_VAR_APP, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL2")));
 	make_add_act(&make, act);
 
@@ -1534,13 +1746,12 @@ TEST(make_eval_print_var_ext_inst)
 	make_t make = {0};
 	make_init(&make, 1, 1, 1, 4, ALLOC_STD);
 
-	uint var = MAKE_END;
 	make_act_t ext;
 
-	make_var_ext(&make, STRV("VAR"), &var, &ext);
+	make_var_ext(&make, STRV("VAR"), &ext);
 	make_add_act(&make, ext);
 
-	make_ext_set_val(&make, var, MSTR(STRV("VAL")));
+	make_ext_set_val(&make, ext, MSTR(STRV("VAL")));
 
 	make_vars_t vars = {0};
 	make_vars_init(&make, &vars, ALLOC_STD);
@@ -1568,28 +1779,23 @@ TEST(make_eval_print_var_ext)
 	make_t make = {0};
 	make_init(&make, 8, 8, 1, 16, ALLOC_STD);
 
-	uint ext_id1 = MAKE_END;
-	uint ext_id2 = MAKE_END;
-	uint ext_id3 = MAKE_END;
-	uint ext_id4 = MAKE_END;
 	make_act_t ext1, ext2, ext3, ext4, var, var_app, out;
 
-	make_var_ext(&make, STRV("EXT1"), &ext_id1, &ext1);
+	make_var_ext(&make, STRV("EXT1"), &ext1);
 	make_add_act(&make, ext1);
-	make_var_ext(&make, STRV("EXT2"), &ext_id2, &ext2);
+	make_var_ext(&make, STRV("EXT2"), &ext2);
 	make_add_act(&make, ext2);
-	make_var_ext(&make, STRV("EXT3"), &ext_id3, &ext3);
+	make_var_ext(&make, STRV("EXT3"), &ext3);
 	make_add_act(&make, ext3);
-	make_var_ext(&make, STRV("EXT4"), &ext_id4, &ext4);
+	make_var_ext(&make, STRV("EXT4"), &ext4);
 	make_add_act(&make, ext4);
 
-	uint var_id = MAKE_END;
-	make_var(&make, STRV("VAR"), MAKE_VAR_APP, &var_id, &var);
+	make_var(&make, STRV("VAR"), MAKE_VAR_APP, &var);
 	make_add_act(&make, var);
-	make_var(&make, STRV("VAR"), MAKE_VAR_APP, &var_id, &var_app);
+	make_var_var(&make, var, MAKE_VAR_APP, &var_app);
 	make_add_act(&make, var_app);
 
-	make_var(&make, STRV("OUT"), MAKE_VAR_INST, NULL, &out);
+	make_var(&make, STRV("OUT"), MAKE_VAR_INST, &out);
 	make_add_act(&make, out);
 
 	make_var_add_val(&make, var, MVAR(ext1));
@@ -1599,10 +1805,10 @@ TEST(make_eval_print_var_ext)
 
 	make_var_add_val(&make, out, MVAR(var));
 
-	make_ext_set_val(&make, ext_id1, MSTR(STRV("VAL1")));
-	make_ext_set_val(&make, ext_id2, MSTR(STRV("VAL2")));
-	make_ext_set_val(&make, ext_id3, MSTR(STRV("VAL3")));
-	make_ext_set_val(&make, ext_id4, MSTR(STRV("VAL4")));
+	make_ext_set_val(&make, ext1, MSTR(STRV("VAL1")));
+	make_ext_set_val(&make, ext2, MSTR(STRV("VAL2")));
+	make_ext_set_val(&make, ext3, MSTR(STRV("VAL3")));
+	make_ext_set_val(&make, ext4, MSTR(STRV("VAL4")));
 
 	make_vars_t vars = {0};
 	make_vars_init(&make, &vars, ALLOC_STD);
@@ -1711,17 +1917,16 @@ TEST(make_eval_print_var_if_true)
 	make_t make = {0};
 	make_init(&make, 4, 4, 1, 8, ALLOC_STD);
 
-	uint cond_id = MAKE_END;
 	make_act_t cond, if_cond, act;
 
-	make_var_ext(&make, STRV("COND"), &cond_id, &cond);
+	make_var_ext(&make, STRV("COND"), &cond);
 	make_add_act(&make, cond);
 	make_if(&make, MVAR(cond), MSTR(STRV("A")), &if_cond);
 	make_add_act(&make, if_cond);
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL")));
 	make_if_add_true_act(&make, if_cond, act);
-	make_var(&make, STRV("VAR2"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("VAR2"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL2")));
 	make_if_add_true_act(&make, if_cond, act);
 
@@ -1730,13 +1935,13 @@ TEST(make_eval_print_var_if_true)
 
 	uint var_id;
 
-	make_ext_set_val(&make, cond_id, MSTR(STRV("A")));
+	make_ext_set_val(&make, cond, MSTR(STRV("A")));
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
 	strbuf_find(&vars.names, STRV("VAR"), &var_id);
 	strv_t var_exp_a = make_vars_get_expanded(&vars, var_id);
 	EXPECT_STRN(var_exp_a.data, "VAL", var_exp_a.len);
 
-	make_ext_set_val(&make, cond_id, MSTR(STRV("B")));
+	make_ext_set_val(&make, cond, MSTR(STRV("B")));
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
 	EXPECT_EQ(strbuf_find(&vars.names, STRV("VAR"), &var_id), 1);
 
@@ -1779,18 +1984,16 @@ TEST(make_eval_print_var_if_false)
 	make_t make = {0};
 	make_init(&make, 6, 6, 1, 8, ALLOC_STD);
 
-	uint cond_id = MAKE_END;
 	make_act_t cond, if_cond, act;
 
-	make_var_ext(&make, STRV("COND"), &cond_id, &cond);
+	make_var_ext(&make, STRV("COND"), &cond);
 	make_add_act(&make, cond);
 	make_if(&make, MVAR(cond), MSTR(STRV("A")), &if_cond);
 	make_add_act(&make, if_cond);
-	uint var_id = MAKE_END;
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL1")));
 	make_if_add_true_act(&make, if_cond, act);
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id, &act);
+	make_var_var(&make, act, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL2")));
 	make_if_add_false_act(&make, if_cond, act);
 
@@ -1799,13 +2002,13 @@ TEST(make_eval_print_var_if_false)
 
 	uint varr = MAKE_END;
 
-	make_ext_set_val(&make, cond_id, MSTR(STRV("A")));
+	make_ext_set_val(&make, cond, MSTR(STRV("A")));
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
 	strbuf_find(&vars.names, STRV("VAR"), &varr);
 	strv_t var_exp_a = make_vars_get_expanded(&vars, varr);
 	EXPECT_STRN(var_exp_a.data, "VAL1", var_exp_a.len);
 
-	make_ext_set_val(&make, cond_id, MSTR(STRV("B")));
+	make_ext_set_val(&make, cond, MSTR(STRV("B")));
 	EXPECT_EQ(make_vars_eval(&make, &vars), 0);
 	strbuf_find(&vars.names, STRV("VAR"), &varr);
 	strv_t var_exp_b = make_vars_get_expanded(&vars, varr);
@@ -1891,7 +2094,7 @@ TEST(make_eval_print_def)
 
 	make_def(&make, STRV("def"), &def);
 	make_add_act(&make, def);
-	make_var(&make, STRV("$(1)"), MAKE_VAR_INST, NULL, &var);
+	make_var(&make, STRV("$(1)"), MAKE_VAR_INST, &var);
 	make_var_add_val(&make, var, MSTR(STRV("VAL")));
 	make_def_add_act(&make, def, var);
 
@@ -1934,7 +2137,7 @@ TEST(make_eval_print_def_no_arg)
 
 	make_def(&make, STRV("def"), &def);
 	make_add_act(&make, def);
-	make_var(&make, STRV("$(1)"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("$(1)"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL")));
 	make_def_add_act(&make, def, act);
 
@@ -1992,7 +2195,7 @@ TEST(make_eval_print_def_args)
 
 	make_def(&make, STRV("def"), &def);
 	make_add_act(&make, def);
-	make_var(&make, STRV("$(1)"), MAKE_VAR_INST, NULL, &var);
+	make_var(&make, STRV("$(1)"), MAKE_VAR_INST, &var);
 	make_def_add_act(&make, def, var);
 
 	make_var_add_val(&make, var, MSTR(STRV("$(0)")));
@@ -2060,10 +2263,10 @@ TEST(make_eval_print_def_var_invalid)
 	make_def(&make, STRV("def"), &def);
 	make_add_act(&make, def);
 
-	make_var(&make, STRV("A"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("A"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("V")));
 	make_def_add_act(&make, def, act);
-	make_var(&make, STRV("B"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("B"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$(A)")));
 	make_def_add_act(&make, def, act);
 
@@ -2124,13 +2327,13 @@ TEST(make_eval_print_def_var_imm)
 
 	make_act_t act, def;
 
-	make_var(&make, STRV("A"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("A"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("V")));
 	make_add_act(&make, act);
 
 	make_def(&make, STRV("def"), &def);
 	make_add_act(&make, def);
-	make_var(&make, STRV("B"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("B"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$(A)")));
 	make_def_add_act(&make, def, act);
 
@@ -2169,14 +2372,14 @@ TEST(make_eval_print_def_var)
 	make_def(&make, STRV("def"), &def);
 	make_add_act(&make, def);
 
-	make_var(&make, STRV("A"), MAKE_VAR_INST, NULL, &a);
+	make_var(&make, STRV("A"), MAKE_VAR_INST, &a);
 	make_var_add_val(&make, a, MSTR(STRV("V")));
 	make_def_add_act(&make, def, a);
 
-	make_var(&make, STRV("B"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("B"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MVAR(a));
 	make_def_add_act(&make, def, act);
-	make_var(&make, STRV("C"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("C"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$$(A)")));
 	make_def_add_act(&make, def, act);
 
@@ -2257,7 +2460,7 @@ TEST(make_eval_print_var_not_found)
 
 	make_act_t act;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MVAR(MAKE_END));
 	make_add_act(&make, act);
 
@@ -2287,10 +2490,10 @@ TEST(make_eval_print_inc)
 
 	make_inc(&make, STRV("inc.mk"), &inc);
 	make_add_act(&make, inc);
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL")));
 	make_inc_add_act(&make, inc, act);
-	make_var(&make, STRV("VAR2"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("VAR2"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL2")));
 	make_inc_add_act(&make, inc, act);
 
@@ -2375,16 +2578,15 @@ TEST(make_eval_ext_override)
 	make_t make = {0};
 	make_init(&make, 3, 3, 1, 8, ALLOC_STD);
 
-	uint ext = MAKE_END;
-	make_act_t act;
+	make_act_t act, ext;
 
-	make_var_ext(&make, STRV("EXT"), &ext, &act);
-	make_add_act(&make, act);
+	make_var_ext(&make, STRV("EXT"), &ext);
+	make_add_act(&make, ext);
 
-	make_var(&make, STRV("EXT"), MAKE_VAR_INST, &ext, &act);
+	make_var_var(&make, ext, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL")));
 	make_add_act(&make, act);
-	make_var(&make, STRV("EXT"), MAKE_VAR_APP, &ext, &act);
+	make_var_var(&make, ext, MAKE_VAR_APP, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL")));
 	make_add_act(&make, act);
 
@@ -2426,18 +2628,17 @@ TEST(make_eval_inst_app)
 
 	make_act_t var, act;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, NULL, &var);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var);
 	make_var_add_val(&make, var, MSTR(STRV("A")));
 	make_add_act(&make, var);
-	uint t = MAKE_END;
-	make_var(&make, STRV("T"), MAKE_VAR_INST, &t, &act);
+	make_var(&make, STRV("T"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MVAR(var));
 	make_add_act(&make, act);
-	make_var(&make, STRV("T"), MAKE_VAR_APP, &t, &act);
+	make_var_var(&make, act, MAKE_VAR_APP, &act);
 	make_var_add_val(&make, act, MVAR(var));
 	make_add_act(&make, act);
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("B")));
 	make_add_act(&make, act);
 
@@ -2467,21 +2668,19 @@ TEST(make_eval_ref_app)
 	make_t make = {0};
 	make_init(&make, 4, 4, 1, 8, ALLOC_STD);
 
-	uint var_id = MAKE_END;
 	make_act_t var, act;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id, &var);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var);
 	make_var_add_val(&make, var, MSTR(STRV("A")));
 	make_add_act(&make, var);
-	uint t = MAKE_END;
-	make_var(&make, STRV("T"), MAKE_VAR_REF, &t, &act);
+	make_var(&make, STRV("T"), MAKE_VAR_REF, &act);
 	make_var_add_val(&make, act, MVAR(var));
 	make_add_act(&make, act);
-	make_var(&make, STRV("T"), MAKE_VAR_APP, &t, &act);
+	make_var_var(&make, act, MAKE_VAR_APP, &act);
 	make_var_add_val(&make, act, MVAR(var));
 	make_add_act(&make, act);
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("B")));
 	make_add_act(&make, act);
 
@@ -2511,27 +2710,25 @@ TEST(make_eval_inst_if)
 	make_t make = {0};
 	make_init(&make, 4, 4, 1, 8, ALLOC_STD);
 
-	uint var_id = MAKE_END;
 	make_act_t var, t, act, if_cond;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id, &var);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var);
 	make_var_add_val(&make, var, MSTR(STRV("A")));
 	make_add_act(&make, var);
-	make_var(&make, STRV("T"), MAKE_VAR_INST, NULL, &t);
+	make_var(&make, STRV("T"), MAKE_VAR_INST, &t);
 	make_var_add_val(&make, t, MVAR(var));
 	make_add_act(&make, t);
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id, &act);
+	make_var_var(&make, var, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("B")));
 	make_add_act(&make, act);
 
 	make_if(&make, MVAR(t), MSTR(STRV("A")), &if_cond);
 	make_add_act(&make, if_cond);
-	uint r = MAKE_END;
-	make_var(&make, STRV("R"), MAKE_VAR_INST, &r, &act);
+	make_var(&make, STRV("R"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("C")));
 	make_if_add_true_act(&make, if_cond, act);
-	make_var(&make, STRV("R"), MAKE_VAR_INST, &r, &act);
+	make_var_var(&make, act, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("D")));
 	make_if_add_false_act(&make, if_cond, act);
 
@@ -2561,27 +2758,25 @@ TEST(make_eval_ref_if)
 	make_t make = {0};
 	make_init(&make, 4, 4, 1, 8, ALLOC_STD);
 
-	uint var_id = MAKE_END;
 	make_act_t var, t, act, if_cond;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id, &var);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var);
 	make_var_add_val(&make, var, MSTR(STRV("A")));
 	make_add_act(&make, var);
-	make_var(&make, STRV("T"), MAKE_VAR_REF, NULL, &t);
+	make_var(&make, STRV("T"), MAKE_VAR_REF, &t);
 	make_var_add_val(&make, t, MVAR(var));
 	make_add_act(&make, t);
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id, &act);
+	make_var_var(&make, var, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("B")));
 	make_add_act(&make, act);
 
 	make_if(&make, MVAR(t), MSTR(STRV("A")), &if_cond);
 	make_add_act(&make, if_cond);
-	uint r = MAKE_END;
-	make_var(&make, STRV("R"), MAKE_VAR_INST, &r, &act);
+	make_var(&make, STRV("R"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("C")));
 	make_if_add_true_act(&make, if_cond, act);
-	make_var(&make, STRV("R"), MAKE_VAR_INST, &r, &act);
+	make_var_var(&make, act, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("D")));
 	make_if_add_false_act(&make, if_cond, act);
 
@@ -2613,10 +2808,10 @@ TEST(make_eval_name)
 
 	make_act_t act;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("A")));
 	make_add_act(&make, act);
-	make_var(&make, STRV("$(VAR)_VAR"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("$(VAR)_VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL")));
 	make_add_act(&make, act);
 
@@ -2648,14 +2843,14 @@ TEST(make_eval_def_name)
 
 	make_act_t act, def;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("A")));
 	make_add_act(&make, act);
 
 	make_def(&make, STRV("def"), &def);
 	make_add_act(&make, def);
 
-	make_var(&make, STRV("$(VAR)_VAR"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("$(VAR)_VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAL")));
 	make_def_add_act(&make, def, act);
 
@@ -2688,10 +2883,9 @@ TEST(make_vars_print)
 	make_t make = {0};
 	make_init(&make, 1, 1, 1, 2, ALLOC_STD);
 
-	uint var = MAKE_END;
 	make_act_t act;
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("A")));
 	make_add_act(&make, act);
 
@@ -2949,6 +3143,7 @@ TEST(make_eval_print)
 	RUN(make_ext_set_val_oom_val);
 	RUN(make_vars_init_free);
 	RUN(make_vars_eval);
+	RUN(make_vars_eval_loop);
 	RUN(make_vars_replace);
 	RUN(make_vars_eval_oom_add_var);
 	RUN(make_vars_eval_oom_var_inst);
@@ -2961,7 +3156,11 @@ TEST(make_eval_print)
 	RUN(make_vars_get_resolved);
 	RUN(make_inc_print);
 	RUN(make_print);
+	RUN(make_print_loop);
 	RUN(make_dbg);
+	RUN(make_dbg_var_loop);
+	RUN(make_dbg_rule_loop);
+	RUN(make_dbg_eval_def_loop);
 	RUN(make_eval_print_empty);
 	RUN(make_eval_print_var_inst_empty);
 	RUN(make_eval_print_var_inst);
@@ -3010,72 +3209,67 @@ TEST(make_vars)
 	make_t make = {0};
 	make_init(&make, 5, 5, 1, 8, ALLOC_STD);
 
-	make_act_t act, var, def, def_var, all;
+	make_act_t act, var, def, def_var, all, ext_empty, ext_set, ext_var, var_ext_not, var_ext_empty, var_ext_set;
 
-	uint ext_empty = MAKE_END, ext_set = MAKE_END, ext_var = MAKE_END;
-	make_var_ext(&make, STRV("EXT_NOT"), NULL, &act);
+	make_var_ext(&make, STRV("EXT_NOT"), &act);
 	make_add_act(&make, act);
-	make_var_ext(&make, STRV("EXT_EMPTY"), &ext_empty, &act);
-	make_add_act(&make, act);
-	make_var_ext(&make, STRV("EXT_SET"), &ext_set, &act);
-	make_add_act(&make, act);
-	make_var_ext(&make, STRV("EXT_VAR"), &ext_var, &act);
-	make_add_act(&make, act);
+	make_var_ext(&make, STRV("EXT_EMPTY"), &ext_empty);
+	make_add_act(&make, ext_empty);
+	make_var_ext(&make, STRV("EXT_SET"), &ext_set);
+	make_add_act(&make, ext_set);
+	make_var_ext(&make, STRV("EXT_VAR"), &ext_var);
+	make_add_act(&make, ext_var);
 
-	uint var_ext_not = MAKE_END, var_ext_empty = MAKE_END, var_ext_set = MAKE_END;
-	make_var_ext(&make, STRV("VAR_EXT_NOT"), &var_ext_not, &act);
-	make_add_act(&make, act);
-	make_var_ext(&make, STRV("VAR_EXT_EMPTY"), &var_ext_empty, &act);
-	make_add_act(&make, act);
-	make_var_ext(&make, STRV("VAR_EXT_SET"), &var_ext_set, &act);
-	make_add_act(&make, act);
+	make_var_ext(&make, STRV("VAR_EXT_NOT"), &var_ext_not);
+	make_add_act(&make, var_ext_not);
+	make_var_ext(&make, STRV("VAR_EXT_EMPTY"), &var_ext_empty);
+	make_add_act(&make, var_ext_empty);
+	make_var_ext(&make, STRV("VAR_EXT_SET"), &var_ext_set);
+	make_add_act(&make, var_ext_set);
 
-	uint var_id = MAKE_END;
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id, &var);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var);
 	make_var_add_val(&make, var, MSTR(STRV("V1")));
 	make_add_act(&make, var);
-	make_var(&make, STRV("IMM"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("IMM"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$(VAR)")));
 	make_add_act(&make, act);
-	make_var(&make, STRV("REC"), MAKE_VAR_REF, NULL, &act);
+	make_var(&make, STRV("REC"), MAKE_VAR_REF, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$(VAR)")));
 	make_add_act(&make, act);
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id, &act);
+	make_var_var(&make, var, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("V2")));
 	make_add_act(&make, act);
 
-	uint app_imm_id = MAKE_END;
-	make_var(&make, STRV("APP_IMM"), MAKE_VAR_INST, &app_imm_id, &act);
+	make_var(&make, STRV("APP_IMM"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MVAR(var));
 	make_add_act(&make, act);
-	make_var(&make, STRV("APP_IMM"), MAKE_VAR_APP, &app_imm_id, &act);
+	make_var_var(&make, act, MAKE_VAR_APP, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$(VAR)")));
 	make_add_act(&make, act);
-	make_var(&make, STRV("APP_IMM"), MAKE_VAR_APP, &app_imm_id, &act);
+	make_var_var(&make, act, MAKE_VAR_APP, &act);
 	make_var_add_val(&make, act, MVAR(var));
 	make_add_act(&make, act);
 
-	uint app_rec_id = MAKE_END;
-	make_var(&make, STRV("APP_REC"), MAKE_VAR_REF, &app_rec_id, &act);
+	make_var(&make, STRV("APP_REC"), MAKE_VAR_REF, &act);
 	make_var_add_val(&make, act, MVAR(var));
 	make_add_act(&make, act);
-	make_var(&make, STRV("APP_REC"), MAKE_VAR_APP, &app_rec_id, &act);
+	make_var_var(&make, act, MAKE_VAR_APP, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$(VAR)")));
 	make_add_act(&make, act);
-	make_var(&make, STRV("APP_REC"), MAKE_VAR_APP, &app_rec_id, &act);
+	make_var_var(&make, act, MAKE_VAR_APP, &act);
 	make_var_add_val(&make, act, MVAR(var));
 	make_add_act(&make, act);
 
 	make_empty(&make, &act);
 	make_add_act(&make, act);
 
-	make_var(&make, STRV("VAR_EXT_NOT"), MAKE_VAR_INST, &var_ext_not, &act);
+	make_var_var(&make, var_ext_not, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAR")));
 	make_add_act(&make, act);
-	make_var(&make, STRV("VAR_EXT_EMPTY"), MAKE_VAR_INST, &var_ext_empty, &act);
+	make_var_var(&make, var_ext_empty, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAR")));
 	make_add_act(&make, act);
-	make_var(&make, STRV("VAR_EXT_SET"), MAKE_VAR_INST, &var_ext_set, &act);
+	make_var_var(&make, var_ext_set, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("VAR")));
 	make_add_act(&make, act);
 
@@ -3084,34 +3278,34 @@ TEST(make_vars)
 
 	make_def(&make, STRV("def"), &def);
 	make_add_act(&make, def);
-	make_var(&make, STRV("DEF_VAR"), MAKE_VAR_INST, NULL, &def_var);
+	make_var(&make, STRV("DEF_VAR"), MAKE_VAR_INST, &def_var);
 	make_var_add_val(&make, def_var, MSTR(STRV("D")));
 	make_def_add_act(&make, def, def_var);
-	make_var(&make, STRV("DEF_VAR_IMM"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("DEF_VAR_IMM"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$$(DEF_VAR)")));
 	make_def_add_act(&make, def, act);
-	make_var(&make, STRV("DEF_VAR_IMM_VAR"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("DEF_VAR_IMM_VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MVAR(def_var));
 	make_def_add_act(&make, def, act);
-	make_var(&make, STRV("DEF_IMM"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("DEF_IMM"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$(VAR)")));
 	make_def_add_act(&make, def, act);
-	make_var(&make, STRV("DEF_IMM_VAR"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("DEF_IMM_VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MVAR(var));
 	make_def_add_act(&make, def, act);
-	make_var(&make, STRV("DEF_IMM_ESC"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("DEF_IMM_ESC"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$$(VAR)")));
 	make_def_add_act(&make, def, act);
-	make_var(&make, STRV("DEF_REC"), MAKE_VAR_REF, NULL, &act);
+	make_var(&make, STRV("DEF_REC"), MAKE_VAR_REF, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$(VAR)")));
 	make_def_add_act(&make, def, act);
-	make_var(&make, STRV("DEF_REC_VAR"), MAKE_VAR_REF, NULL, &act);
+	make_var(&make, STRV("DEF_REC_VAR"), MAKE_VAR_REF, &act);
 	make_var_add_val(&make, act, MVAR(var));
 	make_def_add_act(&make, def, act);
-	make_var(&make, STRV("DEF_REC_ESC"), MAKE_VAR_REF, NULL, &act);
+	make_var(&make, STRV("DEF_REC_ESC"), MAKE_VAR_REF, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$$(VAR)")));
 	make_def_add_act(&make, def, act);
-	make_var(&make, STRV("$(0)"), MAKE_VAR_INST, NULL, &act);
+	make_var(&make, STRV("$(0)"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$$($(1))")));
 	make_def_add_act(&make, def, act);
 
@@ -3125,7 +3319,7 @@ TEST(make_vars)
 	make_empty(&make, &act);
 	make_add_act(&make, act);
 
-	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var_id, &act);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("V3")));
 	make_add_act(&make, act);
 
@@ -3432,4 +3626,3 @@ STEST(make)
 
 	SEND;
 }
-// 3339

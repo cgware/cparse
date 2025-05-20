@@ -50,7 +50,7 @@ typedef struct make_s {
 	list_t arrs;
 	list_t acts;
 	list_t targets;
-	strbuf_t strs;
+	buf_t strs;
 	make_act_t root;
 } make_t;
 
@@ -65,8 +65,9 @@ make_t *make_init(make_t *make, uint arrs_cap, uint acts_cap, uint targets_cap, 
 void make_free(make_t *make);
 
 int make_empty(make_t *make, make_act_t *act);
-int make_var(make_t *make, strv_t name, make_var_type_t type, uint *id, make_act_t *act);
-int make_var_ext(make_t *make, strv_t name, uint *id, make_act_t *act);
+int make_var(make_t *make, strv_t name, make_var_type_t type, make_act_t *act);
+int make_var_var(make_t *make, make_act_t var, make_var_type_t type, make_act_t *act);
+int make_var_ext(make_t *make, strv_t name, make_act_t *act);
 int make_rule(make_t *make, make_create_rule_t target, int file, make_act_t *act);
 int make_phony(make_t *make, make_act_t *act);
 int make_cmd(make_t *make, make_create_cmd_t cmd, make_act_t *act);
@@ -85,7 +86,7 @@ int make_def_add_act(make_t *make, make_act_t def, make_act_t act);
 int make_eval_def_add_arg(make_t *make, make_act_t def, make_create_str_t arg);
 int make_inc_add_act(make_t *make, make_act_t inc, make_act_t act);
 
-int make_ext_set_val(make_t *make, uint id, make_create_str_t val);
+int make_ext_set_val(make_t *make, make_act_t var, make_create_str_t val);
 
 int make_rule_get_target(const make_t *make, make_create_rule_t target, make_act_t *act);
 

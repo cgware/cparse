@@ -388,7 +388,7 @@ static int eprs_parse_terms(eprs_t *eprs, estx_node_t rule, estx_node_t term_id,
 
 	while (ret == 0) {
 		if (cur == *off) {
-			log_warn("cparse", "eprs", NULL, "loop detected");
+			log_warn("cparse", "eprs", NULL, "loop detected: %d", cur);
 			break;
 		}
 		cur = *off;
