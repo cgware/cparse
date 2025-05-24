@@ -1,4 +1,5 @@
 #include "file/cfg.h"
+#include "file/cfg_priv.h"
 
 #include "log.h"
 #include "mem.h"
@@ -25,131 +26,170 @@ TEST(cfg_init_free)
 	END;
 }
 
-TEST(cfg_var_init)
+TEST(cfg_root)
 {
 	START;
 
 	cfg_t cfg = {0};
-
 	log_set_quiet(0, 1);
 	cfg_init(&cfg, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(cfg_var_init(NULL, STRV_NULL, CFG_NULL), CFG_VAR_END);
-	mem_oom(1);
-	EXPECT_EQ(cfg_var_init(&cfg, STRV_NULL, CFG_NULL), CFG_VAR_END);
-	EXPECT_EQ(cfg_var_init(&cfg, STRV(""), CFG_NULL), CFG_VAR_END);
-	mem_oom(0);
-	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_var_init(&cfg, STRV_NULL, (cfg_val_t){.type = -1}), CFG_VAR_END);
-	log_set_quiet(0, 0);
+	EXPECT_EQ(cfg_root(NULL, NULL), 1);
+	EXPECT_EQ(cfg_root(&cfg, NULL), 0);
 
 	cfg_free(&cfg);
 
 	END;
 }
 
-TEST(cfg_var_init_lit)
+TEST(cfg_lit)
 {
 	START;
 
 	cfg_t cfg = {0};
-
 	log_set_quiet(0, 1);
 	cfg_init(&cfg, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
+
+	cfg_var_t lit;
+
+	EXPECT_EQ(cfg_lit(NULL, STRV_NULL, STRV_NULL, NULL), 1);
 	mem_oom(1);
-	EXPECT_EQ(CFG_LIT(&cfg, STRV_NULL, STRV_NULL), CFG_VAR_END);
+	EXPECT_EQ(cfg_lit(&cfg, STRV_NULL, STRV_NULL, NULL), 1);
+	EXPECT_EQ(cfg_lit(&cfg, STRV(""), STRV_NULL, NULL), 1);
 	mem_oom(0);
-	EXPECT_EQ(CFG_LIT(&cfg, STRV_NULL, STRV_NULL), 0);
+	EXPECT_EQ(cfg_lit(&cfg, STRV_NULL, STRV_NULL, &lit), 0);
+	EXPECT_EQ(lit, 0);
 	cfg_free(&cfg);
 
 	log_set_quiet(0, 1);
 	cfg_init(&cfg, 0, 1, ALLOC_STD);
 	log_set_quiet(0, 0);
 	mem_oom(1);
-	EXPECT_EQ(CFG_LIT(&cfg, STRV_NULL, STRV("")), CFG_VAR_END);
+	EXPECT_EQ(cfg_lit(&cfg, STRV_NULL, STRV(""), NULL), 1);
 	mem_oom(0);
+
 	cfg_free(&cfg);
 
 	END;
 }
 
-TEST(cfg_var_init_str)
+TEST(cfg_str)
 {
 	START;
 
 	cfg_t cfg = {0};
-
 	log_set_quiet(0, 1);
 	cfg_init(&cfg, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
+
+	cfg_var_t str;
+
+	EXPECT_EQ(cfg_str(NULL, STRV_NULL, STRV_NULL, NULL), 1);
 	mem_oom(1);
-	EXPECT_EQ(CFG_STR(&cfg, STRV_NULL, STRV_NULL), CFG_VAR_END);
+	EXPECT_EQ(cfg_str(&cfg, STRV_NULL, STRV_NULL, NULL), 1);
+	EXPECT_EQ(cfg_str(&cfg, STRV(""), STRV_NULL, NULL), 1);
 	mem_oom(0);
-	EXPECT_EQ(CFG_STR(&cfg, STRV_NULL, STRV_NULL), 0);
+	EXPECT_EQ(cfg_str(&cfg, STRV_NULL, STRV_NULL, &str), 0);
+	EXPECT_EQ(str, 0);
 	cfg_free(&cfg);
 
 	log_set_quiet(0, 1);
 	cfg_init(&cfg, 0, 1, ALLOC_STD);
 	log_set_quiet(0, 0);
 	mem_oom(1);
-	EXPECT_EQ(CFG_STR(&cfg, STRV_NULL, STRV("")), CFG_VAR_END);
+	EXPECT_EQ(cfg_str(&cfg, STRV_NULL, STRV(""), NULL), 1);
 	mem_oom(0);
+
 	cfg_free(&cfg);
 
 	END;
 }
 
-TEST(cfg_var_init_int)
+TEST(cfg_int)
 {
 	START;
 
 	cfg_t cfg = {0};
-
 	log_set_quiet(0, 1);
 	cfg_init(&cfg, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
+
+	cfg_var_t val;
+
 	mem_oom(1);
-	EXPECT_EQ(CFG_INT(&cfg, STRV_NULL, 0), CFG_VAR_END);
+	EXPECT_EQ(cfg_int(&cfg, STRV_NULL, 0, NULL), 1);
+	EXPECT_EQ(cfg_int(&cfg, STRV(""), 0, NULL), 1);
 	mem_oom(0);
-	EXPECT_EQ(CFG_INT(&cfg, STRV_NULL, 0), 0);
+	EXPECT_EQ(cfg_int(&cfg, STRV_NULL, 0, &val), 0);
+	EXPECT_EQ(val, 0);
 	cfg_free(&cfg);
 
 	END;
 }
 
-TEST(cfg_var_init_arr)
+TEST(cfg_arr)
 {
 	START;
 
 	cfg_t cfg = {0};
-
 	log_set_quiet(0, 1);
 	cfg_init(&cfg, 1, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
+
+	cfg_var_t arr;
+
 	mem_oom(1);
-	EXPECT_EQ(CFG_ARR(&cfg, STRV_NULL), CFG_VAR_END);
+	EXPECT_EQ(cfg_arr(&cfg, STRV_NULL, NULL), 1);
 	mem_oom(0);
-	EXPECT_EQ(CFG_ARR(&cfg, STRV_NULL), 0);
+	EXPECT_EQ(cfg_arr(&cfg, STRV_NULL, &arr), 0);
+	EXPECT_EQ(arr, 0);
+
 	cfg_free(&cfg);
 
 	END;
 }
 
-TEST(cfg_var_init_tbl)
+TEST(cfg_obj)
 {
 	START;
 
 	cfg_t cfg = {0};
-
 	log_set_quiet(0, 1);
-	cfg_init(&cfg, 0, 0, ALLOC_STD);
+	cfg_init(&cfg, 1, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
+
+	cfg_var_t obj;
+
 	mem_oom(1);
-	EXPECT_EQ(CFG_TBL(&cfg, STRV_NULL), CFG_VAR_END);
+	EXPECT_EQ(cfg_obj(&cfg, STRV_NULL, NULL), 1);
 	mem_oom(0);
-	EXPECT_EQ(CFG_TBL(&cfg, STRV_NULL), 0);
+	EXPECT_EQ(cfg_obj(&cfg, STRV_NULL, &obj), 0);
+	EXPECT_EQ(obj, 0);
+
+	cfg_free(&cfg);
+
+	END;
+}
+
+TEST(cfg_tbl)
+{
+	START;
+
+	cfg_t cfg = {0};
+	log_set_quiet(0, 1);
+	cfg_init(&cfg, 1, 0, ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	cfg_var_t tbl;
+
+	mem_oom(1);
+	EXPECT_EQ(cfg_tbl(&cfg, STRV_NULL, NULL), 1);
+	mem_oom(0);
+	EXPECT_EQ(cfg_tbl(&cfg, STRV_NULL, &tbl), 0);
+	EXPECT_EQ(tbl, 0);
+
 	cfg_free(&cfg);
 
 	END;
@@ -160,18 +200,22 @@ TEST(cfg_add_var)
 	START;
 
 	cfg_t cfg = {0};
-
 	log_set_quiet(0, 1);
 	cfg_init(&cfg, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
-	EXPECT_EQ(cfg_add_var(NULL, CFG_VAR_END, CFG_VAR_END), CFG_VAR_END);
+
+	cfg_var_t i, root;
+
+	EXPECT_EQ(cfg_add_var(NULL, cfg.vars.cnt, cfg.vars.cnt), 1);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_add_var(&cfg, CFG_VAR_END, CFG_VAR_END), CFG_VAR_END);
+	EXPECT_EQ(cfg_add_var(&cfg, cfg.vars.cnt, cfg.vars.cnt), 1);
 	log_set_quiet(0, 0);
-	cfg_var_t i = CFG_INT(&cfg, STRV_NULL, 0);
-	EXPECT_EQ(cfg_add_var(&cfg, i, CFG_VAR_END), CFG_VAR_END);
-	cfg_var_t root = CFG_ROOT(&cfg);
-	EXPECT_NE(cfg_add_var(&cfg, root, CFG_INT(&cfg, STRV_NULL, 0)), CFG_VAR_END);
+
+	cfg_int(&cfg, STRV_NULL, 0, &i);
+	EXPECT_EQ(cfg_add_var(&cfg, i, cfg.vars.cnt), 1);
+	cfg_root(&cfg, &root);
+	EXPECT_EQ(cfg_add_var(&cfg, root, i), 0);
+
 	cfg_free(&cfg);
 
 	END;
@@ -184,11 +228,11 @@ TEST(cfg_get_var)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
+	cfg_var_t root, i, var;
 
-	cfg_var_t i = cfg_add_var(&cfg, root, CFG_INT(&cfg, STRV("a"), 2));
-
-	cfg_var_t var;
+	cfg_root(&cfg, &root);
+	cfg_int(&cfg, STRV("a"), 2, &i);
+	cfg_add_var(&cfg, root, i);
 
 	EXPECT_EQ(cfg_get_var(NULL, root, STRV_NULL, NULL), 1);
 	EXPECT_EQ(cfg_get_var(&cfg, root, STRV_NULL, NULL), 1);
@@ -207,9 +251,11 @@ TEST(cfg_get_var_not_found)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
+	cfg_var_t root, str;
 
-	cfg_add_var(&cfg, root, CFG_STR(&cfg, STRV("a"), STRV("int")));
+	cfg_root(&cfg, &root);
+	cfg_str(&cfg, STRV("a"), STRV("int"), &str);
+	cfg_add_var(&cfg, root, str);
 
 	log_set_quiet(0, 1);
 	EXPECT_EQ(cfg_get_var(&cfg, root, STRV("int"), NULL), 1);
@@ -227,7 +273,9 @@ TEST(cfg_get_var_wrong_parent)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_INT(&cfg, STRV("int"), 0);
+	cfg_var_t root;
+
+	cfg_int(&cfg, STRV("int"), 0, &root);
 
 	log_set_quiet(0, 1);
 	EXPECT_EQ(cfg_get_var(&cfg, root, STRV("int"), NULL), 1);
@@ -245,9 +293,12 @@ TEST(cfg_get_val_wrong_type)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
+	cfg_var_t root, var;
 
-	cfg_var_t var = cfg_add_var(&cfg, root, CFG_STR(&cfg, STRV("int"), STRV("a")));
+	cfg_root(&cfg, &root);
+
+	cfg_str(&cfg, STRV("int"), STRV("a"), &var);
+	cfg_add_var(&cfg, root, var);
 
 	log_set_quiet(0, 1);
 	EXPECT_EQ(cfg_get_int(&cfg, var, NULL), 1);
@@ -265,9 +316,10 @@ TEST(cfg_get_lit)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t var = CFG_LIT(&cfg, STRV("str"), STRV("val"));
-
+	cfg_var_t var;
 	strv_t val;
+
+	cfg_lit(&cfg, STRV("str"), STRV("val"), &var);
 
 	EXPECT_EQ(cfg_get_lit(NULL, CFG_VAR_END, NULL), 1);
 	log_set_quiet(0, 1);
@@ -288,9 +340,10 @@ TEST(cfg_get_str)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t var = CFG_STR(&cfg, STRV("str"), STRV("val"));
-
+	cfg_var_t var;
 	strv_t val;
+
+	cfg_str(&cfg, STRV("str"), STRV("val"), &var);
 
 	EXPECT_EQ(cfg_get_str(NULL, CFG_VAR_END, NULL), 1);
 	log_set_quiet(0, 1);
@@ -311,9 +364,10 @@ TEST(cfg_get_int)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t var = CFG_INT(&cfg, STRV("int"), 1);
-
+	cfg_var_t var;
 	int val;
+
+	cfg_int(&cfg, STRV("int"), 1, &var);
 
 	EXPECT_EQ(cfg_get_int(NULL, CFG_VAR_END, NULL), 1);
 	log_set_quiet(0, 1);
@@ -334,13 +388,14 @@ TEST(cfg_get_arr)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t arr = CFG_ARR(&cfg, STRV("arr"));
+	cfg_var_t arr, var;
+
+	cfg_arr(&cfg, STRV("arr"), &arr);
 
 	EXPECT_EQ(cfg_get_arr(NULL, CFG_VAR_END, NULL), 1);
 	log_set_quiet(0, 1);
 	EXPECT_EQ(cfg_get_arr(&cfg, CFG_VAR_END, NULL), 1);
 	log_set_quiet(0, 0);
-	cfg_var_t var = CFG_VAR_END;
 	EXPECT_EQ(cfg_get_arr(&cfg, arr, &var), 0);
 
 	cfg_free(&cfg);
@@ -355,15 +410,15 @@ TEST(cfg_get_arr_str)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t arr = CFG_ARR(&cfg, STRV("arr"));
+	cfg_var_t arr, var = CFG_VAR_END, vars[2];
 
-	cfg_var_t vars[] = {
-		cfg_add_var(&cfg, arr, CFG_STR(&cfg, STRV("str"), STRV("val"))),
-		cfg_add_var(&cfg, arr, CFG_STR(&cfg, STRV("str"), STRV("val"))),
-	};
+	cfg_arr(&cfg, STRV("arr"), &arr);
+	cfg_str(&cfg, STRV("str"), STRV("val"), &vars[0]);
+	cfg_str(&cfg, STRV("str"), STRV("val"), &vars[1]);
+	cfg_add_var(&cfg, arr, vars[0]);
+	cfg_add_var(&cfg, arr, vars[1]);
 
-	cfg_var_t var = CFG_VAR_END;
-	int cnt	      = 0;
+	int cnt = 0;
 	while (cfg_get_arr(&cfg, arr, &var) == 0) {
 		EXPECT_EQ(var, vars[cnt]);
 		cnt++;
@@ -375,11 +430,6 @@ TEST(cfg_get_arr_str)
 	END;
 }
 
-typedef struct var_data_s {
-	uint key;
-	cfg_val_type_t type;
-} var_data_t;
-
 TEST(cfg_print)
 {
 	START;
@@ -387,23 +437,29 @@ TEST(cfg_print)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
+	cfg_var_t root, var;
 
-	cfg_add_var(&cfg, root, CFG_LIT(&cfg, STRV("lit"), STRV("val")));
-	cfg_add_var(&cfg, root, CFG_STR(&cfg, STRV("str"), STRV("str")));
-	cfg_add_var(&cfg, root, CFG_INT(&cfg, STRV("int"), 1));
-	cfg_add_var(&cfg, root, CFG_ARR(&cfg, STRV("arr")));
-	cfg_add_var(&cfg, root, CFG_OBJ(&cfg, STRV("obj")));
-	cfg_add_var(&cfg, root, CFG_TBL(&cfg, STRV("tbl")));
+	cfg_root(&cfg, &root);
+	cfg_lit(&cfg, STRV("lit"), STRV("val"), &var);
+	cfg_add_var(&cfg, root, var);
+	cfg_str(&cfg, STRV("str"), STRV("str"), &var);
+	cfg_add_var(&cfg, root, var);
+	cfg_int(&cfg, STRV("int"), 1, &var);
+	cfg_add_var(&cfg, root, var);
+	cfg_arr(&cfg, STRV("arr"), &var);
+	cfg_add_var(&cfg, root, var);
+	cfg_obj(&cfg, STRV("obj"), &var);
+	cfg_add_var(&cfg, root, var);
+	cfg_tbl(&cfg, STRV("tbl"), &var);
+	cfg_add_var(&cfg, root, var);
 
 	EXPECT_EQ(cfg_print(NULL, root, DST_NONE()), 0);
 	log_set_quiet(0, 1);
 	EXPECT_EQ(cfg_print(&cfg, CFG_VAR_END, DST_NONE()), 0);
 	log_set_quiet(0, 0);
 
-	char buf[1024] = {0};
+	char buf[64] = {0};
 	cfg_print(&cfg, root, DST_BUF(buf));
-
 	EXPECT_STR(buf,
 		   "lit = val\n"
 		   "str = \"str\"\n"
@@ -414,6 +470,7 @@ TEST(cfg_print)
 		   "[tbl]\n");
 
 	cfg_free(&cfg);
+
 	END;
 }
 
@@ -422,22 +479,26 @@ TEST(cfg_print_none)
 	START;
 
 	cfg_t cfg = {0};
-
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
-	cfg_var_t root	 = CFG_ROOT(&cfg);
-	cfg_var_t none	 = cfg_add_var(&cfg, root, CFG_INT(&cfg, STRV("none"), 0));
-	var_data_t *data = list_get(&cfg.vars, none);
+
+	cfg_var_t root, none;
+
+	cfg_root(&cfg, &root);
+	cfg_int(&cfg, STRV("none"), 0, &none);
+	cfg_add_var(&cfg, root, none);
+
+	cfg_var_data_t *data = list_get(&cfg.vars, none);
 
 	data->type = 0;
 
-	char buf[1024] = {0};
+	char buf[16] = {0};
 	log_set_quiet(0, 1);
 	cfg_print(&cfg, root, DST_BUF(buf));
 	log_set_quiet(0, 0);
-
 	EXPECT_STR(buf, "\n");
 
 	cfg_free(&cfg);
+
 	END;
 }
 
@@ -446,19 +507,20 @@ TEST(cfg_print_lit)
 	START;
 
 	cfg_t cfg = {0};
-
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
+	cfg_var_t root, var;
 
-	cfg_add_var(&cfg, root, CFG_LIT(&cfg, STRV("str"), STRV("val")));
+	cfg_root(&cfg, &root);
+	cfg_lit(&cfg, STRV("str"), STRV("val"), &var);
+	cfg_add_var(&cfg, root, var);
 
-	char buf[1024] = {0};
+	char buf[16] = {0};
 	cfg_print(&cfg, root, DST_BUF(buf));
-
 	EXPECT_STR(buf, "str = val\n");
 
 	cfg_free(&cfg);
+
 	END;
 }
 
@@ -467,19 +529,20 @@ TEST(cfg_print_str)
 	START;
 
 	cfg_t cfg = {0};
-
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
+	cfg_var_t root, var;
 
-	cfg_add_var(&cfg, root, CFG_STR(&cfg, STRV("str"), STRV("val")));
+	cfg_root(&cfg, &root);
+	cfg_str(&cfg, STRV("str"), STRV("val"), &var);
+	cfg_add_var(&cfg, root, var);
 
-	char buf[1024] = {0};
+	char buf[16] = {0};
 	cfg_print(&cfg, root, DST_BUF(buf));
-
 	EXPECT_STR(buf, "str = \"val\"\n");
 
 	cfg_free(&cfg);
+
 	END;
 }
 
@@ -488,27 +551,35 @@ TEST(cfg_print_arr)
 	START;
 
 	cfg_t cfg = {0};
-
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
+	cfg_var_t root, arr, var, obj;
 
-	cfg_var_t arr = cfg_add_var(&cfg, root, CFG_ARR(&cfg, STRV("arr")));
-	cfg_add_var(&cfg, arr, CFG_STR(&cfg, STRV_NULL, STRV("str")));
-	cfg_add_var(&cfg, arr, CFG_INT(&cfg, STRV_NULL, 1));
-	cfg_add_var(&cfg, arr, CFG_ARR(&cfg, STRV_NULL));
-	cfg_add_var(&cfg, arr, CFG_OBJ(&cfg, STRV_NULL));
+	cfg_root(&cfg, &root);
+	cfg_arr(&cfg, STRV("arr"), &arr);
+	cfg_add_var(&cfg, root, arr);
+	cfg_str(&cfg, STRV_NULL, STRV("str"), &var);
+	cfg_add_var(&cfg, arr, var);
+	cfg_int(&cfg, STRV_NULL, 1, &var);
+	cfg_add_var(&cfg, arr, var);
+	cfg_arr(&cfg, STRV_NULL, &var);
+	cfg_add_var(&cfg, arr, var);
+	cfg_obj(&cfg, STRV_NULL, &var);
+	cfg_add_var(&cfg, arr, var);
 
-	cfg_var_t obj = cfg_add_var(&cfg, arr, CFG_OBJ(&cfg, STRV_NULL));
-	cfg_add_var(&cfg, obj, CFG_STR(&cfg, STRV("str"), STRV("str")));
-	cfg_add_var(&cfg, obj, CFG_INT(&cfg, STRV("int"), 1));
+	cfg_obj(&cfg, STRV_NULL, &obj);
+	cfg_add_var(&cfg, arr, obj);
+	cfg_str(&cfg, STRV("str"), STRV("str"), &var);
+	cfg_add_var(&cfg, obj, var);
+	cfg_int(&cfg, STRV("int"), 1, &var);
+	cfg_add_var(&cfg, obj, var);
 
-	char buf[1024] = {0};
+	char buf[64] = {0};
 	cfg_print(&cfg, root, DST_BUF(buf));
-
 	EXPECT_STR(buf, "arr = [\"str\", 1, [], {}, {str = \"str\", int = 1}]\n");
 
 	cfg_free(&cfg);
+
 	END;
 }
 
@@ -517,23 +588,28 @@ TEST(cfg_print_obj)
 	START;
 
 	cfg_t cfg = {0};
-
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
+	cfg_var_t root, obj, var, obj_obj;
 
-	cfg_var_t obj = cfg_add_var(&cfg, root, CFG_OBJ(&cfg, STRV("obj")));
-	cfg_add_var(&cfg, obj, CFG_STR(&cfg, STRV("str"), STRV("str")));
-	cfg_add_var(&cfg, obj, CFG_INT(&cfg, STRV("int"), 1));
-	cfg_var_t obj_obj = cfg_add_var(&cfg, obj, CFG_OBJ(&cfg, STRV("obj_obj")));
-	cfg_add_var(&cfg, obj_obj, CFG_INT(&cfg, STRV("int"), 1));
+	cfg_root(&cfg, &root);
+	cfg_obj(&cfg, STRV("obj"), &obj);
+	cfg_add_var(&cfg, root, obj);
+	cfg_str(&cfg, STRV("str"), STRV("str"), &var);
+	cfg_add_var(&cfg, obj, var);
+	cfg_int(&cfg, STRV("int"), 1, &var);
+	cfg_add_var(&cfg, obj, var);
+	cfg_obj(&cfg, STRV("obj_obj"), &obj_obj);
+	cfg_add_var(&cfg, obj, obj_obj);
+	cfg_int(&cfg, STRV("int"), 1, &var);
+	cfg_add_var(&cfg, obj_obj, var);
 
-	char buf[1024] = {0};
+	char buf[64] = {0};
 	cfg_print(&cfg, root, DST_BUF(buf));
-
 	EXPECT_STR(buf, "obj = {str = \"str\", int = 1, obj_obj = {int = 1}}\n");
 
 	cfg_free(&cfg);
+
 	END;
 }
 
@@ -542,20 +618,24 @@ TEST(cfg_print_tbl)
 	START;
 
 	cfg_t cfg = {0};
-
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
+	cfg_var_t root, tbl, var;
 
-	cfg_var_t tbl = cfg_add_var(&cfg, root, CFG_TBL(&cfg, STRV("tbl")));
-	cfg_add_var(&cfg, tbl, CFG_STR(&cfg, STRV("str"), STRV("str")));
-	cfg_add_var(&cfg, tbl, CFG_INT(&cfg, STRV("int"), 1));
-	cfg_add_var(&cfg, tbl, CFG_ARR(&cfg, STRV("arr")));
-	cfg_add_var(&cfg, tbl, CFG_OBJ(&cfg, STRV("obj")));
+	cfg_root(&cfg, &root);
+	cfg_tbl(&cfg, STRV("tbl"), &tbl);
+	cfg_add_var(&cfg, root, tbl);
+	cfg_str(&cfg, STRV("str"), STRV("str"), &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_int(&cfg, STRV("int"), 1, &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_arr(&cfg, STRV("arr"), &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_obj(&cfg, STRV("obj"), &var);
+	cfg_add_var(&cfg, tbl, var);
 
-	char buf[1024] = {0};
+	char buf[64] = {0};
 	cfg_print(&cfg, root, DST_BUF(buf));
-
 	EXPECT_STR(buf,
 		   "[tbl]\n"
 		   "str = \"str\"\n"
@@ -564,6 +644,7 @@ TEST(cfg_print_tbl)
 		   "obj = {}\n");
 
 	cfg_free(&cfg);
+
 	END;
 }
 
@@ -572,23 +653,25 @@ TEST(cfg_print_tbl1)
 	START;
 
 	cfg_t cfg = {0};
-
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
-	cfg_add_var(&cfg, root, CFG_INT(&cfg, STRV("int"), 1));
+	cfg_var_t root, var;
 
-	cfg_add_var(&cfg, root, CFG_TBL(&cfg, STRV("tbl")));
+	cfg_root(&cfg, &root);
+	cfg_int(&cfg, STRV("int"), 1, &var);
+	cfg_add_var(&cfg, root, var);
+	cfg_tbl(&cfg, STRV("tbl"), &var);
+	cfg_add_var(&cfg, root, var);
 
-	char buf[1024] = {0};
+	char buf[32] = {0};
 	cfg_print(&cfg, root, DST_BUF(buf));
-
 	EXPECT_STR(buf,
 		   "int = 1\n"
 		   "\n"
 		   "[tbl]\n");
 
 	cfg_free(&cfg);
+
 	END;
 }
 
@@ -597,22 +680,27 @@ TEST(cfg_print_tbl2)
 	START;
 
 	cfg_t cfg = {0};
-
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
+	cfg_var_t root, tbl, var;
 
-	cfg_var_t tbl = cfg_add_var(&cfg, root, CFG_TBL(&cfg, STRV("tbl")));
-	cfg_add_var(&cfg, tbl, CFG_STR(&cfg, STRV("str"), STRV("str")));
-	cfg_add_var(&cfg, tbl, CFG_INT(&cfg, STRV("int"), 1));
-	cfg_add_var(&cfg, tbl, CFG_ARR(&cfg, STRV("arr")));
-	cfg_add_var(&cfg, tbl, CFG_OBJ(&cfg, STRV("obj")));
+	cfg_root(&cfg, &root);
+	cfg_tbl(&cfg, STRV("tbl"), &tbl);
+	cfg_add_var(&cfg, root, tbl);
+	cfg_str(&cfg, STRV("str"), STRV("str"), &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_int(&cfg, STRV("int"), 1, &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_arr(&cfg, STRV("arr"), &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_obj(&cfg, STRV("obj"), &var);
+	cfg_add_var(&cfg, tbl, var);
 
-	cfg_add_var(&cfg, root, CFG_TBL(&cfg, STRV("tbll")));
+	cfg_tbl(&cfg, STRV("tbll"), &var);
+	cfg_add_var(&cfg, root, var);
 
-	char buf[1024] = {0};
+	char buf[64] = {0};
 	cfg_print(&cfg, root, DST_BUF(buf));
-
 	EXPECT_STR(buf,
 		   "[tbl]\n"
 		   "str = \"str\"\n"
@@ -623,6 +711,7 @@ TEST(cfg_print_tbl2)
 		   "[tbll]\n");
 
 	cfg_free(&cfg);
+
 	END;
 }
 
@@ -631,17 +720,18 @@ TEST(cfg_print_root_str)
 	START;
 
 	cfg_t cfg = {0};
-
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t str = CFG_STR(&cfg, STRV("str"), STRV("val"));
+	cfg_var_t str;
+
+	cfg_str(&cfg, STRV("str"), STRV("val"), &str);
 
 	char buf[1024] = {0};
 	cfg_print(&cfg, str, DST_BUF(buf));
-
 	EXPECT_STR(buf, "\"val\"");
 
 	cfg_free(&cfg);
+
 	END;
 }
 
@@ -650,26 +740,33 @@ TEST(cfg_print_root_arr)
 	START;
 
 	cfg_t cfg = {0};
-
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t arr = CFG_ARR(&cfg, STRV("arr"));
+	cfg_var_t arr, var, obj;
 
-	cfg_add_var(&cfg, arr, CFG_STR(&cfg, STRV_NULL, STRV("str")));
-	cfg_add_var(&cfg, arr, CFG_INT(&cfg, STRV_NULL, 1));
-	cfg_add_var(&cfg, arr, CFG_ARR(&cfg, STRV_NULL));
-	cfg_add_var(&cfg, arr, CFG_OBJ(&cfg, STRV_NULL));
+	cfg_arr(&cfg, STRV("arr"), &arr);
+	cfg_str(&cfg, STRV_NULL, STRV("str"), &var);
+	cfg_add_var(&cfg, arr, var);
+	cfg_int(&cfg, STRV_NULL, 1, &var);
+	cfg_add_var(&cfg, arr, var);
+	cfg_arr(&cfg, STRV_NULL, &var);
+	cfg_add_var(&cfg, arr, var);
+	cfg_obj(&cfg, STRV_NULL, &var);
+	cfg_add_var(&cfg, arr, var);
 
-	cfg_var_t obj = cfg_add_var(&cfg, arr, CFG_OBJ(&cfg, STRV_NULL));
-	cfg_add_var(&cfg, obj, CFG_STR(&cfg, STRV("str"), STRV("str")));
-	cfg_add_var(&cfg, obj, CFG_INT(&cfg, STRV("int"), 1));
+	cfg_obj(&cfg, STRV_NULL, &obj);
+	cfg_add_var(&cfg, arr, obj);
+	cfg_str(&cfg, STRV("str"), STRV("str"), &var);
+	cfg_add_var(&cfg, obj, var);
+	cfg_int(&cfg, STRV("int"), 1, &var);
+	cfg_add_var(&cfg, obj, var);
 
 	char buf[1024] = {0};
 	cfg_print(&cfg, arr, DST_BUF(buf));
-
 	EXPECT_STR(buf, "[\"str\", 1, [], {}, {str = \"str\", int = 1}]");
 
 	cfg_free(&cfg);
+
 	END;
 }
 
@@ -678,19 +775,22 @@ TEST(cfg_print_root_tbl)
 	START;
 
 	cfg_t cfg = {0};
-
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t tbl = CFG_TBL(&cfg, STRV("tbl"));
+	cfg_var_t tbl, var;
 
-	cfg_add_var(&cfg, tbl, CFG_STR(&cfg, STRV("str"), STRV("str")));
-	cfg_add_var(&cfg, tbl, CFG_INT(&cfg, STRV("int"), 1));
-	cfg_add_var(&cfg, tbl, CFG_ARR(&cfg, STRV("arr")));
-	cfg_add_var(&cfg, tbl, CFG_OBJ(&cfg, STRV("obj")));
+	cfg_tbl(&cfg, STRV("tbl"), &tbl);
+	cfg_str(&cfg, STRV("str"), STRV("str"), &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_int(&cfg, STRV("int"), 1, &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_arr(&cfg, STRV("arr"), &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_obj(&cfg, STRV("obj"), &var);
+	cfg_add_var(&cfg, tbl, var);
 
 	char buf[1024] = {0};
 	cfg_print(&cfg, tbl, DST_BUF(buf));
-
 	EXPECT_STR(buf,
 		   "str = \"str\"\n"
 		   "int = 1\n"
@@ -698,6 +798,7 @@ TEST(cfg_print_root_tbl)
 		   "obj = {}\n");
 
 	cfg_free(&cfg);
+
 	END;
 }
 
@@ -706,12 +807,13 @@ STEST(cfg)
 	SSTART;
 
 	RUN(cfg_init_free);
-	RUN(cfg_var_init);
-	RUN(cfg_var_init_lit);
-	RUN(cfg_var_init_str);
-	RUN(cfg_var_init_int);
-	RUN(cfg_var_init_arr);
-	RUN(cfg_var_init_tbl);
+	RUN(cfg_root);
+	RUN(cfg_lit);
+	RUN(cfg_str);
+	RUN(cfg_int);
+	RUN(cfg_arr);
+	RUN(cfg_obj);
+	RUN(cfg_tbl);
 	RUN(cfg_add_var);
 	RUN(cfg_get_var);
 	RUN(cfg_get_var_not_found);

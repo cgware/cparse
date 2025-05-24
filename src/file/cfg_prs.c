@@ -86,22 +86,19 @@ static cfg_var_t cfg_parse_value(const cfg_prs_t *cfg_prs, eprs_t *eprs, strv_t 
 		strv_t val_str = lex_get_tok_val(eprs->lex, val);
 		int val_int;
 		strv_to_int(val_str, &val_int);
-
-		ret = CFG_INT(cfg, key, val_int);
+		cfg_int(cfg, key, val_int, &ret);
 	} else if (eprs_get_rule(eprs, value, cfg_prs->str, &node) == 0) {
 		tok_t val = {0};
 		eprs_get_str(eprs, node, &val);
-
-		ret = CFG_STR(cfg, key, lex_get_tok_val(eprs->lex, val));
+		cfg_str(cfg, key, lex_get_tok_val(eprs->lex, val), &ret);
 	} else if (eprs_get_rule(eprs, value, cfg_prs->lit, &node) == 0) {
 		tok_t val = {0};
 		eprs_get_str(eprs, node, &val);
-
-		ret = CFG_LIT(cfg, key, lex_get_tok_val(eprs->lex, val));
+		cfg_lit(cfg, key, lex_get_tok_val(eprs->lex, val), &ret);
 	} else if (eprs_get_rule(eprs, value, cfg_prs->arr, &node) == 0) {
 		eprs_node_t child;
 		void *data;
-		ret = CFG_ARR(cfg, key);
+		cfg_arr(cfg, key, &ret);
 		eprs_node_foreach(&eprs->nodes, node, child, data)
 		{
 			eprs_node_t val;
@@ -114,7 +111,7 @@ static cfg_var_t cfg_parse_value(const cfg_prs_t *cfg_prs, eprs_t *eprs, strv_t 
 	} else if (eprs_get_rule(eprs, value, cfg_prs->obj, &node) == 0) {
 		eprs_node_t child;
 		void *data;
-		ret = CFG_OBJ(cfg, key);
+		cfg_obj(cfg, key, &ret);
 		eprs_node_foreach(&eprs->nodes, node, child, data)
 		{
 			eprs_node_t kv;
@@ -153,7 +150,8 @@ cfg_var_t cfg_parse_tbl(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t kv, 
 	tok_t key = {0};
 	eprs_get_str(eprs, prs_key, &key);
 
-	cfg_var_t tbl = CFG_TBL(cfg, lex_get_tok_val(eprs->lex, key));
+	cfg_var_t tbl;
+	cfg_tbl(cfg, lex_get_tok_val(eprs->lex, key), &tbl);
 
 	eprs_node_t prs_ent;
 	eprs_get_rule(eprs, kv, cfg_prs->ent, &prs_ent);
@@ -185,7 +183,8 @@ void cfg_parse_ent(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t ent, cfg_
 
 cfg_var_t cfg_parse_file(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t file, cfg_t *cfg)
 {
-	cfg_var_t root = CFG_ROOT(cfg);
+	cfg_var_t root;
+	cfg_root(cfg, &root);
 
 	eprs_node_t prs_cfg;
 	eprs_get_rule(eprs, file, cfg_prs->cfg, &prs_cfg);
