@@ -9,7 +9,7 @@ estx_t *estx_init(estx_t *estx, uint nodes_cap, alloc_t alloc)
 	}
 
 	if (list_init(&estx->nodes, nodes_cap, sizeof(estx_node_data_t), alloc) == NULL ||
-	    buf_init(&estx->strs, nodes_cap * 8, alloc) == NULL) {
+	    strvbuf_init(&estx->strs, nodes_cap, 8, alloc) == NULL) {
 		log_error("cparse", "estx", NULL, "failed to initialize nodes");
 		return NULL;
 	}
@@ -24,7 +24,7 @@ void estx_free(estx_t *estx)
 	}
 
 	list_free(&estx->nodes);
-	buf_free(&estx->strs);
+	strvbuf_free(&estx->strs);
 }
 
 int estx_rule(estx_t *estx, strv_t name, estx_node_t *rule)
@@ -33,17 +33,16 @@ int estx_rule(estx_t *estx, strv_t name, estx_node_t *rule)
 		return 1;
 	}
 
-	loc_t rule_name = {.len = name.len};
-
+	size_t rule_name;
 	size_t used = estx->strs.used;
-	if (buf_add(&estx->strs, name.data, name.len, &rule_name.off)) {
+	if (strvbuf_add(&estx->strs, name, &rule_name)) {
 		log_error("cparse", "estx", NULL, "failed to add rule name");
 		return 1;
 	}
 
 	estx_node_data_t *data = list_node(&estx->nodes, rule);
 	if (data == NULL) {
-		buf_reset(&estx->strs, used);
+		strvbuf_reset(&estx->strs, used);
 		log_error("cparse", "stx", NULL, "failed to add rule");
 		return 1;
 	}
@@ -122,17 +121,16 @@ int estx_term_lit(estx_t *estx, strv_t str, estx_node_occ_t occ, estx_node_t *te
 		return 1;
 	}
 
-	loc_t lit = {.len = str.len};
-
+	size_t lit;
 	size_t used = estx->strs.used;
-	if (buf_add(&estx->strs, str.data, str.len, &lit.off)) {
+	if (strvbuf_add(&estx->strs, str, &lit)) {
 		log_error("cparse", "estx", NULL, "failed to add literal string");
 		return 1;
 	}
 
 	estx_node_data_t *data = list_node(&estx->nodes, term);
 	if (data == NULL) {
-		buf_reset(&estx->strs, used);
+		strvbuf_reset(&estx->strs, used);
 		log_error("cparse", "estx", NULL, "failed to create literal term");
 		return 1;
 	}
@@ -237,7 +235,7 @@ int estx_find_rule(estx_t *estx, strv_t name, estx_node_t *rule)
 			continue;
 		}
 
-		if (strv_eq(STRVN(buf_get(&estx->strs, node->val.name.off), node->val.name.len), name)) {
+		if (strv_eq(strvbuf_get(&estx->strs, node->val.name), name)) {
 			*rule = i;
 			return 0;
 		}
@@ -267,7 +265,7 @@ strv_t estx_data_lit(const estx_t *estx, const estx_node_data_t *data)
 		return STRV_NULL;
 	}
 
-	return STRVN(buf_get(&estx->strs, data->val.lit.off), data->val.lit.len);
+	return strvbuf_get(&estx->strs, data->val.lit);
 }
 
 int estx_add_term(estx_t *estx, estx_node_t node, estx_node_t term)
@@ -314,7 +312,7 @@ static size_t estx_term_print(const estx_t *estx, const estx_node_data_t *term, 
 		if (rule == NULL) {
 			break;
 		}
-		dst.off += dputs(dst, STRVN(buf_get(&estx->strs, rule->val.name.off), rule->val.name.len));
+		dst.off += dputs(dst, strvbuf_get(&estx->strs, rule->val.name));
 		dst.off += estx_term_occ_print(term->occ, dst);
 		break;
 	}
@@ -397,7 +395,7 @@ size_t estx_print(const estx_t *estx, dst_t dst)
 			continue;
 		}
 
-		strv_t name = STRVN(buf_get(&estx->strs, node->val.name.off), node->val.name.len);
+		strv_t name = strvbuf_get(&estx->strs, node->val.name);
 		dst.off += dputf(dst, "%.*s = ", name.len, name.data);
 
 		uint term = i;
@@ -448,7 +446,7 @@ static size_t estx_node_print_tree(const estx_t *estx, estx_node_t rule, dst_t d
 
 		switch (term->type) {
 		case ESTX_RULE: {
-			strv_t name = STRVN(buf_get(&estx->strs, term->val.name.off), term->val.name.len);
+			strv_t name = strvbuf_get(&estx->strs, term->val.name);
 			dst.off += dputf(dst, "<%.*s>\n", name.len, name.data);
 			if (list_get_next(&estx->nodes, stack[top - 1], &stack[top - 1]) == NULL) {
 				top--;
@@ -461,7 +459,7 @@ static size_t estx_node_print_tree(const estx_t *estx, estx_node_t rule, dst_t d
 				top--;
 				break;
 			}
-			strv_t name = STRVN(buf_get(&estx->strs, node->val.name.off), node->val.name.len);
+			strv_t name = strvbuf_get(&estx->strs, node->val.name);
 			dst.off += print_header(estx, stack, state, top, dst);
 			dst.off += dputf(dst, "<%.*s>", name.len, name.data);
 			dst.off += estx_term_occ_print(term->occ, dst);

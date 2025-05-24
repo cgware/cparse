@@ -68,7 +68,7 @@ TEST(stx_rule_oom)
 
 	EXPECT_EQ(stx_rule(&stx, STRV("rule"), &rule), 0);
 	EXPECT_EQ(rule, 0);
-	EXPECT_EQ(stx.strs.used, 4);
+	EXPECT_EQ(stx.strs.used, sizeof(size_t) + 4);
 
 	stx_free(&stx);
 
@@ -162,7 +162,7 @@ TEST(stx_term_lit_oom)
 
 	EXPECT_EQ(stx_term_lit(&stx, STRV("lit"), &lit), 0);
 	EXPECT_EQ(lit, 0);
-	EXPECT_EQ(stx.strs.used, 3);
+	EXPECT_EQ(stx.strs.used, sizeof(size_t) + 3);
 
 	stx_free(&stx);
 

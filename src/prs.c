@@ -410,7 +410,7 @@ static size_t print_nodes(void *data, dst_t dst, const void *priv)
 	switch (node->type) {
 	case PRS_NODE_RULE: {
 		stx_node_data_t *rule = stx_get_node(prs->stx, node->val.rule);
-		strv_t name	      = STRVN(buf_get(&prs->stx->strs, rule->val.name.off), rule->val.name.len);
+		strv_t name	      = strvbuf_get(&prs->stx->strs, rule->val.name);
 		dst.off += dputf(dst, "%.*s\n", name.len, name.data);
 		break;
 	}

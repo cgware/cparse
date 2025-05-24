@@ -1,9 +1,8 @@
 #ifndef ESTX_H
 #define ESTX_H
 
-#include "buf.h"
 #include "list.h"
-#include "loc.h"
+#include "strvbuf.h"
 #include "tok.h"
 
 typedef uint estx_node_t;
@@ -29,17 +28,17 @@ typedef struct estx_term_data_s {
 	estx_node_type_t type;
 	estx_node_occ_t occ;
 	union {
-		loc_t name;
+		size_t name;
 		estx_node_t rule;
 		tok_type_t tok;
-		loc_t lit;
+		size_t lit;
 		estx_node_t terms;
 	} val;
 } estx_node_data_t;
 
 typedef struct estx_s {
 	list_t nodes;
-	buf_t strs;
+	strvbuf_t strs;
 } estx_t;
 
 estx_t *estx_init(estx_t *estx, uint nodes_cap, alloc_t alloc);

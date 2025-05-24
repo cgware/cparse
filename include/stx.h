@@ -1,9 +1,8 @@
 #ifndef STX_H
 #define STX_H
 
-#include "buf.h"
 #include "list.h"
-#include "loc.h"
+#include "strvbuf.h"
 #include "tok.h"
 
 typedef list_node_t stx_node_t;
@@ -20,10 +19,10 @@ typedef enum stx_node_type_e {
 typedef struct stx_node_data_s {
 	stx_node_type_t type;
 	union {
-		loc_t name;
+		size_t name;
 		stx_node_t rule;
 		tok_type_t tok;
-		loc_t lit;
+		size_t lit;
 		struct {
 			stx_node_t l;
 			stx_node_t r;
@@ -33,7 +32,7 @@ typedef struct stx_node_data_s {
 
 typedef struct stx_s {
 	list_t nodes;
-	buf_t strs;
+	strvbuf_t strs;
 } stx_t;
 
 stx_t *stx_init(stx_t *stx, uint nodes_cap, alloc_t alloc);

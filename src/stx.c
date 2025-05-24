@@ -9,7 +9,7 @@ stx_t *stx_init(stx_t *stx, uint nodes_cap, alloc_t alloc)
 	}
 
 	if (list_init(&stx->nodes, nodes_cap, sizeof(stx_node_data_t), alloc) == NULL ||
-	    buf_init(&stx->strs, nodes_cap * 8, alloc) == NULL) {
+	    strvbuf_init(&stx->strs, nodes_cap, 8, alloc) == NULL) {
 		log_error("cparse", "stx", NULL, "failed to initialize nodes");
 		return NULL;
 	}
@@ -24,7 +24,7 @@ void stx_free(stx_t *stx)
 	}
 
 	list_free(&stx->nodes);
-	buf_free(&stx->strs);
+	strvbuf_free(&stx->strs);
 }
 
 int stx_rule(stx_t *stx, strv_t name, stx_node_t *rule)
@@ -33,10 +33,9 @@ int stx_rule(stx_t *stx, strv_t name, stx_node_t *rule)
 		return 1;
 	}
 
-	loc_t rule_name = {.len = name.len};
-
+	size_t rule_name;
 	size_t used = stx->strs.used;
-	if (buf_add(&stx->strs, name.data, name.len, &rule_name.off)) {
+	if (strvbuf_add(&stx->strs, name, &rule_name)) {
 		log_error("cparse", "stx", NULL, "failed to add rule name");
 		return 1;
 	}
@@ -108,10 +107,9 @@ int stx_term_lit(stx_t *stx, strv_t str, stx_node_t *term)
 		return 1;
 	}
 
-	loc_t lit = {.len = str.len};
-
+	size_t lit;
 	size_t used = stx->strs.used;
-	if (buf_add(&stx->strs, str.data, str.len, &lit.off)) {
+	if (strvbuf_add(&stx->strs, str, &lit)) {
 		log_error("cparse", "stx", NULL, "failed to add literal string");
 		return 1;
 	}
@@ -175,7 +173,7 @@ int stx_find_rule(stx_t *stx, strv_t name, stx_node_t *rule)
 			continue;
 		}
 
-		if (strv_eq(STRVN(buf_get(&stx->strs, node->val.name.off), node->val.name.len), name)) {
+		if (strv_eq(strvbuf_get(&stx->strs, node->val.name), name)) {
 			*rule = i;
 			return 0;
 		}
@@ -205,7 +203,7 @@ strv_t stx_data_lit(const stx_t *stx, const stx_node_data_t *data)
 		return STRV_NULL;
 	}
 
-	return STRVN(buf_get(&stx->strs, data->val.lit.off), data->val.lit.len);
+	return strvbuf_get(&stx->strs, data->val.lit);
 }
 
 int stx_add_term(stx_t *stx, stx_node_t node, stx_node_t term)
@@ -326,7 +324,7 @@ static size_t stx_terms_print(const stx_t *stx, stx_node_t terms, dst_t dst)
 			if (rule == NULL) {
 				break;
 			}
-			strv_t name = STRVN(buf_get(&stx->strs, rule->val.name.off), rule->val.name.len);
+			strv_t name = strvbuf_get(&stx->strs, rule->val.name);
 			dst.off += dputf(dst, " <%.*s>", name.len, name.data);
 			break;
 		}
@@ -372,7 +370,7 @@ size_t stx_print(const stx_t *stx, dst_t dst)
 			continue;
 		}
 
-		strv_t name = STRVN(buf_get(&stx->strs, node->val.name.off), node->val.name.len);
+		strv_t name = strvbuf_get(&stx->strs, node->val.name);
 		dst.off += dputf(dst, "<%.*s> ::=", name.len, name.data);
 		dst.off += stx_terms_print(stx, i, dst);
 		dst.off += dputs(dst, STRV("\n"));
@@ -441,7 +439,7 @@ static size_t stx_node_print_tree(const stx_t *stx, stx_node_t rule, dst_t dst)
 
 		switch (term->type) {
 		case STX_RULE: {
-			strv_t name = STRVN(buf_get(&stx->strs, term->val.name.off), term->val.name.len);
+			strv_t name = strvbuf_get(&stx->strs, term->val.name);
 			dst.off += dputf(dst, "<%.*s>\n", name.len, name.data);
 			if (list_get_next(&stx->nodes, stack[top - 1], &stack[top - 1]) == NULL) {
 				top--;
@@ -454,7 +452,7 @@ static size_t stx_node_print_tree(const stx_t *stx, stx_node_t rule, dst_t dst)
 				top--;
 				break;
 			}
-			strv_t name = STRVN(buf_get(&stx->strs, node->val.name.off), node->val.name.len);
+			strv_t name = strvbuf_get(&stx->strs, node->val.name);
 			dst.off += print_header(stx, stack, state, top, dst);
 			dst.off += dputf(dst, "<%.*s>\n", name.len, name.data);
 			if (list_get_next(&stx->nodes, stack[top - 1], &stack[top - 1]) == NULL) {
