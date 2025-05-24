@@ -415,23 +415,6 @@ static size_t print_header(const estx_t *estx, estx_node_t *stack, int *state, i
 {
 	(void)state;
 	size_t off = dst.off;
-	/*estx_node_data_t *term;
-
-	for (int i = 0; i < top - 1; i++) {
-		// if 'or' column
-		switch ((term = estx_get_node(estx, stack[i]))->type) {
-		case ESTX_TERM_ALT:
-		case ESTX_TERM_CON:
-		case ESTX_TERM_GROUP: {
-			strv_t str = STRV("  ");
-			dst.off += dputs(dst, str);
-		}
-		default: break;
-		}
-	}
-
-	// └─ if last, ├─ otherwise
-	dst.off += dputs(dst, list_get_next(&estx->nodes, stack[top - 1], NULL) ? STRV("├─") : STRV("└─"));*/
 
 	for (int i = 0; i < top - 1; i++) {
 		dst.off += dputs(dst, list_get_next(&estx->nodes, stack[i], NULL) ? STRV("│ ") : STRV("  "));

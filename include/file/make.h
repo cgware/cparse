@@ -5,7 +5,7 @@
 #include "str.h"
 #include "strbuf.h"
 
-#define MAKE_END ((uint)-1)
+#define MAKE_END ((uint) - 1)
 
 typedef list_node_t make_act_t;
 
@@ -50,16 +50,10 @@ typedef struct make_s {
 	list_t arrs;
 	list_t acts;
 	list_t targets;
-	buf_t strs;
+	strvbuf_t strs;
 	make_act_t root;
+	size_t strs_used;
 } make_t;
-
-typedef struct make_vars_s {
-	strbuf_t names;
-	arr_t flags;
-	strbuf_t expanded;
-	strbuf_t resolved;
-} make_vars_t;
 
 make_t *make_init(make_t *make, uint arrs_cap, uint acts_cap, uint targets_cap, uint strs_cap, alloc_t alloc);
 void make_free(make_t *make);
@@ -90,15 +84,12 @@ int make_ext_set_val(make_t *make, make_act_t var, make_create_str_t val);
 
 int make_rule_get_target(const make_t *make, make_create_rule_t target, make_act_t *act);
 
-make_vars_t *make_vars_init(const make_t *make, make_vars_t *vars, alloc_t alloc);
-void make_vars_free(make_vars_t *vars);
+int make_eval(make_t *make, str_t *buf);
 
-int make_vars_eval(const make_t *make, make_vars_t *vars);
+strv_t make_get_expanded(const make_t *make, make_act_t act);
+strv_t make_get_resolved(const make_t *vars, make_act_t act, str_t *buf);
 
-strv_t make_vars_get_expanded(const make_vars_t *make, uint id);
-strv_t make_vars_get_resolved(const make_vars_t *vars, uint id);
-
-size_t make_vars_print(const make_vars_t *vars, dst_t dst);
+size_t make_print_vars(const make_t *make, dst_t dst);
 
 size_t make_inc_print(const make_t *make, make_act_t inc, dst_t dst);
 size_t make_print(const make_t *make, dst_t dst);
