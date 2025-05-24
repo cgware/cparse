@@ -5,8 +5,6 @@
 #include "str.h"
 #include "strbuf.h"
 
-#define MAKE_END ((uint) - 1)
-
 typedef list_node_t make_act_t;
 
 typedef enum make_var_type_e {
@@ -51,7 +49,6 @@ typedef struct make_s {
 	list_t acts;
 	list_t targets;
 	strvbuf_t strs;
-	make_act_t root;
 	size_t strs_used;
 } make_t;
 
@@ -70,7 +67,7 @@ int make_def(make_t *make, strv_t name, make_act_t *act);
 int make_eval_def(make_t *make, make_act_t def, make_act_t *act);
 int make_inc(make_t *make, strv_t path, make_act_t *act);
 
-int make_add_act(make_t *make, make_act_t act);
+int make_add_act(make_t *make, make_act_t act, make_act_t next);
 int make_var_add_val(make_t *make, make_act_t var, make_create_str_t val);
 int make_rule_add_depend(make_t *make, make_act_t rule, make_create_rule_t depend);
 int make_rule_add_act(make_t *make, make_act_t rule, make_act_t act);
@@ -84,7 +81,7 @@ int make_ext_set_val(make_t *make, make_act_t var, make_create_str_t val);
 
 int make_rule_get_target(const make_t *make, make_create_rule_t target, make_act_t *act);
 
-int make_eval(make_t *make, str_t *buf);
+int make_eval(make_t *make, make_act_t acts, str_t *buf);
 
 strv_t make_get_expanded(const make_t *make, make_act_t act);
 strv_t make_get_resolved(const make_t *vars, make_act_t act, str_t *buf);
@@ -92,7 +89,7 @@ strv_t make_get_resolved(const make_t *vars, make_act_t act, str_t *buf);
 size_t make_print_vars(const make_t *make, dst_t dst);
 
 size_t make_inc_print(const make_t *make, make_act_t inc, dst_t dst);
-size_t make_print(const make_t *make, dst_t dst);
+size_t make_print(const make_t *make, make_act_t acts, dst_t dst);
 
 size_t make_dbg(const make_t *make, dst_t dst);
 

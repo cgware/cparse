@@ -16,6 +16,7 @@ typedef struct make_var_data_s {
 	} flags;
 	byte ext : 1;
 	byte def : 1;
+	byte has_values : 1;
 } make_var_data_t;
 
 typedef struct make_str_data_s {
@@ -37,6 +38,8 @@ typedef struct make_rule_data_s {
 	list_node_t depends;
 	make_act_t acts;
 	byte file : 1;
+	byte has_depends : 1;
+	byte has_acts : 1;
 } make_rule_data_t;
 
 typedef struct make_cmd_data_s {
@@ -54,11 +57,14 @@ typedef struct make_if_data_s {
 	size_t rresolved;
 	make_act_t true_acts;
 	make_act_t false_acts;
+	byte has_false_acts : 1;
+	byte has_true_acts : 1;
 } make_if_data_t;
 
 typedef struct make_def_data_s {
 	size_t name;
 	make_act_t acts;
+	byte has_acts : 1;
 } make_def_data_t;
 
 typedef struct make_eval_def_data_s {
@@ -69,6 +75,7 @@ typedef struct make_eval_def_data_s {
 typedef struct make_inc_data_s {
 	size_t path;
 	make_act_t acts;
+	byte has_acts : 1;
 } make_inc_data_t;
 
 typedef enum make_act_type_e {
