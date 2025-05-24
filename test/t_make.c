@@ -2890,7 +2890,7 @@ TEST(make_print_rule_acts)
 		   "endif\n"
 		   "\n");
 
-	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 228);
+	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 248);
 	EXPECT_STR(buf,
 		   "RULE\n"
 		   "    TARGET: rule\n"
@@ -2898,22 +2898,22 @@ TEST(make_print_rule_acts)
 		   "CMD\n"
 		   "    ARG1: cmd1\n"
 		   "    ARG2: \n"
-		   "    TYPE: 0\n"
+		   "    TYPE: NORMAL\n"
 		   "CMD\n"
 		   "    ARG1: cmd2\n"
 		   "    ARG2: \n"
-		   "    TYPE: 0\n"
+		   "    TYPE: NORMAL\n"
 		   "IF\n"
 		   "    L: 'L'\n"
 		   "    R: 'R'\n"
 		   "CMD\n"
 		   "    ARG1: cmd3\n"
 		   "    ARG2: \n"
-		   "    TYPE: 0\n"
+		   "    TYPE: NORMAL\n"
 		   "CMD\n"
 		   "    ARG1: cmd4\n"
 		   "    ARG2: \n"
-		   "    TYPE: 0\n");
+		   "    TYPE: NORMAL\n");
 	make_free(&make);
 
 	END;
@@ -2937,18 +2937,21 @@ TEST(make_print_cmd)
 	make_rule_add_act(&make, rule, act);
 	make_cmd(&make, MCMDERR(STRV("msg")), &act);
 	make_rule_add_act(&make, rule, act);
+	make_cmd(&make, (make_create_cmd_t){.type = 3, .arg1 = STRV("")}, &act);
+	make_rule_add_act(&make, rule, act);
 
 	char buf[256] = {0};
-	EXPECT_EQ(make_print(&make, rule, DST_BUF(buf)), 67);
+	EXPECT_EQ(make_print(&make, rule, DST_BUF(buf)), 69);
 	EXPECT_STR(buf,
 		   "rule:\n"
 		   "\tcmd\n"
 		   "\t@$(MAKE) -C dir\n"
 		   "\t@$(MAKE) -C dir action\n"
 		   "\t$(error msg)\n"
+		   "\t\n"
 		   "\n");
 
-	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 205);
+	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 248);
 
 	make_free(&make);
 
@@ -3261,7 +3264,7 @@ TEST(make_vars)
 		   "	@echo def             = $(def)           #V2\n"
 		   "\n");
 
-	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 3676);
+	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 3786);
 
 	str_t tmp = STRB(buf, 0);
 

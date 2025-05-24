@@ -1262,24 +1262,57 @@ size_t make_print_vars(const make_t *make, dst_t dst)
 	return off - dst.off;
 }
 
-const char *make_var_type_to_str(make_var_type_t type)
+static strv_t make_var_type_to_str(make_var_type_t type)
 {
 	switch (type) {
-	case MAKE_VAR_INST: return ":=";
-	case MAKE_VAR_REF: return "=";
-	// case MAKE_VAR_COND: return "?=";
-	case MAKE_VAR_APP: return "+=";
-	default: return NULL;
+	case MAKE_VAR_INST: return STRV(" :=");
+	case MAKE_VAR_REF: return STRV(" =");
+	// case MAKE_VAR_COND: return STRV(" ?=");
+	case MAKE_VAR_APP: return STRV(" +=");
+	default: return STRV_NULL;
 	}
 }
 
-static size_t make_rule_target_print(const make_t *make, const make_rule_target_data_t *target, dst_t dst, str_t *buf)
+static strv_t make_cmd_type_to_str(make_cmd_type_t type)
+{
+	switch (type) {
+	case MAKE_CMD_NORMAL: return STRV("NORMAL");
+	case MAKE_CMD_CHILD: return STRV("CHILD");
+	case MAKE_CMD_ERR: return STRV("ERROR");
+	default: return STRV_NULL;
+	}
+}
+
+static int make_str_print(const make_t *make, const make_str_data_t *str, dst_t dst)
+{
+	int off = dst.off;
+
+	switch (str->type) {
+	case MAKE_STR_VAR: {
+		make_var_data_t *data = make_act_get_type(make, str->val.var, MAKE_ACT_VAR);
+		if (data == NULL) {
+			log_warn("cparse", "make", NULL, "variable not found");
+			return 0;
+		}
+		dst.off += dputs(dst, data->def ? STRV("$$(") : STRV("$("));
+		dst.off += dputs(dst, strvbuf_get(&make->strs, data->name));
+		dst.off += dputs(dst, STRV(")"));
+		break;
+	}
+	default: {
+		dst.off += dputs(dst, strvbuf_get(&make->strs, str->val.val));
+		break;
+	}
+	}
+
+	return dst.off - off;
+}
+
+static size_t make_rule_target_print(const make_t *make, const make_rule_target_data_t *target, dst_t dst)
 {
 	size_t off = dst.off;
 
-	buf->len = 0;
-	make_str_expand(make, &target->target, buf);
-	dst.off += dputs(dst, STRVS(*buf));
+	dst.off += make_str_print(make, &target->target, dst);
 	if (target->has_action) {
 		dst.off += dputs(dst, strvbuf_get(&make->strs, target->action));
 	}
@@ -1287,7 +1320,7 @@ static size_t make_rule_target_print(const make_t *make, const make_rule_target_
 	return dst.off - off;
 }
 
-static size_t make_acts_print(const make_t *make, make_act_t acts, dst_t dst, int rule, str_t *buf)
+static size_t make_acts_print(const make_t *make, make_act_t acts, dst_t dst, int rule)
 {
 	size_t off = dst.off;
 	const make_act_data_t *act;
@@ -1310,22 +1343,21 @@ static size_t make_acts_print(const make_t *make, make_act_t acts, dst_t dst, in
 				break;
 			}
 
-			const char *var_type_str = make_var_type_to_str(act->val.var.type);
-			if (var_type_str == NULL) {
+			strv_t var_type_str = make_var_type_to_str(act->val.var.type);
+			if (var_type_str.data == NULL) {
 				break;
 			}
 
-			strv_t name = strvbuf_get(&make->strs, act->val.var.name);
-			dst.off += dputf(dst, "%.*s %s", name.len, name.data, var_type_str);
+			dst.off += dputs(dst, strvbuf_get(&make->strs, act->val.var.name));
+			dst.off += dputs(dst, var_type_str);
 
 			if (act->val.var.has_values) {
 				const make_str_data_t *value;
 				list_node_t j = act->val.var.values;
 				list_foreach(&make->arrs, j, value)
 				{
-					buf->len = 0;
-					make_str_expand(make, value, buf);
-					dst.off += dputf(dst, " %.*s", buf->len, buf->data);
+					dst.off += dputs(dst, STRV(" "));
+					dst.off += make_str_print(make, value, dst);
 				}
 			}
 
@@ -1333,7 +1365,7 @@ static size_t make_acts_print(const make_t *make, make_act_t acts, dst_t dst, in
 			break;
 		}
 		case MAKE_ACT_RULE: {
-			dst.off += make_rule_target_print(make, &act->val.rule.target, dst, buf);
+			dst.off += make_rule_target_print(make, &act->val.rule.target, dst);
 			dst.off += dputs(dst, STRV(":"));
 
 			if (act->val.rule.has_depends) {
@@ -1342,13 +1374,13 @@ static size_t make_acts_print(const make_t *make, make_act_t acts, dst_t dst, in
 				list_foreach(&make->targets, j, depend)
 				{
 					dst.off += dputs(dst, STRV(" "));
-					dst.off += make_rule_target_print(make, depend, dst, buf);
+					dst.off += make_rule_target_print(make, depend, dst);
 				}
 			}
 
 			dst.off += dputs(dst, STRV("\n"));
 			if (act->val.rule.has_acts) {
-				dst.off += make_acts_print(make, act->val.rule.acts, dst, 1, buf);
+				dst.off += make_acts_print(make, act->val.rule.acts, dst, 1);
 			}
 			dst.off += dputs(dst, STRV("\n"));
 			break;
@@ -1365,7 +1397,12 @@ static size_t make_acts_print(const make_t *make, make_act_t acts, dst_t dst, in
 			}
 			case MAKE_CMD_ERR: {
 				strv_t arg1 = strvbuf_get(&make->strs, act->val.cmd.arg[0]);
-				dst.off += dputf(dst, "%s$(error %.*s)", rule ? "\t" : "", arg1.len, arg1.data);
+				if (rule) {
+					dst.off += dputs(dst, STRV("\t"));
+				}
+				dst.off += dputs(dst, STRV("$(error "));
+				dst.off += dputs(dst, arg1);
+				dst.off += dputs(dst, STRV(")"));
 				break;
 			}
 			default: {
@@ -1380,33 +1417,30 @@ static size_t make_acts_print(const make_t *make, make_act_t acts, dst_t dst, in
 			break;
 		}
 		case MAKE_ACT_IF: {
-			buf->len = 0;
-			make_str_expand(make, &act->val.mif.l, buf);
-			dst.off += dputf(dst, "ifeq (%.*s", buf->len, buf->data);
-
-			buf->len = 0;
-			make_str_expand(make, &act->val.mif.r, buf);
-			dst.off += dputf(dst, ",%.*s", buf->len, buf->data);
-
+			dst.off += dputs(dst, STRV("ifeq ("));
+			dst.off += make_str_print(make, &act->val.mif.l, dst);
+			dst.off += dputs(dst, STRV(","));
+			dst.off += make_str_print(make, &act->val.mif.r, dst);
 			dst.off += dputs(dst, STRV(")\n"));
 
 			if (act->val.mif.has_true_acts) {
-				dst.off += make_acts_print(make, act->val.mif.true_acts, dst, rule, buf);
+				dst.off += make_acts_print(make, act->val.mif.true_acts, dst, rule);
 			}
 
 			if (act->val.mif.has_false_acts) {
 				dst.off += dputs(dst, STRV("else\n"));
-				dst.off += make_acts_print(make, act->val.mif.false_acts, dst, rule, buf);
+				dst.off += make_acts_print(make, act->val.mif.false_acts, dst, rule);
 			}
 
 			dst.off += dputs(dst, STRV("endif\n"));
 			break;
 		}
 		case MAKE_ACT_DEF: {
-			strv_t name = strvbuf_get(&make->strs, act->val.def.name);
-			dst.off += dputf(dst, "define %.*s\n", name.len, name.data);
+			dst.off += dputs(dst, STRV("define "));
+			dst.off += dputs(dst, strvbuf_get(&make->strs, act->val.def.name));
+			dst.off += dputs(dst, STRV("\n"));
 			if (act->val.def.has_acts) {
-				dst.off += make_acts_print(make, act->val.def.acts, dst, rule, buf);
+				dst.off += make_acts_print(make, act->val.def.acts, dst, rule);
 			}
 			dst.off += dputs(dst, STRV("endef\n"));
 			break;
@@ -1418,7 +1452,8 @@ static size_t make_acts_print(const make_t *make, make_act_t acts, dst_t dst, in
 			}
 
 			strv_t name = strvbuf_get(&make->strs, data->name);
-			dst.off += dputf(dst, "$(eval $(call %.*s", name.len, name.data);
+			dst.off += dputs(dst, STRV("$(eval $(call "));
+			dst.off += dputs(dst, name);
 
 			const make_str_data_t *value;
 			list_node_t j = act->val.eval_def.args;
@@ -1427,17 +1462,17 @@ static size_t make_acts_print(const make_t *make, make_act_t acts, dst_t dst, in
 				if (j == act->val.eval_def.args) {
 					continue;
 				}
-				buf->len = 0;
-				make_str_expand(make, value, buf);
-				dst.off += dputf(dst, ",%.*s", buf->len, buf->data);
+				dst.off += dputs(dst, STRV(","));
+				dst.off += make_str_print(make, value, dst);
 			}
 
 			dst.off += dputs(dst, STRV("))\n"));
 			break;
 		}
 		case MAKE_ACT_INCLUDE: {
-			strv_t path = strvbuf_get(&make->strs, act->val.inc.path);
-			dst.off += dputf(dst, "include %.*s\n", path.len, path.data);
+			dst.off += dputs(dst, STRV("include "));
+			dst.off += dputs(dst, strvbuf_get(&make->strs, act->val.inc.path));
+			dst.off += dputs(dst, STRV("\n"));
 			break;
 		}
 		}
@@ -1459,10 +1494,7 @@ size_t make_inc_print(const make_t *make, make_act_t inc, dst_t dst)
 		return 0;
 	}
 
-	str_t buf  = strz(16);
-	size_t ret = data->has_acts ? make_acts_print(make, data->acts, dst, 0, &buf) : 0;
-	str_free(&buf);
-	return ret;
+	return data->has_acts ? make_acts_print(make, data->acts, dst, 0) : 0;
 }
 
 size_t make_print(const make_t *make, make_act_t acts, dst_t dst)
@@ -1471,11 +1503,7 @@ size_t make_print(const make_t *make, make_act_t acts, dst_t dst)
 		return 0;
 	}
 
-	str_t buf  = strz(16);
-	size_t ret = make_acts_print(make, acts, dst, 0, &buf);
-	str_free(&buf);
-
-	return ret;
+	return make_acts_print(make, acts, dst, 0);
 }
 
 size_t make_dbg(const make_t *make, dst_t dst)
@@ -1483,8 +1511,6 @@ size_t make_dbg(const make_t *make, dst_t dst)
 	if (make == NULL) {
 		return 0;
 	}
-
-	str_t buf = strz(16);
 
 	size_t off = dst.off;
 	const make_act_data_t *act;
@@ -1497,14 +1523,16 @@ size_t make_dbg(const make_t *make, dst_t dst)
 			break;
 		}
 		case MAKE_ACT_VAR: {
-			strv_t name = strvbuf_get(&make->strs, act->val.var.name);
-			dst.off += dputf(dst,
-					 "VAR\n"
-					 "    NAME    : %.*s%s\n"
-					 "    VALUES  :\n",
-					 name.len,
-					 name.data,
-					 act->val.var.ext ? " (ext)" : "");
+			dst.off += dputs(dst,
+					 STRV("VAR\n"
+					      "    NAME    : "));
+			dst.off += dputs(dst, strvbuf_get(&make->strs, act->val.var.name));
+			if (act->val.var.ext) {
+				dst.off += dputs(dst, STRV(" (ext)"));
+			}
+			dst.off += dputs(dst,
+					 STRV("\n"
+					      "    VALUES  :\n"));
 
 			if (act->val.var.has_values) {
 				const make_str_data_t *value;
@@ -1516,9 +1544,9 @@ size_t make_dbg(const make_t *make, dst_t dst)
 						log_error("cparse", "make", NULL, "loop detected: %d", j);
 						break;
 					}
-					buf.len = 0;
-					make_str_expand(make, value, &buf);
-					dst.off += dputf(dst, "        %.*s\n", buf.len, buf.data);
+					dst.off += dputs(dst, STRV("        "));
+					dst.off += make_str_print(make, value, dst);
+					dst.off += dputs(dst, STRV("\n"));
 					first = 0;
 				}
 			}
@@ -1526,10 +1554,10 @@ size_t make_dbg(const make_t *make, dst_t dst)
 			break;
 		}
 		case MAKE_ACT_RULE: {
-			dst.off += dputf(dst,
-					 "RULE\n"
-					 "    TARGET: ");
-			dst.off += make_rule_target_print(make, &act->val.rule.target, dst, &buf);
+			dst.off += dputs(dst,
+					 STRV("RULE\n"
+					      "    TARGET: "));
+			dst.off += make_rule_target_print(make, &act->val.rule.target, dst);
 
 			dst.off += dputs(dst, STRV("\n    DEPENDS:\n"));
 			if (act->val.rule.has_depends) {
@@ -1543,7 +1571,7 @@ size_t make_dbg(const make_t *make, dst_t dst)
 						break;
 					}
 					dst.off += dputs(dst, STRV("        "));
-					dst.off += make_rule_target_print(make, depend, dst, &buf);
+					dst.off += make_rule_target_print(make, depend, dst);
 					dst.off += dputs(dst, STRV("\n"));
 					first = 0;
 				}
@@ -1551,40 +1579,42 @@ size_t make_dbg(const make_t *make, dst_t dst)
 			break;
 		}
 		case MAKE_ACT_CMD: {
-			strv_t arg1 = act->val.cmd.args > 0 ? strvbuf_get(&make->strs, act->val.cmd.arg[0]) : STRV("");
-			strv_t arg2 = act->val.cmd.args > 1 ? strvbuf_get(&make->strs, act->val.cmd.arg[1]) : STRV("");
-			dst.off += dputf(dst,
-					 "CMD\n"
-					 "    ARG1: %.*s\n"
-					 "    ARG2: %.*s\n"
-					 "    TYPE: %d\n",
-					 arg1.len,
-					 arg1.data,
-					 arg2.len,
-					 arg2.data,
-					 act->val.cmd.type);
+			dst.off += dputs(dst,
+					 STRV("CMD\n"
+					      "    ARG1: "));
+			if (act->val.cmd.args > 0) {
+				dst.off += dputs(dst, strvbuf_get(&make->strs, act->val.cmd.arg[0]));
+			}
+			dst.off += dputs(dst,
+					 STRV("\n"
+					      "    ARG2: "));
+			if (act->val.cmd.args > 1) {
+				dst.off += dputs(dst, strvbuf_get(&make->strs, act->val.cmd.arg[1]));
+			}
+			dst.off += dputs(dst,
+					 STRV("\n"
+					      "    TYPE: "));
+			dst.off += dputs(dst, make_cmd_type_to_str(act->val.cmd.type));
+			dst.off += dputs(dst, STRV("\n"));
 			break;
 		}
 		case MAKE_ACT_IF: {
-			buf.len = 0;
-			make_str_expand(make, &act->val.mif.l, &buf);
-			dst.off += dputf(dst,
-					 "IF\n"
-					 "    L: '%.*s'\n",
-					 buf.len,
-					 buf.data);
-			buf.len = 0;
-			make_str_expand(make, &act->val.mif.r, &buf);
-			dst.off += dputf(dst, "    R: '%.*s'\n", buf.len, buf.data);
+			dst.off += dputs(dst,
+					 STRV("IF\n"
+					      "    L: '"));
+			dst.off += make_str_print(make, &act->val.mif.l, dst);
+			dst.off += dputs(dst, STRV("'\n"));
+			dst.off += dputs(dst, STRV("    R: '"));
+			dst.off += make_str_print(make, &act->val.mif.r, dst);
+			dst.off += dputs(dst, STRV("'\n"));
 			break;
 		}
 		case MAKE_ACT_DEF: {
-			strv_t name = strvbuf_get(&make->strs, act->val.def.name);
-			dst.off += dputf(dst,
-					 "DEF\n"
-					 "    NAME: '%.*s'\n",
-					 name.len,
-					 name.data);
+			dst.off += dputs(dst,
+					 STRV("DEF\n"
+					      "    NAME: '"));
+			dst.off += dputs(dst, strvbuf_get(&make->strs, act->val.def.name));
+			dst.off += dputs(dst, STRV("'\n"));
 			break;
 		}
 		case MAKE_ACT_EVAL_DEF: {
@@ -1593,13 +1623,13 @@ size_t make_dbg(const make_t *make, dst_t dst)
 				break;
 			}
 
-			strv_t name = strvbuf_get(&make->strs, def->name);
-			dst.off += dputf(dst,
-					 "EVAL DEF\n"
-					 "    DEF: '%.*s'\n"
-					 "    ARGS:\n",
-					 name.len,
-					 name.data);
+			dst.off += dputs(dst,
+					 STRV("EVAL DEF\n"
+					      "    DEF: '"));
+			dst.off += dputs(dst, strvbuf_get(&make->strs, def->name));
+			dst.off += dputs(dst,
+					 STRV("'\n"
+					      "    ARGS:\n"));
 			const make_str_data_t *arg;
 			list_node_t j = act->val.eval_def.args;
 			int first     = 1;
@@ -1609,26 +1639,23 @@ size_t make_dbg(const make_t *make, dst_t dst)
 					log_error("cparse", "make", NULL, "loop detected: %d", j);
 					break;
 				}
-				buf.len = 0;
-				make_str_expand(make, arg, &buf);
-				dst.off += dputf(dst, "        %.*s\n", buf.len, buf.data);
+				dst.off += dputs(dst, STRV("        "));
+				dst.off += make_str_print(make, arg, dst);
+				dst.off += dputs(dst, STRV("\n"));
 				first = 0;
 			}
 			break;
 		}
 		case MAKE_ACT_INCLUDE: {
-			strv_t path = strvbuf_get(&make->strs, act->val.inc.path);
-			dst.off += dputf(dst,
-					 "INCLUDE\n"
-					 "    PATH: '%.*s'\n",
-					 path.len,
-					 path.data);
+			dst.off += dputs(dst,
+					 STRV("INCLUDE\n"
+					      "    PATH: '"));
+			dst.off += dputs(dst, strvbuf_get(&make->strs, act->val.inc.path));
+			dst.off += dputs(dst, STRV("'\n"));
 			break;
 		}
 		}
 	}
-
-	str_free(&buf);
 
 	return dst.off - off;
 }
