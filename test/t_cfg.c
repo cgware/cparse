@@ -234,8 +234,11 @@ TEST(cfg_get_var)
 	cfg_int(&cfg, STRV("a"), 2, &i);
 	cfg_add_var(&cfg, root, i);
 
-	EXPECT_EQ(cfg_get_var(NULL, root, STRV_NULL, NULL), 1);
+	EXPECT_EQ(cfg_get_var(NULL, cfg.vars.cnt, STRV_NULL, NULL), 1);
+	log_set_quiet(0, 1);
+	EXPECT_EQ(cfg_get_var(&cfg, cfg.vars.cnt, STRV_NULL, NULL), 1);
 	EXPECT_EQ(cfg_get_var(&cfg, root, STRV_NULL, NULL), 1);
+	log_set_quiet(0, 0);
 	EXPECT_EQ(cfg_get_var(&cfg, root, STRV("a"), &var), 0);
 	EXPECT_EQ(var, i);
 

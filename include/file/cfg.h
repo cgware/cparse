@@ -2,16 +2,15 @@
 #define CFG_H
 
 #include "list.h"
-#include "strbuf.h"
-#include "strv.h"
+#include "strvbuf.h"
 
 #define CFG_VAR_END ((uint)-1)
 
 typedef list_node_t cfg_var_t;
 
 typedef struct cfg_s {
-	strbuf_t strs;
 	list_t vars;
+	strvbuf_t strs;
 } cfg_t;
 
 cfg_t *cfg_init(cfg_t *cfg, uint strs_cap, uint vars_cap, alloc_t alloc);

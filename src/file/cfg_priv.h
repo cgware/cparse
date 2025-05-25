@@ -13,11 +13,11 @@ typedef enum cfg_var_type_e {
 } cfg_var_type_t;
 
 typedef struct var_data_s {
-	uint key;
+	size_t key;
 	cfg_var_type_t type;
 	union {
 		cfg_var_t child;
-		uint str;
+		size_t str;
 		int i;
 	} val;
 } cfg_var_data_t;

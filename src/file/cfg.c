@@ -9,7 +9,7 @@ cfg_t *cfg_init(cfg_t *cfg, uint strs_cap, uint vars_cap, alloc_t alloc)
 		return NULL;
 	}
 
-	if (strbuf_init(&cfg->strs, strs_cap, strs_cap * 8, alloc) == NULL) {
+	if (strvbuf_init(&cfg->strs, strs_cap, strs_cap * 8, alloc) == NULL) {
 		log_error("cparse", "cfg", NULL, "failed to initialize stings");
 		return NULL;
 	}
@@ -29,7 +29,7 @@ void cfg_free(cfg_t *cfg)
 	}
 
 	list_free(&cfg->vars);
-	strbuf_free(&cfg->strs);
+	strvbuf_free(&cfg->strs);
 }
 
 static int add_var(cfg_t *cfg, strv_t key, cfg_var_t *var, cfg_var_data_t data)
@@ -40,7 +40,7 @@ static int add_var(cfg_t *cfg, strv_t key, cfg_var_t *var, cfg_var_data_t data)
 
 	data.key = -1;
 	if (key.data) {
-		if (strbuf_add(&cfg->strs, key, &data.key)) {
+		if (strvbuf_add(&cfg->strs, key, &data.key)) {
 			log_error("cparse", "cfg", NULL, "failed to add key");
 			return 1;
 		}
@@ -68,8 +68,8 @@ int cfg_lit(cfg_t *cfg, strv_t key, strv_t str, cfg_var_t *var)
 		return 1;
 	}
 
-	uint str_id;
-	if (strbuf_add(&cfg->strs, str, &str_id)) {
+	size_t str_id;
+	if (strvbuf_add(&cfg->strs, str, &str_id)) {
 		log_error("cparse", "cfg", NULL, "failed to add string");
 		return 1;
 	}
@@ -83,8 +83,8 @@ int cfg_str(cfg_t *cfg, strv_t key, strv_t str, cfg_var_t *var)
 		return 1;
 	}
 
-	uint str_id;
-	if (strbuf_add(&cfg->strs, str, &str_id)) {
+	size_t str_id;
+	if (strvbuf_add(&cfg->strs, str, &str_id)) {
 		log_error("cparse", "cfg", NULL, "failed to add string");
 		return 1;
 	}
@@ -120,6 +120,7 @@ int cfg_add_var(cfg_t *cfg, cfg_var_t parent, cfg_var_t var)
 
 	cfg_var_data_t *data = list_get(&cfg->vars, parent);
 	if (data == NULL) {
+		log_error("cparse", "cfg", NULL, "failed to get parent: %d", parent);
 		return 1;
 	}
 
@@ -166,12 +167,12 @@ int cfg_get_var(const cfg_t *cfg, cfg_var_t parent, strv_t key, cfg_var_t *var)
 		return 1;
 	}
 
-	uint index;
-	if (strbuf_find(&cfg->strs, key, &index)) {
+	cfg_var_data_t *data = list_get(&cfg->vars, parent);
+	if (data == NULL) {
+		log_error("cparse", "cfg", NULL, "failed to get parent: %d", parent);
 		return 1;
 	}
 
-	const cfg_var_data_t *data = list_get(&cfg->vars, parent);
 	switch (data->type) {
 	case CFG_VAR_ROOT:
 	case CFG_VAR_ARR:
@@ -183,7 +184,7 @@ int cfg_get_var(const cfg_t *cfg, cfg_var_t parent, strv_t key, cfg_var_t *var)
 	cfg_var_t i = data->val.child;
 	list_foreach(&cfg->vars, i, data)
 	{
-		if (data->key != index) {
+		if (!strv_eq(strvbuf_get(&cfg->strs, data->key), key)) {
 			continue;
 		}
 
@@ -192,6 +193,8 @@ int cfg_get_var(const cfg_t *cfg, cfg_var_t parent, strv_t key, cfg_var_t *var)
 		}
 		return 0;
 	}
+
+	log_error("cparse", "cfg", NULL, "variable not found: '%.*s'", key.len, key.data);
 
 	return 1;
 }
@@ -204,6 +207,7 @@ const cfg_var_data_t *cfg_get_type(const cfg_t *cfg, cfg_var_t var, cfg_var_type
 
 	const cfg_var_data_t *data = list_get(&cfg->vars, var);
 	if (data == NULL) {
+		log_error("cparse", "cfg", NULL, "failed to get variable: %d", var);
 		return NULL;
 	}
 
@@ -223,7 +227,7 @@ int cfg_get_lit(const cfg_t *cfg, cfg_var_t var, strv_t *val)
 	}
 
 	if (val) {
-		*val = strbuf_get(&cfg->strs, data->val.str);
+		*val = strvbuf_get(&cfg->strs, data->val.str);
 	}
 
 	return 0;
@@ -237,7 +241,7 @@ int cfg_get_str(const cfg_t *cfg, cfg_var_t var, strv_t *val)
 	}
 
 	if (val) {
-		*val = strbuf_get(&cfg->strs, data->val.str);
+		*val = strvbuf_get(&cfg->strs, data->val.str);
 	}
 
 	return 0;
@@ -291,12 +295,12 @@ static size_t cfg_print_var(const cfg_t *cfg, const cfg_var_data_t *data, int fi
 		case CFG_VAR_INT:
 		case CFG_VAR_ARR:
 		case CFG_VAR_OBJ: {
-			strv_t key = strbuf_get(&cfg->strs, data->key);
+			strv_t key = strvbuf_get(&cfg->strs, data->key);
 			dst.off += dputf(dst, "%.*s = ", key.len, key.data);
 			break;
 		}
 		case CFG_VAR_TBL: {
-			strv_t key = strbuf_get(&cfg->strs, data->key);
+			strv_t key = strvbuf_get(&cfg->strs, data->key);
 			if (!first) {
 				dst.off += dputs(dst, STRV("\n"));
 			}
@@ -309,11 +313,11 @@ static size_t cfg_print_var(const cfg_t *cfg, const cfg_var_data_t *data, int fi
 
 	switch (data->type) {
 	case CFG_VAR_LIT: {
-		dst.off += dputs(dst, strbuf_get(&cfg->strs, data->val.str));
+		dst.off += dputs(dst, strvbuf_get(&cfg->strs, data->val.str));
 		break;
 	}
 	case CFG_VAR_STR: {
-		strv_t str = strbuf_get(&cfg->strs, data->val.str);
+		strv_t str = strvbuf_get(&cfg->strs, data->val.str);
 		dst.off += dputf(dst, "\"%.*s\"", str.len, str.data);
 		break;
 	}
@@ -375,6 +379,7 @@ size_t cfg_print(const cfg_t *cfg, cfg_var_t var, dst_t dst)
 
 	const cfg_var_data_t *data = list_get(&cfg->vars, var);
 	if (data == NULL) {
+		log_error("cparse", "cfg", NULL, "failed to print variable: %d", var);
 		return 0;
 	}
 
