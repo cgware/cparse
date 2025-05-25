@@ -73,12 +73,12 @@ void cfg_prs_free(cfg_prs_t *cfg_prs)
 	estx_free(&cfg_prs->estx);
 }
 
-static cfg_var_t cfg_parse_kv(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t kv, cfg_t *cfg);
+static cfg_var_t cfg_parse_kv(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t kv, cfg_t *cfg, cfg_var_t *var);
 
-static cfg_var_t cfg_parse_value(const cfg_prs_t *cfg_prs, eprs_t *eprs, strv_t key, eprs_node_t value, cfg_t *cfg)
+static int cfg_parse_value(const cfg_prs_t *cfg_prs, eprs_t *eprs, strv_t key, eprs_node_t value, cfg_t *cfg, cfg_var_t *var)
 {
+	int ret = 1;
 	eprs_node_t node;
-	cfg_var_t ret = CFG_VAR_END;
 	if (eprs_get_rule(eprs, value, cfg_prs->i, &node) == 0) {
 		tok_t val = {0};
 		eprs_get_str(eprs, node, &val);
@@ -86,19 +86,19 @@ static cfg_var_t cfg_parse_value(const cfg_prs_t *cfg_prs, eprs_t *eprs, strv_t 
 		strv_t val_str = lex_get_tok_val(eprs->lex, val);
 		int val_int;
 		strv_to_int(val_str, &val_int);
-		cfg_int(cfg, key, val_int, &ret);
+		ret = cfg_int(cfg, key, val_int, var);
 	} else if (eprs_get_rule(eprs, value, cfg_prs->str, &node) == 0) {
 		tok_t val = {0};
 		eprs_get_str(eprs, node, &val);
-		cfg_str(cfg, key, lex_get_tok_val(eprs->lex, val), &ret);
+		ret = cfg_str(cfg, key, lex_get_tok_val(eprs->lex, val), var);
 	} else if (eprs_get_rule(eprs, value, cfg_prs->lit, &node) == 0) {
 		tok_t val = {0};
 		eprs_get_str(eprs, node, &val);
-		cfg_lit(cfg, key, lex_get_tok_val(eprs->lex, val), &ret);
+		ret = cfg_lit(cfg, key, lex_get_tok_val(eprs->lex, val), var);
 	} else if (eprs_get_rule(eprs, value, cfg_prs->arr, &node) == 0) {
 		eprs_node_t child;
 		void *data;
-		cfg_arr(cfg, key, &ret);
+		ret = cfg_arr(cfg, key, var);
 		eprs_node_foreach(&eprs->nodes, node, child, data)
 		{
 			eprs_node_t val;
@@ -106,12 +106,14 @@ static cfg_var_t cfg_parse_value(const cfg_prs_t *cfg_prs, eprs_t *eprs, strv_t 
 				continue;
 			}
 
-			cfg_add_var(cfg, ret, cfg_parse_value(cfg_prs, eprs, STRV_NULL, val, cfg));
+			cfg_var_t el;
+			ret |= cfg_parse_value(cfg_prs, eprs, STRV_NULL, val, cfg, &el);
+			ret |= cfg_add_var(cfg, *var, el);
 		}
 	} else if (eprs_get_rule(eprs, value, cfg_prs->obj, &node) == 0) {
 		eprs_node_t child;
 		void *data;
-		cfg_obj(cfg, key, &ret);
+		ret = cfg_obj(cfg, key, var);
 		eprs_node_foreach(&eprs->nodes, node, child, data)
 		{
 			eprs_node_t kv;
@@ -119,14 +121,16 @@ static cfg_var_t cfg_parse_value(const cfg_prs_t *cfg_prs, eprs_t *eprs, strv_t 
 				continue;
 			}
 
-			cfg_add_var(cfg, ret, cfg_parse_kv(cfg_prs, eprs, kv, cfg));
+			cfg_var_t el;
+			ret |= cfg_parse_kv(cfg_prs, eprs, kv, cfg, &el);
+			ret |= cfg_add_var(cfg, *var, el);
 		}
 	}
 
 	return ret;
 }
 
-static cfg_var_t cfg_parse_kv(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t kv, cfg_t *cfg)
+static cfg_var_t cfg_parse_kv(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t kv, cfg_t *cfg, cfg_var_t *var)
 {
 	eprs_node_t prs_key;
 	eprs_get_rule(eprs, kv, cfg_prs->key, &prs_key);
@@ -136,13 +140,12 @@ static cfg_var_t cfg_parse_kv(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_
 
 	eprs_node_t prs_val;
 	eprs_get_rule(eprs, kv, cfg_prs->val, &prs_val);
-	cfg_var_t s = cfg_parse_value(cfg_prs, eprs, lex_get_tok_val(eprs->lex, key), prs_val, cfg);
-	return s;
+	return cfg_parse_value(cfg_prs, eprs, lex_get_tok_val(eprs->lex, key), prs_val, cfg, var);
 }
 
-void cfg_parse_ent(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t ent, cfg_var_t parent, cfg_t *cfg);
+static int cfg_parse_ent(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t ent, cfg_var_t parent, cfg_t *cfg);
 
-cfg_var_t cfg_parse_tbl(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t kv, cfg_t *cfg)
+static int cfg_parse_tbl(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t kv, cfg_t *cfg, cfg_var_t *var)
 {
 	eprs_node_t prs_key;
 	eprs_get_rule(eprs, kv, cfg_prs->key, &prs_key);
@@ -150,18 +153,15 @@ cfg_var_t cfg_parse_tbl(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t kv, 
 	tok_t key = {0};
 	eprs_get_str(eprs, prs_key, &key);
 
-	cfg_var_t tbl;
-	cfg_tbl(cfg, lex_get_tok_val(eprs->lex, key), &tbl);
+	cfg_tbl(cfg, lex_get_tok_val(eprs->lex, key), var);
 
 	eprs_node_t prs_ent;
 	eprs_get_rule(eprs, kv, cfg_prs->ent, &prs_ent);
 
-	cfg_parse_ent(cfg_prs, eprs, prs_ent, tbl, cfg);
-
-	return tbl;
+	return cfg_parse_ent(cfg_prs, eprs, prs_ent, *var, cfg);
 }
 
-void cfg_parse_ent(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t ent, cfg_var_t parent, cfg_t *cfg)
+static int cfg_parse_ent(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t ent, cfg_var_t parent, cfg_t *cfg)
 {
 	eprs_node_t child;
 	void *data;
@@ -169,41 +169,44 @@ void cfg_parse_ent(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t ent, cfg_
 	{
 		eprs_node_t prs_kv;
 		if (eprs_get_rule(eprs, child, cfg_prs->kv, &prs_kv) == 0) {
-			cfg_add_var(cfg, parent, cfg_parse_kv(cfg_prs, eprs, prs_kv, cfg));
+			cfg_var_t var;
+			cfg_parse_kv(cfg_prs, eprs, prs_kv, cfg, &var);
+			cfg_add_var(cfg, parent, var);
 			continue;
 		}
 
 		eprs_node_t prs_tbl;
 		if (eprs_get_rule(eprs, child, cfg_prs->tbl, &prs_tbl) == 0) {
-			cfg_add_var(cfg, parent, cfg_parse_tbl(cfg_prs, eprs, prs_tbl, cfg));
+			cfg_var_t var;
+			cfg_parse_tbl(cfg_prs, eprs, prs_tbl, cfg, &var);
+			cfg_add_var(cfg, parent, var);
 			continue;
 		}
 	}
+
+	return 0;
 }
 
-cfg_var_t cfg_parse_file(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t file, cfg_t *cfg)
+static int cfg_parse_file(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t file, cfg_t *cfg, cfg_var_t *var)
 {
-	cfg_var_t root;
-	cfg_root(cfg, &root);
+	cfg_root(cfg, var);
 
 	eprs_node_t prs_cfg;
 	eprs_get_rule(eprs, file, cfg_prs->cfg, &prs_cfg);
 
-	cfg_parse_ent(cfg_prs, eprs, prs_cfg, root, cfg);
-
-	return root;
+	return cfg_parse_ent(cfg_prs, eprs, prs_cfg, *var, cfg);
 }
 
-cfg_var_t cfg_prs_parse(const cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, alloc_t alloc, dst_t dst)
+int cfg_prs_parse(const cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, alloc_t alloc, cfg_var_t *root, dst_t dst)
 {
 	if (cfg_prs == NULL || cfg == NULL || str.data == NULL) {
-		return CFG_VAR_END;
+		return 1;
 	}
 
 	lex_t lex = {0};
 	if (lex_init(&lex, 0, 100, alloc) == NULL) {
 		log_error("cparse", "bnf", NULL, "failed to intialize lexer");
-		return CFG_VAR_END;
+		return 1;
 	}
 
 	strv_t sstr = STRVN(str.data, str.len);
@@ -216,13 +219,18 @@ cfg_var_t cfg_prs_parse(const cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, alloc_
 	if (eprs_parse(&eprs, &lex, &cfg_prs->estx, cfg_prs->file, &prs_root, dst)) {
 		eprs_free(&eprs);
 		lex_free(&lex);
-		return CFG_VAR_END;
+		return 1;
 	}
 
-	cfg_var_t root = cfg_parse_file(cfg_prs, &eprs, prs_root, cfg);
+	cfg_var_t tmp;
+	int ret = cfg_parse_file(cfg_prs, &eprs, prs_root, cfg, &tmp);
+
+	if (root) {
+		*root = tmp;
+	}
 
 	eprs_free(&eprs);
 	lex_free(&lex);
 
-	return root;
+	return ret;
 }

@@ -22,7 +22,7 @@ TEST(cfg_prs_init_free)
 	END;
 }
 
-TEST(cfg_parse_null)
+TEST(cfg_prs_null)
 {
 	START;
 
@@ -34,13 +34,13 @@ TEST(cfg_parse_null)
 
 	strv_t str = STRV("");
 
-	EXPECT_EQ(cfg_prs_parse(NULL, STRV_NULL, NULL, ALLOC_STD, DST_NONE()), CFG_VAR_END);
-	EXPECT_EQ(cfg_prs_parse(&prs, STRV_NULL, NULL, ALLOC_STD, DST_NONE()), CFG_VAR_END);
-	EXPECT_EQ(cfg_prs_parse(&prs, str, NULL, ALLOC_STD, DST_NONE()), CFG_VAR_END);
+	EXPECT_EQ(cfg_prs_parse(NULL, STRV_NULL, NULL, ALLOC_STD, NULL, DST_NONE()), 1);
+	EXPECT_EQ(cfg_prs_parse(&prs, STRV_NULL, NULL, ALLOC_STD, NULL, DST_NONE()), 1);
+	EXPECT_EQ(cfg_prs_parse(&prs, str, NULL, ALLOC_STD, NULL, DST_NONE()), 1);
 	mem_oom(1);
-	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, DST_NONE()), CFG_VAR_END);
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, NULL, DST_NONE()), 1);
 	mem_oom(0);
-	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, DST_NONE()), 0);
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, NULL, DST_NONE()), 0);
 
 	cfg_free(&cfg);
 	cfg_prs_free(&prs);
@@ -48,7 +48,7 @@ TEST(cfg_parse_null)
 	END;
 }
 
-TEST(cfg_parse_fail)
+TEST(cfg_prs_fail)
 {
 	START;
 
@@ -60,7 +60,7 @@ TEST(cfg_parse_fail)
 
 	strv_t str = STRV("int0 = 1\n");
 
-	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, DST_NONE()), CFG_VAR_END);
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, NULL, DST_NONE()), 1);
 
 	cfg_free(&cfg);
 	cfg_prs_free(&prs);
@@ -68,7 +68,7 @@ TEST(cfg_parse_fail)
 	END;
 }
 
-TEST(cfg_parse_root)
+TEST(cfg_prs_root)
 {
 	START;
 
@@ -84,7 +84,8 @@ TEST(cfg_parse_root)
 			  "arr = [\"str\", 1]\n"
 			  "obj = {str = \"str\", int = 1}\n");
 
-	cfg_var_t root = cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, DST_NONE());
+	cfg_var_t root;
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, &root, DST_NONE()), 0);
 	EXPECT_EQ(root, 0);
 
 	char buf[1024] = {0};
@@ -102,7 +103,7 @@ TEST(cfg_parse_root)
 	END;
 }
 
-TEST(cfg_parse_tbl)
+TEST(cfg_prs_tbl)
 {
 	START;
 
@@ -116,7 +117,8 @@ TEST(cfg_parse_tbl)
 			  "int = 1\n"
 			  "str = \"str\"\n");
 
-	cfg_var_t root = cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, DST_STD());
+	cfg_var_t root;
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, &root, DST_STD()), 0);
 	EXPECT_EQ(root, 0);
 
 	char buf[1024] = {0};
@@ -132,7 +134,7 @@ TEST(cfg_parse_tbl)
 	END;
 }
 
-TEST(cfg_parse_test)
+TEST(cfg_prs_test)
 {
 	START;
 
@@ -153,7 +155,8 @@ TEST(cfg_parse_test)
 			  "\n"
 			  "[tbll]\n");
 
-	cfg_var_t root = cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, DST_STD());
+	cfg_var_t root;
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, &root, DST_STD()), 0);
 	EXPECT_EQ(root, 0);
 
 	char buf[1024] = {0};
@@ -182,11 +185,11 @@ STEST(cfg_prs)
 	SSTART;
 
 	RUN(cfg_prs_init_free);
-	RUN(cfg_parse_null);
-	RUN(cfg_parse_fail);
-	RUN(cfg_parse_root);
-	RUN(cfg_parse_tbl);
-	RUN(cfg_parse_test);
+	RUN(cfg_prs_null);
+	RUN(cfg_prs_fail);
+	RUN(cfg_prs_root);
+	RUN(cfg_prs_tbl);
+	RUN(cfg_prs_test);
 
 	SEND;
 }

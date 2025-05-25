@@ -23,6 +23,6 @@ typedef struct cfg_prs_s {
 cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc);
 void cfg_prs_free(cfg_prs_t *cfg_prs);
 
-cfg_var_t cfg_prs_parse(const cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, alloc_t alloc, dst_t dst);
+int cfg_prs_parse(const cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, alloc_t alloc, cfg_var_t *root, dst_t dst);
 
 #endif
