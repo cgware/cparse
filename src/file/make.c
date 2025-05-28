@@ -1283,9 +1283,9 @@ static strv_t make_cmd_type_to_str(make_cmd_type_t type)
 	}
 }
 
-static int make_str_print(const make_t *make, const make_str_data_t *str, dst_t dst)
+static size_t make_str_print(const make_t *make, const make_str_data_t *str, dst_t dst)
 {
-	int off = dst.off;
+	size_t off = dst.off;
 
 	switch (str->type) {
 	case MAKE_STR_VAR: {
