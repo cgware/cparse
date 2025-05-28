@@ -1010,7 +1010,9 @@ TEST(make_eval)
 	str_t buf  = STRB(b, 0);
 
 	EXPECT_EQ(make_eval(NULL, make.acts.cnt, NULL), 1);
+	log_set_quiet(0, 1);
 	EXPECT_EQ(make_eval(&make, make.acts.cnt, &buf), 0);
+	log_set_quiet(0, 0);
 
 	make_free(&make);
 
@@ -1349,7 +1351,9 @@ TEST(make_print)
 
 	char buf[8] = {0};
 	EXPECT_EQ(make_print(NULL, make.acts.cnt, DST_BUF(buf)), 0);
+	log_set_quiet(0, 1);
 	EXPECT_EQ(make_print(&make, make.acts.cnt, DST_BUF(buf)), 0);
+	log_set_quiet(0, 0);
 
 	make_act_t root, var;
 

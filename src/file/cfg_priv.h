@@ -20,6 +20,7 @@ typedef struct var_data_s {
 		size_t str;
 		int i;
 	} val;
+	byte has_val : 1;
 } cfg_var_data_t;
 
 #endif

@@ -324,9 +324,9 @@ TEST(cfg_get_lit)
 
 	cfg_lit(&cfg, STRV("str"), STRV("val"), &var);
 
-	EXPECT_EQ(cfg_get_lit(NULL, CFG_VAR_END, NULL), 1);
+	EXPECT_EQ(cfg_get_lit(NULL, cfg.vars.cnt, NULL), 1);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_get_lit(&cfg, CFG_VAR_END, NULL), 1);
+	EXPECT_EQ(cfg_get_lit(&cfg, cfg.vars.cnt, NULL), 1);
 	log_set_quiet(0, 0);
 	EXPECT_EQ(cfg_get_lit(&cfg, var, &val), 0);
 	EXPECT_STRN(val.data, "val", val.len);
@@ -348,9 +348,9 @@ TEST(cfg_get_str)
 
 	cfg_str(&cfg, STRV("str"), STRV("val"), &var);
 
-	EXPECT_EQ(cfg_get_str(NULL, CFG_VAR_END, NULL), 1);
+	EXPECT_EQ(cfg_get_str(NULL, cfg.vars.cnt, NULL), 1);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_get_str(&cfg, CFG_VAR_END, NULL), 1);
+	EXPECT_EQ(cfg_get_str(&cfg, cfg.vars.cnt, NULL), 1);
 	log_set_quiet(0, 0);
 	EXPECT_EQ(cfg_get_str(&cfg, var, &val), 0);
 	EXPECT_STRN(val.data, "val", val.len);
@@ -372,9 +372,9 @@ TEST(cfg_get_int)
 
 	cfg_int(&cfg, STRV("int"), 1, &var);
 
-	EXPECT_EQ(cfg_get_int(NULL, CFG_VAR_END, NULL), 1);
+	EXPECT_EQ(cfg_get_int(NULL, cfg.vars.cnt, NULL), 1);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_get_int(&cfg, CFG_VAR_END, NULL), 1);
+	EXPECT_EQ(cfg_get_int(&cfg, cfg.vars.cnt, NULL), 1);
 	log_set_quiet(0, 0);
 	EXPECT_EQ(cfg_get_int(&cfg, var, &val), 0);
 	EXPECT_EQ(val, 1);
@@ -384,48 +384,89 @@ TEST(cfg_get_int)
 	END;
 }
 
-TEST(cfg_get_arr)
+TEST(cfg_it_begin)
 {
 	START;
 
 	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
+	cfg_init(&cfg, 2, 2, ALLOC_STD);
 
-	cfg_var_t arr, var;
+	cfg_var_t arr, var, it;
 
 	cfg_arr(&cfg, STRV("arr"), &arr);
+	cfg_int(&cfg, STRV("str"), 0, &var);
 
-	EXPECT_EQ(cfg_get_arr(NULL, CFG_VAR_END, NULL), 1);
+	EXPECT_EQ(cfg_it_begin(NULL, cfg.vars.cnt, NULL), NULL);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_get_arr(&cfg, CFG_VAR_END, NULL), 1);
+	EXPECT_EQ(cfg_it_begin(&cfg, cfg.vars.cnt, NULL), NULL);
+	EXPECT_EQ(cfg_it_begin(&cfg, var, NULL), NULL);
 	log_set_quiet(0, 0);
-	EXPECT_EQ(cfg_get_arr(&cfg, arr, &var), 0);
+	EXPECT_EQ(cfg_it_begin(&cfg, arr, NULL), NULL);
+	cfg_add_var(&cfg, arr, var);
+	EXPECT_NE(cfg_it_begin(&cfg, arr, &it), NULL);
+	EXPECT_EQ(it, var);
 
 	cfg_free(&cfg);
 
 	END;
 }
 
-TEST(cfg_get_arr_str)
+TEST(cfg_it_next)
 {
 	START;
 
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t arr, var = CFG_VAR_END, vars[2];
+	cfg_var_t arr, var0, var1;
 
 	cfg_arr(&cfg, STRV("arr"), &arr);
-	cfg_str(&cfg, STRV("str"), STRV("val"), &vars[0]);
-	cfg_str(&cfg, STRV("str"), STRV("val"), &vars[1]);
+	cfg_int(&cfg, STRV("str"), 0, &var0);
+	cfg_int(&cfg, STRV("str"), 1, &var1);
+
+	cfg_var_t it = cfg.vars.cnt;
+
+	EXPECT_EQ(cfg_it_next(NULL, NULL), NULL);
+	EXPECT_EQ(cfg_it_next(&cfg, NULL), NULL);
+	log_set_quiet(0, 1);
+	EXPECT_EQ(cfg_it_next(&cfg, &it), NULL);
+	log_set_quiet(0, 0);
+	cfg_add_var(&cfg, arr, var0);
+	it = var0;
+	EXPECT_EQ(cfg_it_next(&cfg, &it), NULL);
+	cfg_add_var(&cfg, arr, var1);
+	it = var0;
+	EXPECT_NE(cfg_it_next(&cfg, &it), NULL);
+	EXPECT_EQ(it, var1);
+	EXPECT_EQ(cfg_it_next(&cfg, &it), NULL);
+
+	cfg_free(&cfg);
+
+	END;
+}
+
+TEST(cfg_it)
+{
+	START;
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 3, 3, ALLOC_STD);
+
+	cfg_var_t arr, it, vars[2];
+
+	cfg_arr(&cfg, STRV("arr"), &arr);
+	cfg_int(&cfg, STRV("str"), 0, &vars[0]);
+	cfg_int(&cfg, STRV("str"), 1, &vars[1]);
 	cfg_add_var(&cfg, arr, vars[0]);
 	cfg_add_var(&cfg, arr, vars[1]);
 
 	int cnt = 0;
-	while (cfg_get_arr(&cfg, arr, &var) == 0) {
-		EXPECT_EQ(var, vars[cnt]);
+	void *data;
+	cfg_foreach(&cfg, arr, data, &it)
+	{
+		EXPECT_EQ(it, vars[cnt]);
 		cnt++;
-	};
+	}
 	EXPECT_EQ(cnt, 2);
 
 	cfg_free(&cfg);
@@ -443,6 +484,10 @@ TEST(cfg_print)
 	cfg_var_t root, var;
 
 	cfg_root(&cfg, &root);
+
+	char buf[64] = {0};
+	EXPECT_EQ(cfg_print(&cfg, root, DST_BUF(buf)), 0);
+
 	cfg_lit(&cfg, STRV("lit"), STRV("val"), &var);
 	cfg_add_var(&cfg, root, var);
 	cfg_str(&cfg, STRV("str"), STRV("str"), &var);
@@ -458,11 +503,10 @@ TEST(cfg_print)
 
 	EXPECT_EQ(cfg_print(NULL, root, DST_NONE()), 0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_print(&cfg, CFG_VAR_END, DST_NONE()), 0);
+	EXPECT_EQ(cfg_print(&cfg, cfg.vars.cnt, DST_NONE()), 0);
 	log_set_quiet(0, 0);
 
-	char buf[64] = {0};
-	cfg_print(&cfg, root, DST_BUF(buf));
+	EXPECT_EQ(cfg_print(&cfg, root, DST_BUF(buf)), 55);
 	EXPECT_STR(buf,
 		   "lit = val\n"
 		   "str = \"str\"\n"
@@ -825,8 +869,9 @@ STEST(cfg)
 	RUN(cfg_get_lit);
 	RUN(cfg_get_str);
 	RUN(cfg_get_int);
-	RUN(cfg_get_arr);
-	RUN(cfg_get_arr_str);
+	RUN(cfg_it_begin);
+	RUN(cfg_it_next);
+	RUN(cfg_it);
 	RUN(cfg_print);
 	RUN(cfg_print_none);
 	RUN(cfg_print_lit);

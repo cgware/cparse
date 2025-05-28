@@ -99,17 +99,17 @@ int cfg_int(cfg_t *cfg, strv_t key, int val, cfg_var_t *var)
 
 int cfg_arr(cfg_t *cfg, strv_t key, cfg_var_t *var)
 {
-	return add_var(cfg, key, var, (cfg_var_data_t){.type = CFG_VAR_ARR, .val.child = (uint)-1});
+	return add_var(cfg, key, var, (cfg_var_data_t){.type = CFG_VAR_ARR});
 }
 
 int cfg_obj(cfg_t *cfg, strv_t key, cfg_var_t *var)
 {
-	return add_var(cfg, key, var, (cfg_var_data_t){.type = CFG_VAR_OBJ, .val.child = (uint)-1});
+	return add_var(cfg, key, var, (cfg_var_data_t){.type = CFG_VAR_OBJ});
 }
 
 int cfg_tbl(cfg_t *cfg, strv_t key, cfg_var_t *var)
 {
-	return add_var(cfg, key, var, (cfg_var_data_t){.type = CFG_VAR_TBL, .val.child = (uint)-1});
+	return add_var(cfg, key, var, (cfg_var_data_t){.type = CFG_VAR_TBL});
 }
 
 int cfg_add_var(cfg_t *cfg, cfg_var_t parent, cfg_var_t var)
@@ -132,10 +132,11 @@ int cfg_add_var(cfg_t *cfg, cfg_var_t parent, cfg_var_t var)
 	default: return 1;
 	}
 
-	if (data->val.child < cfg->vars.cnt) {
+	if (data->has_val) {
 		list_app(&cfg->vars, data->val.child, var);
 	} else {
 		data->val.child = var;
+		data->has_val	= 1;
 	}
 
 	return 0;
@@ -261,19 +262,44 @@ int cfg_get_int(const cfg_t *cfg, cfg_var_t var, int *val)
 	return 0;
 }
 
-int cfg_get_arr(const cfg_t *cfg, cfg_var_t arr, cfg_var_t *var)
+void *cfg_it_begin(const cfg_t *cfg, cfg_var_t var, cfg_var_t *it)
 {
-	const cfg_var_data_t *data = cfg_get_type(cfg, arr, CFG_VAR_ARR);
-	if (data == NULL || var == NULL) {
-		return 1;
+	if (cfg == NULL) {
+		return NULL;
 	}
 
-	if (*var >= cfg->vars.cnt) {
-		*var = data->val.child;
-		return 0;
+	cfg_var_data_t *data = list_get(&cfg->vars, var);
+	if (data == NULL) {
+		log_error("cparse", "cfg", NULL, "failed to get variable: %d", var);
+		return NULL;
 	}
 
-	return list_get_next(&cfg->vars, *var, var) == NULL;
+	switch (data->type) {
+	case CFG_VAR_ROOT:
+	case CFG_VAR_ARR:
+	case CFG_VAR_OBJ:
+	case CFG_VAR_TBL: break;
+	default: log_error("cparse", "cfg", NULL, "variable is not iteratable: %d", var); return NULL;
+	}
+
+	if (!data->has_val) {
+		return NULL;
+	}
+
+	if (it) {
+		*it = data->val.child;
+	}
+
+	return data;
+}
+
+void *cfg_it_next(const cfg_t *cfg, cfg_var_t *it)
+{
+	if (cfg == NULL || it == NULL) {
+		return NULL;
+	}
+
+	return list_get_next(&cfg->vars, *it, it);
 }
 
 typedef enum val_mode_e {
@@ -327,18 +353,24 @@ static size_t cfg_print_var(const cfg_t *cfg, const cfg_var_data_t *data, int fi
 	}
 	case CFG_VAR_ARR: {
 		dst.off += dputs(dst, STRV("["));
-		dst.off += cfg_print_vars(cfg, data->val.child, 0, 0, dst);
+		if (data->has_val) {
+			dst.off += cfg_print_vars(cfg, data->val.child, 0, 0, dst);
+		}
 		dst.off += dputs(dst, STRV("]"));
 		break;
 	}
 	case CFG_VAR_OBJ: {
 		dst.off += dputs(dst, STRV("{"));
-		dst.off += cfg_print_vars(cfg, data->val.child, 0, 1, dst);
+		if (data->has_val) {
+			dst.off += cfg_print_vars(cfg, data->val.child, 0, 1, dst);
+		}
 		dst.off += dputs(dst, STRV("}"));
 		break;
 	}
 	case CFG_VAR_TBL: {
-		dst.off += cfg_print_vars(cfg, data->val.child, 1, 1, dst);
+		if (data->has_val) {
+			dst.off += cfg_print_vars(cfg, data->val.child, 1, 1, dst);
+		}
 		break;
 	}
 	default: log_error("cparse", "cfg", NULL, "unknown type: %d", data->type); break;
@@ -386,7 +418,10 @@ size_t cfg_print(const cfg_t *cfg, cfg_var_t var, dst_t dst)
 	switch (data->type) {
 	case CFG_VAR_ROOT:
 	case CFG_VAR_TBL: {
-		return cfg_print_vars(cfg, data->val.child, 1, 1, dst);
+		if (data->has_val) {
+			return cfg_print_vars(cfg, data->val.child, 1, 1, dst);
+		}
+		break;
 	}
 	default: return cfg_print_var(cfg, data, 1, 0, dst);
 	}
