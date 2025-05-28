@@ -2709,6 +2709,45 @@ TEST(make_eval_def_name)
 	END;
 }
 
+TEST(make_eval_def_if)
+{
+	START;
+
+	make_t make = {0};
+	make_init(&make, 4, 4, 1, 8, ALLOC_STD);
+
+	make_act_t root, act, var, mif;
+
+	make_def(&make, STRV("def"), &root);
+
+	make_if(&make, MSTR(STRV("$(0)")), MSTR(STRV("def")), &mif);
+	make_var(&make, STRV("VAR"), MAKE_VAR_INST, &var);
+	make_var_add_val(&make, var, MSTR(STRV("1")));
+	make_if_add_true_act(&make, mif, var);
+	make_var_var(&make, var, MAKE_VAR_INST, &act);
+	make_var_add_val(&make, act, MSTR(STRV("0")));
+	make_if_add_false_act(&make, mif, act);
+
+	make_def_add_act(&make, root, mif);
+
+	make_eval_def(&make, root, &act);
+	make_add_act(&make, root, act);
+
+	char buf[16] = {0};
+	str_t tmp    = STRB(buf, 0);
+
+	make_eval(&make, root, &tmp);
+
+	strv_t exp = make_get_expanded(&make, var);
+	EXPECT_STRN(exp.data, "1", exp.len);
+	strv_t res = make_get_resolved(&make, var, &tmp);
+	EXPECT_STRN(res.data, "1", res.len);
+
+	make_free(&make);
+
+	END;
+}
+
 TEST(make_print_vars)
 {
 	START;
@@ -3017,6 +3056,7 @@ TEST(make_eval_print)
 	RUN(make_eval_ref_if);
 	RUN(make_eval_name);
 	RUN(make_eval_def_name);
+	RUN(make_eval_def_if);
 	RUN(make_print_vars);
 	RUN(make_print_rule_empty);
 	RUN(make_print_rule_empty_var);

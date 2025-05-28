@@ -744,28 +744,31 @@ static int replace_args(const void *priv, strv_t name, strv_t *val)
 {
 	const replace_args_priv_t *p = priv;
 
-	if (p->args < p->make->arrs.cnt) {
-		uint id = p->make->arrs.cnt;
-		if (strv_eq(name, STRV("0"))) {
-			id = 0;
-		} else if (strv_eq(name, STRV("1"))) {
-			id = 1;
-		} else if (strv_eq(name, STRV("2"))) {
-			id = 2;
-		} else if (strv_eq(name, STRV("3"))) {
-			id = 3;
+	uint id;
+	int arg = 0;
+	if (strv_eq(name, STRV("0"))) {
+		id  = 0;
+		arg = 1;
+	} else if (strv_eq(name, STRV("1"))) {
+		id  = 1;
+		arg = 1;
+	} else if (strv_eq(name, STRV("2"))) {
+		id  = 2;
+		arg = 1;
+	} else if (strv_eq(name, STRV("3"))) {
+		id  = 3;
+		arg = 1;
+	}
+
+	if (arg) {
+		make_act_t index;
+		const make_str_data_t *data = list_get_at(&p->make->arrs, p->args, id, &index);
+		if (data == NULL) {
+			return 1;
 		}
 
-		if (id < p->make->arrs.cnt) {
-			make_act_t index;
-			const make_str_data_t *data = list_get_at(&p->make->arrs, p->args, id, &index);
-			if (data == NULL) {
-				return 1;
-			}
-
-			*val = strvbuf_get(&p->make->strs, data->val.val);
-			return 0;
-		}
+		*val = strvbuf_get(&p->make->strs, data->val.val);
+		return 0;
 	}
 
 	if (p->vars && replace_vars(p->vars, name, val) == 0) {
@@ -825,7 +828,7 @@ static int make_replace(str_t *str, size_t min_len, replace_fn replace, const vo
 	return ret;
 }
 
-static int eval_args(const make_t *make, list_node_t args, int has_args, str_t *buf)
+static int eval_args(const make_t *make, list_node_t args, str_t *buf)
 {
 	replace_vars_priv_t vars_priv = (replace_vars_priv_t){
 		.make	 = make,
@@ -838,7 +841,7 @@ static int eval_args(const make_t *make, list_node_t args, int has_args, str_t *
 		.vars = &vars_priv,
 	};
 
-	return has_args ? make_replace(buf, 1, replace_args, &args_priv) : 0;
+	return make_replace(buf, 1, replace_args, &args_priv);
 }
 
 static int make_str_expand(const make_t *make, const make_str_data_t *str, str_t *buf)
@@ -998,7 +1001,9 @@ static int make_var_eval(make_t *make, make_act_data_t *act, make_var_data_t *va
 		}
 	}
 
-	ret |= eval_args(make, args, has_args, buf);
+	if (has_args) {
+		ret |= eval_args(make, args, buf);
+	}
 	ret |= make_var_app(make, var, app, buf);
 
 	return ret;
@@ -1087,7 +1092,9 @@ static int make_vars_eval_act(make_t *make, make_act_t root, list_node_t args, i
 
 			buf->len = 0;
 			ret |= make_str_expand(make, &mif->l, buf);
-			ret |= eval_args(make, args, has_args, buf);
+			if (has_args) {
+				ret |= eval_args(make, args, buf);
+			}
 			make_var_data_t lvar = {
 				.expanded = mif->lexpanded,
 				.resolved = mif->lresolved,
@@ -1096,7 +1103,9 @@ static int make_vars_eval_act(make_t *make, make_act_t root, list_node_t args, i
 
 			buf->len = 0;
 			ret |= make_str_expand(make, &mif->r, buf);
-			ret |= eval_args(make, args, has_args, buf);
+			if (has_args) {
+				ret |= eval_args(make, args, buf);
+			}
 			make_var_data_t rvar = {
 				.expanded = mif->rexpanded,
 				.resolved = mif->rresolved,
