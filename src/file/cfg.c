@@ -162,16 +162,16 @@ static const char *val_type_to_str(cfg_var_type_t type)
 	return val_type_str[type];
 }
 
-int cfg_get_var(const cfg_t *cfg, cfg_var_t parent, strv_t key, cfg_var_t *var)
+int cfg_has_var(const cfg_t *cfg, cfg_var_t parent, strv_t key, cfg_var_t *var)
 {
 	if (cfg == NULL) {
-		return 1;
+		return 0;
 	}
 
 	cfg_var_data_t *data = list_get(&cfg->vars, parent);
 	if (data == NULL) {
 		log_error("cparse", "cfg", NULL, "failed to get parent: %d", parent);
-		return 1;
+		return 0;
 	}
 
 	switch (data->type) {
@@ -179,7 +179,11 @@ int cfg_get_var(const cfg_t *cfg, cfg_var_t parent, strv_t key, cfg_var_t *var)
 	case CFG_VAR_ARR:
 	case CFG_VAR_OBJ:
 	case CFG_VAR_TBL: break;
-	default: return 1;
+	default: return 0;
+	}
+
+	if (!data->has_val) {
+		return 0;
 	}
 
 	cfg_var_t i = data->val.child;
@@ -192,12 +196,10 @@ int cfg_get_var(const cfg_t *cfg, cfg_var_t parent, strv_t key, cfg_var_t *var)
 		if (var) {
 			*var = i;
 		}
-		return 0;
+		return 1;
 	}
 
-	log_error("cparse", "cfg", NULL, "variable not found: '%.*s'", key.len, key.data);
-
-	return 1;
+	return 0;
 }
 
 const cfg_var_data_t *cfg_get_type(const cfg_t *cfg, cfg_var_t var, cfg_var_type_t type)

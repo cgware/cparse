@@ -221,7 +221,7 @@ TEST(cfg_add_var)
 	END;
 }
 
-TEST(cfg_get_var)
+TEST(cfg_has_var)
 {
 	START;
 
@@ -232,14 +232,15 @@ TEST(cfg_get_var)
 
 	cfg_root(&cfg, &root);
 	cfg_int(&cfg, STRV("a"), 2, &i);
-	cfg_add_var(&cfg, root, i);
-
-	EXPECT_EQ(cfg_get_var(NULL, cfg.vars.cnt, STRV_NULL, NULL), 1);
+	
+	EXPECT_EQ(cfg_has_var(NULL, cfg.vars.cnt, STRV_NULL, NULL), 0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_get_var(&cfg, cfg.vars.cnt, STRV_NULL, NULL), 1);
-	EXPECT_EQ(cfg_get_var(&cfg, root, STRV_NULL, NULL), 1);
+	EXPECT_EQ(cfg_has_var(&cfg, cfg.vars.cnt, STRV_NULL, NULL), 0);
+	EXPECT_EQ(cfg_has_var(&cfg, root, STRV_NULL, NULL), 0);
 	log_set_quiet(0, 0);
-	EXPECT_EQ(cfg_get_var(&cfg, root, STRV("a"), &var), 0);
+	EXPECT_EQ(cfg_has_var(&cfg, root, STRV("a"), &var), 0);
+	cfg_add_var(&cfg, root, i);
+	EXPECT_EQ(cfg_has_var(&cfg, root, STRV("a"), &var), 1);
 	EXPECT_EQ(var, i);
 
 	cfg_free(&cfg);
@@ -247,7 +248,7 @@ TEST(cfg_get_var)
 	END;
 }
 
-TEST(cfg_get_var_not_found)
+TEST(cfg_has_var_not_found)
 {
 	START;
 
@@ -260,16 +261,14 @@ TEST(cfg_get_var_not_found)
 	cfg_str(&cfg, STRV("a"), STRV("int"), &str);
 	cfg_add_var(&cfg, root, str);
 
-	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_get_var(&cfg, root, STRV("int"), NULL), 1);
-	log_set_quiet(0, 0);
+	EXPECT_EQ(cfg_has_var(&cfg, root, STRV("int"), NULL), 0);
 
 	cfg_free(&cfg);
 
 	END;
 }
 
-TEST(cfg_get_var_wrong_parent)
+TEST(cfg_has_var_wrong_parent)
 {
 	START;
 
@@ -281,7 +280,7 @@ TEST(cfg_get_var_wrong_parent)
 	cfg_int(&cfg, STRV("int"), 0, &root);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_get_var(&cfg, root, STRV("int"), NULL), 1);
+	EXPECT_EQ(cfg_has_var(&cfg, root, STRV("int"), NULL), 0);
 	log_set_quiet(0, 0);
 
 	cfg_free(&cfg);
@@ -862,9 +861,9 @@ STEST(cfg)
 	RUN(cfg_obj);
 	RUN(cfg_tbl);
 	RUN(cfg_add_var);
-	RUN(cfg_get_var);
-	RUN(cfg_get_var_not_found);
-	RUN(cfg_get_var_wrong_parent);
+	RUN(cfg_has_var);
+	RUN(cfg_has_var_not_found);
+	RUN(cfg_has_var_wrong_parent);
 	RUN(cfg_get_val_wrong_type);
 	RUN(cfg_get_lit);
 	RUN(cfg_get_str);
