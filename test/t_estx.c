@@ -343,14 +343,15 @@ TEST(estx_add_term)
 	estx_node_t rule;
 	estx_rule(&estx, STRV("rule"), &rule);
 
-	estx_node_t term;
+	estx_node_t term, term2;
 	estx_term_rule(&estx, rule, ESTX_TERM_OCC_ONE, &term);
+	estx_term_rule(&estx, rule, ESTX_TERM_OCC_ONE, &term2);
 
 	log_set_quiet(0, 1);
 	EXPECT_EQ(estx_add_term(NULL, 0, term), 1);
 	EXPECT_EQ(estx_add_term(&estx, estx.nodes.cnt, term), 1);
 	log_set_quiet(0, 0);
-	EXPECT_EQ(estx_add_term(&estx, term, term), 0);
+	EXPECT_EQ(estx_add_term(&estx, term, term2), 0);
 
 	estx_free(&estx);
 

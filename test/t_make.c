@@ -1026,15 +1026,18 @@ TEST(make_eval_loop)
 	make_t make = {0};
 	make_init(&make, 1, 1, 1, 1, ALLOC_STD);
 
-	make_act_t empty;
-	make_empty(&make, &empty);
-	list_app(&make.acts, empty, empty);
+	make_act_t empty0, empty1;
+
+	make_empty(&make, &empty0);
+	make_empty(&make, &empty1);
+	list_app(&make.acts, empty0, empty1);
+	list_app(&make.acts, empty1, empty0);
 
 	char buf[16] = {0};
 	str_t tmp    = STRB(buf, 0);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(make_eval(&make, empty, &tmp), 1);
+	EXPECT_EQ(make_eval(&make, empty0, &tmp), 1);
 	log_set_quiet(0, 0);
 
 	make_free(&make);
@@ -1379,13 +1382,15 @@ TEST(make_print_loop)
 
 	char buf[8] = {0};
 
-	make_act_t empty;
+	make_act_t empty0, empty1;
 
-	make_empty(&make, &empty);
-	list_app(&make.acts, empty, empty);
+	make_empty(&make, &empty0);
+	make_empty(&make, &empty1);
+	list_app(&make.acts, empty0, empty1);
+	list_app(&make.acts, empty1, empty0);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(make_print(&make, empty, DST_BUF(buf)), 1);
+	EXPECT_EQ(make_print(&make, empty0, DST_BUF(buf)), 2);
 	log_set_quiet(0, 0);
 
 	make_free(&make);
@@ -1424,14 +1429,17 @@ TEST(make_dbg_var_loop)
 
 	char buf[128] = {0};
 
-	make_act_t var;
+	make_act_t var0, var1;
 
-	make_var(&make, STRV(""), MAKE_VAR_INST, &var);
-	make_var_add_val(&make, var, MSTR(STRV("")));
-	list_app(&make.arrs, 0, 0);
+	make_var(&make, STRV(""), MAKE_VAR_INST, &var0);
+	make_var_add_val(&make, var0, MSTR(STRV("")));
+	make_var(&make, STRV(""), MAKE_VAR_INST, &var1);
+	make_var_add_val(&make, var1, MSTR(STRV("")));
+	list_app(&make.arrs, var0, var1);
+	list_app(&make.arrs, var1, var0);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 42);
+	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 102);
 	log_set_quiet(0, 0);
 
 	make_free(&make);
@@ -1448,14 +1456,17 @@ TEST(make_dbg_rule_loop)
 
 	char buf[128] = {0};
 
-	make_act_t rule;
+	make_act_t rule0, rule1;
 
-	make_rule(&make, MRULE(MSTR(STRV(""))), 0, &rule);
-	make_rule_add_depend(&make, rule, MRULE(MSTR(STRV(""))));
-	list_app(&make.targets, 0, 0);
+	make_rule(&make, MRULE(MSTR(STRV(""))), 0, &rule0);
+	make_rule_add_depend(&make, rule0, MRULE(MSTR(STRV(""))));
+	make_rule(&make, MRULE(MSTR(STRV(""))), 0, &rule1);
+	make_rule_add_depend(&make, rule1, MRULE(MSTR(STRV(""))));
+	list_app(&make.targets, rule0, rule1);
+	list_app(&make.targets, rule1, rule0);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 40);
+	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 98);
 	log_set_quiet(0, 0);
 
 	make_free(&make);
@@ -1476,11 +1487,12 @@ TEST(make_dbg_eval_def_loop)
 
 	make_def(&make, STRV(""), &def);
 	make_eval_def(&make, def, &eval);
-	list_app(&make.arrs, 0, 0);
+	make_eval_def_add_arg(&make, eval, MSTR(STRV("")));
+	list_app(&make.arrs, 1, 0);
 	make_add_act(&make, def, eval);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 57);
+	EXPECT_EQ(make_dbg(&make, DST_BUF(buf)), 66);
 	log_set_quiet(0, 0);
 
 	make_free(&make);
