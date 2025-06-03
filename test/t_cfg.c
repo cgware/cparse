@@ -232,7 +232,7 @@ TEST(cfg_has_var)
 
 	cfg_root(&cfg, &root);
 	cfg_int(&cfg, STRV("a"), 2, &i);
-	
+
 	EXPECT_EQ(cfg_has_var(NULL, cfg.vars.cnt, STRV_NULL, NULL), 0);
 	log_set_quiet(0, 1);
 	EXPECT_EQ(cfg_has_var(&cfg, cfg.vars.cnt, STRV_NULL, NULL), 0);
@@ -282,6 +282,28 @@ TEST(cfg_has_var_wrong_parent)
 	log_set_quiet(0, 1);
 	EXPECT_EQ(cfg_has_var(&cfg, root, STRV("int"), NULL), 0);
 	log_set_quiet(0, 0);
+
+	cfg_free(&cfg);
+
+	END;
+}
+
+TEST(cfg_get_key)
+{
+	START;
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root;
+
+	cfg_int(&cfg, STRV("int"), 0, &root);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(cfg_get_key(&cfg, cfg.vars.cnt).data, NULL);
+	log_set_quiet(0, 0);
+	strv_t key = cfg_get_key(&cfg, root);
+	EXPECT_STRN(key.data, "int", key.len);
 
 	cfg_free(&cfg);
 
@@ -864,6 +886,7 @@ STEST(cfg)
 	RUN(cfg_has_var);
 	RUN(cfg_has_var_not_found);
 	RUN(cfg_has_var_wrong_parent);
+	RUN(cfg_get_key);
 	RUN(cfg_get_val_wrong_type);
 	RUN(cfg_get_lit);
 	RUN(cfg_get_str);

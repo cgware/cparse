@@ -202,6 +202,17 @@ int cfg_has_var(const cfg_t *cfg, cfg_var_t parent, strv_t key, cfg_var_t *var)
 	return 0;
 }
 
+strv_t cfg_get_key(const cfg_t *cfg, cfg_var_t var)
+{
+	const cfg_var_data_t *data = list_get(&cfg->vars, var);
+	if (data == NULL) {
+		log_error("cparse", "cfg", NULL, "failed to get variable: %d", var);
+		return STRV_NULL;
+	}
+
+	return strvbuf_get(&cfg->strs, data->key);
+}
+
 const cfg_var_data_t *cfg_get_type(const cfg_t *cfg, cfg_var_t var, cfg_var_type_t type)
 {
 	if (cfg == NULL) {
