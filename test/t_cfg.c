@@ -527,7 +527,7 @@ TEST(cfg_print)
 	EXPECT_EQ(cfg_print(&cfg, cfg.vars.cnt, DST_NONE()), 0);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(cfg_print(&cfg, root, DST_BUF(buf)), 55);
+	EXPECT_EQ(cfg_print(&cfg, root, DST_BUF(buf)), 54);
 	EXPECT_STR(buf,
 		   "lit = val\n"
 		   "str = \"str\"\n"
@@ -535,7 +535,7 @@ TEST(cfg_print)
 		   "arr = []\n"
 		   "obj = {}\n"
 		   "\n"
-		   "[tbl]\n");
+		   ":tbl\n");
 
 	cfg_free(&cfg);
 
@@ -705,7 +705,7 @@ TEST(cfg_print_tbl)
 	char buf[64] = {0};
 	cfg_print(&cfg, root, DST_BUF(buf));
 	EXPECT_STR(buf,
-		   "[tbl]\n"
+		   ":tbl\n"
 		   "str = \"str\"\n"
 		   "int = 1\n"
 		   "arr = []\n"
@@ -736,7 +736,7 @@ TEST(cfg_print_tbl1)
 	EXPECT_STR(buf,
 		   "int = 1\n"
 		   "\n"
-		   "[tbl]\n");
+		   ":tbl\n");
 
 	cfg_free(&cfg);
 
@@ -770,13 +770,13 @@ TEST(cfg_print_tbl2)
 	char buf[64] = {0};
 	cfg_print(&cfg, root, DST_BUF(buf));
 	EXPECT_STR(buf,
-		   "[tbl]\n"
+		   ":tbl\n"
 		   "str = \"str\"\n"
 		   "int = 1\n"
 		   "arr = []\n"
 		   "obj = {}\n"
 		   "\n"
-		   "[tbll]\n");
+		   ":tbll\n");
 
 	cfg_free(&cfg);
 

@@ -113,7 +113,7 @@ TEST(cfg_prs_tbl)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	strv_t str = STRV("[tbl]\n"
+	strv_t str = STRV(":tbl\n"
 			  "int = 1\n"
 			  "str = \"str\"\n");
 
@@ -124,7 +124,7 @@ TEST(cfg_prs_tbl)
 	char buf[1024] = {0};
 	cfg_print(&cfg, root, DST_BUF(buf));
 	EXPECT_STR(buf,
-		   "[tbl]\n"
+		   ":tbl\n"
 		   "int = 1\n"
 		   "str = \"str\"\n");
 
@@ -144,16 +144,17 @@ TEST(cfg_prs_test)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	strv_t str = STRV("int = 1\n"
+	strv_t str = STRV("\"str\"\n"
+			  "int = 1\n"
 			  "str = \"str\"\n"
 			  "lit = lit_LIT\n"
 			  "arr = [\"str\", 1]\n"
 			  "obj = {str = \"str\", int = 1}\n"
-			  "[tbl]\n"
+			  ":tbl\n"
 			  "int = 1\n"
 			  "str = \"str\"\n"
 			  "\n"
-			  "[tbll]\n");
+			  ":tbll\n");
 
 	cfg_var_t root;
 	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, &root, DST_STD()), 0);
@@ -162,17 +163,18 @@ TEST(cfg_prs_test)
 	char buf[1024] = {0};
 	cfg_print(&cfg, root, DST_BUF(buf));
 	EXPECT_STR(buf,
+		   "\"str\"\n"
 		   "int = 1\n"
 		   "str = \"str\"\n"
 		   "lit = lit_LIT\n"
 		   "arr = [\"str\", 1]\n"
 		   "obj = {str = \"str\", int = 1}\n"
 		   "\n"
-		   "[tbl]\n"
+		   ":tbl\n"
 		   "int = 1\n"
 		   "str = \"str\"\n"
 		   "\n"
-		   "[tbll]\n");
+		   ":tbll\n");
 
 	cfg_free(&cfg);
 	cfg_prs_free(&prs);

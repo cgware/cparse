@@ -335,7 +335,9 @@ static size_t cfg_print_var(const cfg_t *cfg, const cfg_var_data_t *data, int fi
 		case CFG_VAR_ARR:
 		case CFG_VAR_OBJ: {
 			strv_t key = strvbuf_get(&cfg->strs, data->key);
-			dst.off += dputf(dst, "%.*s = ", key.len, key.data);
+			if (key.len > 0) {
+				dst.off += dputf(dst, "%.*s = ", key.len, key.data);
+			}
 			break;
 		}
 		case CFG_VAR_TBL: {
@@ -343,7 +345,7 @@ static size_t cfg_print_var(const cfg_t *cfg, const cfg_var_data_t *data, int fi
 			if (!first) {
 				dst.off += dputs(dst, STRV("\n"));
 			}
-			dst.off += dputf(dst, "[%.*s]\n", key.len, key.data);
+			dst.off += dputf(dst, ":%.*s\n", key.len, key.data);
 			break;
 		}
 		default: log_error("cparse", "cfg", NULL, "unknown type: %d", data->type); break;

@@ -10,7 +10,7 @@ ebnf_t *ebnf_init(ebnf_t *ebnf, alloc_t alloc)
 		return NULL;
 	}
 
-	if (stx_init(&ebnf->stx, 64, alloc) == NULL) {
+	if (stx_init(&ebnf->stx, 128, alloc) == NULL) {
 		log_error("cparse", "ebnf", NULL, "failed to intialize syntax");
 		return NULL;
 	}
@@ -60,7 +60,7 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, dst_t dst)
 			   "<space>   ::= ' '\n");
 
 	lex_t lex = {0};
-	if (lex_init(&lex, 0, 100, alloc) == NULL) {
+	if (lex_init(&lex, 0, 1024, alloc) == NULL) {
 		log_error("cparse", "bnf", NULL, "failed to intialize lexer");
 		return NULL;
 	}
@@ -72,7 +72,7 @@ const stx_t *ebnf_get_stx(ebnf_t *ebnf, alloc_t alloc, dst_t dst)
 	bnf_get_stx(&bnf);
 
 	prs_t prs = {0};
-	prs_init(&prs, 100, alloc);
+	prs_init(&prs, 4096, alloc);
 
 	prs_node_t prs_root;
 	prs_parse(&prs, &lex, &bnf.stx, bnf.file, &prs_root, dst);

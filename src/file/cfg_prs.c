@@ -14,7 +14,7 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 	uint line      = __LINE__ + 1;
 	strv_t cfg_bnf = STRV("file = cfg EOF\n"
 			      "cfg  = (kv NL)* tbl? (NL tbl)*\n"
-			      "kv   = key ' = ' val\n"
+			      "kv   = (key ' = ')? val\n"
 			      "key  = (ALPHA | '.')+\n"
 			      "val  = int | '\"' str '\"' | lit | '[' arr? ']' | '{' obj? '}'\n"
 			      "int  = DIGIT+\n"
@@ -23,11 +23,11 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 			      "arr  = val (', ' val)*\n"
 			      "obj  = kv (', ' kv)*\n"
 			      "c    = ALPHA | DIGIT | SYMBOL | ' '\n"
-			      "tbl  = '[' key ']' NL ent\n"
+			      "tbl  = ':' key NL ent\n"
 			      "ent  = (kv NL)*\n");
 
 	lex_t lex = {0};
-	if (lex_init(&lex, 0, 100, alloc) == NULL) {
+	if (lex_init(&lex, 0, 512, alloc) == NULL) {
 		log_error("cparse", "bnf", NULL, "failed to intialize lexer");
 		return NULL;
 	}
@@ -39,14 +39,14 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 	ebnf_get_stx(&ebnf, alloc, DST_NONE());
 
 	prs_t prs = {0};
-	prs_init(&prs, 100, ALLOC_STD);
+	prs_init(&prs, 1024, ALLOC_STD);
 
 	prs_node_t prs_root;
 	prs_parse(&prs, &lex, &ebnf.stx, ebnf.file, &prs_root, DST_NONE());
 
 	ebnf_free(&ebnf);
 
-	estx_init(&cfg_prs->estx, 16, ALLOC_STD);
+	estx_init(&cfg_prs->estx, 128, ALLOC_STD);
 	estx_from_ebnf(&ebnf, &prs, prs_root, &cfg_prs->estx, NULL);
 
 	estx_find_rule(&cfg_prs->estx, STRV("file"), &cfg_prs->file);
@@ -133,10 +133,11 @@ static int cfg_parse_value(const cfg_prs_t *cfg_prs, eprs_t *eprs, strv_t key, e
 static cfg_var_t cfg_parse_kv(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t kv, cfg_t *cfg, cfg_var_t *var)
 {
 	eprs_node_t prs_key;
-	eprs_get_rule(eprs, kv, cfg_prs->key, &prs_key);
-
 	tok_t key = {0};
-	eprs_get_str(eprs, prs_key, &key);
+
+	if (eprs_get_rule(eprs, kv, cfg_prs->key, &prs_key) == 0) {
+		eprs_get_str(eprs, prs_key, &key);
+	}
 
 	eprs_node_t prs_val;
 	eprs_get_rule(eprs, kv, cfg_prs->val, &prs_val);

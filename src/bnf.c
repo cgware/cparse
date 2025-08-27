@@ -10,7 +10,7 @@ bnf_t *bnf_init(bnf_t *bnf, alloc_t alloc)
 		return NULL;
 	}
 
-	if (stx_init(&bnf->stx, 64, alloc) == NULL) {
+	if (stx_init(&bnf->stx, 128, alloc) == NULL) {
 		log_error("cparse", "bnf", NULL, "failed to intialize syntax");
 		return NULL;
 	}
