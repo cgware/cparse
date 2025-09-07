@@ -20,6 +20,29 @@ static inline void *make_act_get_type(const make_t *make, make_act_t act, make_a
 	return &data->val;
 }
 
+static inline void *make_act_get_type2(const make_t *make, make_act_t act, make_act_type_t type1, make_act_type_t type2)
+{
+	make_act_data_t *data = list_get(&make->acts, act);
+	if (data == NULL) {
+		log_error("cutils", "make", NULL, "failed to get action: %d", act);
+		return NULL;
+	}
+
+	if (data->type != type1 && data->type != type2) {
+		log_error("cutils",
+			  "make",
+			  NULL,
+			  "failed to get action: %d: expected type: %d or %d, got: %d",
+			  act,
+			  type1,
+			  type2,
+			  data->type);
+		return NULL;
+	}
+
+	return &data->val;
+}
+
 make_t *make_init(make_t *make, uint arrs_cap, uint acts_cap, uint targets_cap, uint strs_cap, alloc_t alloc)
 {
 	if (make == NULL) {
@@ -237,7 +260,7 @@ int make_cmd(make_t *make, make_create_cmd_t cmd, make_act_t *act)
 	return 0;
 }
 
-int make_if(make_t *make, make_create_str_t l, make_create_str_t r, make_act_t *act)
+static int make_if(make_t *make, make_create_str_t l, make_create_str_t r, make_act_t *act, make_act_type_t type)
 {
 	if (make == NULL) {
 		return 1;
@@ -249,7 +272,7 @@ int make_if(make_t *make, make_create_str_t l, make_create_str_t r, make_act_t *
 	}
 
 	*data = (make_act_data_t){
-		.type = MAKE_ACT_IF,
+		.type = type,
 	};
 
 	if (create_str(make, l, &data->val.mif.l)) {
@@ -261,6 +284,16 @@ int make_if(make_t *make, make_create_str_t l, make_create_str_t r, make_act_t *
 	}
 
 	return 0;
+}
+
+int make_ifeq(make_t *make, make_create_str_t l, make_create_str_t r, make_act_t *act)
+{
+	return make_if(make, l, r, act, MAKE_ACT_IFEQ);
+}
+
+int make_ifneq(make_t *make, make_create_str_t l, make_create_str_t r, make_act_t *act)
+{
+	return make_if(make, l, r, act, MAKE_ACT_IFNEQ);
 }
 
 int make_def(make_t *make, strv_t name, make_act_t *act)
@@ -498,7 +531,7 @@ static int make_if_add_act(make_t *make, make_act_t mif, int true_acts, make_act
 		return 1;
 	}
 
-	make_if_data_t *data = make_act_get_type(make, mif, MAKE_ACT_IF);
+	make_if_data_t *data = make_act_get_type2(make, mif, MAKE_ACT_IFEQ, MAKE_ACT_IFNEQ);
 	if (data == NULL) {
 		log_error("cutils", "make", NULL, "failed to add %s action to if: %d", true_acts ? "true" : "false", mif);
 		return 1;
@@ -890,7 +923,8 @@ static void update_strs(make_t *make, make_var_data_t *var, size_t off, int diff
 				act->val.var.resolved += diff;
 			}
 			break;
-		case MAKE_ACT_IF:
+		case MAKE_ACT_IFEQ:
+		case MAKE_ACT_IFNEQ:
 			if (act->val.mif.lexpanded > off) {
 				act->val.mif.lexpanded += diff;
 			}
@@ -1087,7 +1121,8 @@ static int make_vars_eval_act(make_t *make, make_act_t root, list_node_t args, i
 			}
 			break;
 		}
-		case MAKE_ACT_IF: {
+		case MAKE_ACT_IFEQ:
+		case MAKE_ACT_IFNEQ: {
 			make_if_data_t *mif = &act->val.mif;
 
 			buf->len = 0;
@@ -1115,7 +1150,7 @@ static int make_vars_eval_act(make_t *make, make_act_t root, list_node_t args, i
 			strv_t l = strvbuf_get(&make->strs, lvar.resolved);
 			strv_t r = strvbuf_get(&make->strs, rvar.resolved);
 
-			if (strv_eq(l, r)) {
+			if ((act->type == MAKE_ACT_IFEQ && strv_eq(l, r)) || (act->type == MAKE_ACT_IFNEQ && !strv_eq(l, r))) {
 				if (mif->has_true_acts) {
 					ret |= make_vars_eval_act(make, mif->true_acts, args, has_args, def, scope, buf);
 				}
@@ -1187,7 +1222,8 @@ int make_eval(make_t *make, make_act_t acts, str_t *buf)
 			ret |= strvbuf_add(&make->strs, STRV_NULL, &act->val.var.expanded);
 			ret |= strvbuf_add(&make->strs, STRV_NULL, &act->val.var.resolved);
 			break;
-		case MAKE_ACT_IF:
+		case MAKE_ACT_IFEQ:
+		case MAKE_ACT_IFNEQ:
 			ret |= strvbuf_add(&make->strs, STRV_NULL, &act->val.mif.lexpanded);
 			ret |= strvbuf_add(&make->strs, STRV_NULL, &act->val.mif.lresolved);
 			ret |= strvbuf_add(&make->strs, STRV_NULL, &act->val.mif.rexpanded);
@@ -1425,8 +1461,9 @@ static size_t make_acts_print(const make_t *make, make_act_t acts, dst_t dst, in
 			dst.off += dputs(dst, STRV("\n"));
 			break;
 		}
-		case MAKE_ACT_IF: {
-			dst.off += dputs(dst, STRV("ifeq ("));
+		case MAKE_ACT_IFEQ:
+		case MAKE_ACT_IFNEQ: {
+			dst.off += dputs(dst, act->type == MAKE_ACT_IFEQ ? STRV("ifeq (") : STRV("ifneq ("));
 			dst.off += make_str_print(make, &act->val.mif.l, dst);
 			dst.off += dputs(dst, STRV(","));
 			dst.off += make_str_print(make, &act->val.mif.r, dst);
@@ -1607,9 +1644,20 @@ size_t make_dbg(const make_t *make, dst_t dst)
 			dst.off += dputs(dst, STRV("\n"));
 			break;
 		}
-		case MAKE_ACT_IF: {
+		case MAKE_ACT_IFEQ: {
 			dst.off += dputs(dst,
-					 STRV("IF\n"
+					 STRV("IFEQ\n"
+					      "    L: '"));
+			dst.off += make_str_print(make, &act->val.mif.l, dst);
+			dst.off += dputs(dst, STRV("'\n"));
+			dst.off += dputs(dst, STRV("    R: '"));
+			dst.off += make_str_print(make, &act->val.mif.r, dst);
+			dst.off += dputs(dst, STRV("'\n"));
+			break;
+		}
+		case MAKE_ACT_IFNEQ: {
+			dst.off += dputs(dst,
+					 STRV("IFNEQ\n"
 					      "    L: '"));
 			dst.off += make_str_print(make, &act->val.mif.l, dst);
 			dst.off += dputs(dst, STRV("'\n"));
