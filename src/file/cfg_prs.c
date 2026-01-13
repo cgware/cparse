@@ -22,7 +22,7 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 			      "lit  = (ALPHA | DIGIT | '_')+\n"
 			      "arr  = val (', ' val)*\n"
 			      "obj  = kv (', ' kv)*\n"
-			      "c    = ALPHA | DIGIT | SYMBOL | ' '\n"
+			      "c    = ALPHA | DIGIT | SYMBOL | ' ' | \"'\"\n"
 			      "tbl  = ':' key NL ent\n"
 			      "ent  = (kv NL)*\n");
 
