@@ -103,6 +103,32 @@ TEST(cfg_prs_root)
 	END;
 }
 
+TEST(cfg_prs_lit)
+{
+	START;
+
+	cfg_prs_t prs = {0};
+	cfg_prs_init(&prs, ALLOC_STD);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	strv_t str = STRV("abcABC123:_\n");
+
+	cfg_var_t root;
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, &root, DST_STD()), 0);
+	EXPECT_EQ(root, 0);
+
+	char buf[1024] = {0};
+	cfg_print(&cfg, root, DST_BUF(buf));
+	EXPECT_STR(buf, "abcABC123:_\n");
+
+	cfg_free(&cfg);
+	cfg_prs_free(&prs);
+
+	END;
+}
+
 TEST(cfg_prs_str)
 {
 	START;
@@ -216,6 +242,7 @@ STEST(cfg_prs)
 	RUN(cfg_prs_null);
 	RUN(cfg_prs_fail);
 	RUN(cfg_prs_root);
+	RUN(cfg_prs_lit);
 	RUN(cfg_prs_str);
 	RUN(cfg_prs_tbl);
 	RUN(cfg_prs_test);

@@ -19,7 +19,7 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 			      "val  = int | '\"' str '\"' | lit | '[' arr? ']' | '{' obj? '}'\n"
 			      "int  = DIGIT+\n"
 			      "str  = c*\n"
-			      "lit  = (ALPHA | DIGIT | '_')+\n"
+			      "lit  = (ALPHA | DIGIT | '_') (ALPHA | DIGIT | '_' | ':')*\n"
 			      "arr  = val (', ' val)*\n"
 			      "obj  = kv (', ' kv)*\n"
 			      "c    = ALPHA | DIGIT | SYMBOL | ' ' | \"'\"\n"
