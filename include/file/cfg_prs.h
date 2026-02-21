@@ -8,7 +8,8 @@ typedef struct cfg_prs_s {
 	estx_t estx;
 	estx_node_t file;
 	estx_node_t cfg;
-	estx_node_t kv;
+	estx_node_t tv;
+	estx_node_t vals;
 	estx_node_t key;
 	estx_node_t val;
 	estx_node_t i;
@@ -16,7 +17,10 @@ typedef struct cfg_prs_s {
 	estx_node_t lit;
 	estx_node_t arr;
 	estx_node_t obj;
+	estx_node_t kv;
+	estx_node_t mode;
 	estx_node_t tbl;
+	estx_node_t name;
 	estx_node_t ent;
 } cfg_prs_t;
 

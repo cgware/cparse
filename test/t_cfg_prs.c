@@ -155,6 +155,101 @@ TEST(cfg_prs_str)
 	END;
 }
 
+TEST(cfg_prs_mode)
+{
+	START;
+
+	cfg_prs_t prs = {0};
+	cfg_prs_init(&prs, ALLOC_STD);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	strv_t str = STRV("a += 1\n"
+			  "a -= 1\n"
+			  "a ?= 1\n");
+
+	cfg_var_t root;
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, &root, DST_STD()), 0);
+	EXPECT_EQ(root, 0);
+
+	char buf[1024] = {0};
+	cfg_print(&cfg, root, DST_BUF(buf));
+	EXPECT_STR(buf,
+		   "a += 1\n"
+		   "a -= 1\n"
+		   "a ?= 1\n");
+
+	cfg_free(&cfg);
+	cfg_prs_free(&prs);
+
+	END;
+}
+
+TEST(cfg_prs_arr_one)
+{
+	START;
+
+	cfg_prs_t prs = {0};
+	cfg_prs_init(&prs, ALLOC_STD);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	strv_t str = STRV("arr:\n"
+			  "val1\n"
+			  "\n");
+
+	cfg_var_t root;
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, &root, DST_STD()), 0);
+	EXPECT_EQ(root, 0);
+
+	char buf[1024] = {0};
+	cfg_print(&cfg, root, DST_BUF(buf));
+	EXPECT_STR(buf,
+		   "arr:\n"
+		   "val1\n"
+		   "\n");
+
+	cfg_free(&cfg);
+	cfg_prs_free(&prs);
+
+	END;
+}
+
+TEST(cfg_prs_arr_two)
+{
+	START;
+
+	cfg_prs_t prs = {0};
+	cfg_prs_init(&prs, ALLOC_STD);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	strv_t str = STRV("arr:\n"
+			  "val1\n"
+			  "val2\n"
+			  "\n");
+
+	cfg_var_t root;
+	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, &root, DST_STD()), 0);
+	EXPECT_EQ(root, 0);
+
+	char buf[1024] = {0};
+	cfg_print(&cfg, root, DST_BUF(buf));
+	EXPECT_STR(buf,
+		   "arr:\n"
+		   "val1\n"
+		   "val2\n"
+		   "\n");
+
+	cfg_free(&cfg);
+	cfg_prs_free(&prs);
+
+	END;
+}
+
 TEST(cfg_prs_tbl)
 {
 	START;
@@ -165,7 +260,7 @@ TEST(cfg_prs_tbl)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	strv_t str = STRV(":tbl\n"
+	strv_t str = STRV("[+tbl:name=tbl1]\n"
 			  "int = 1\n"
 			  "str = \"str\"\n");
 
@@ -176,7 +271,7 @@ TEST(cfg_prs_tbl)
 	char buf[1024] = {0};
 	cfg_print(&cfg, root, DST_BUF(buf));
 	EXPECT_STR(buf,
-		   ":tbl\n"
+		   "[+tbl:name=tbl1]\n"
 		   "int = 1\n"
 		   "str = \"str\"\n");
 
@@ -202,11 +297,16 @@ TEST(cfg_prs_test)
 			  "lit = lit_LIT\n"
 			  "arr = [\"str\", 1]\n"
 			  "obj = {str = \"str\", int = 1}\n"
-			  ":tbl\n"
+			  "\n"
+			  "[tbl]\n"
 			  "int = 1\n"
+			  "arr:\n"
+			  "\"val1\"\n"
+			  "\"val2\"\n"
+			  "\n"
 			  "str = \"str\"\n"
 			  "\n"
-			  ":tbll\n");
+			  "[tbll]\n");
 
 	cfg_var_t root;
 	EXPECT_EQ(cfg_prs_parse(&prs, str, &cfg, ALLOC_STD, &root, DST_STD()), 0);
@@ -222,11 +322,15 @@ TEST(cfg_prs_test)
 		   "arr = [\"str\", 1]\n"
 		   "obj = {str = \"str\", int = 1}\n"
 		   "\n"
-		   ":tbl\n"
+		   "[tbl]\n"
 		   "int = 1\n"
+		   "arr:\n"
+		   "\"val1\"\n"
+		   "\"val2\"\n"
+		   "\n"
 		   "str = \"str\"\n"
 		   "\n"
-		   ":tbll\n");
+		   "[tbll]\n");
 
 	cfg_free(&cfg);
 	cfg_prs_free(&prs);
@@ -244,6 +348,9 @@ STEST(cfg_prs)
 	RUN(cfg_prs_root);
 	RUN(cfg_prs_lit);
 	RUN(cfg_prs_str);
+	RUN(cfg_prs_mode);
+	RUN(cfg_prs_arr_one);
+	RUN(cfg_prs_arr_two);
 	RUN(cfg_prs_tbl);
 	RUN(cfg_prs_test);
 

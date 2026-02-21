@@ -1,5 +1,4 @@
-/bin/
-/build/
-/deps/
-/report/
+/.cache/
 /.vscode/
+/build/
+/compile_commands.json
