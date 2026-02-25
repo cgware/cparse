@@ -25,6 +25,21 @@ TEST(lex_init_free)
 	END;
 }
 
+TEST(lex_reset)
+{
+	START;
+
+	lex_t lex = {0};
+	lex_init(&lex, 0, 1, ALLOC_STD);
+
+	lex_reset(NULL);
+	lex_reset(&lex);
+
+	lex_free(&lex);
+
+	END;
+}
+
 TEST(lex_add_word)
 {
 	START;
@@ -273,7 +288,7 @@ TEST(lex_tok_loc_print_loc)
 	EXPECT_EQ(lex_tok_loc_print_loc(NULL, loc, DST_BUF(buf)), 0);
 	lex_tok_loc_print_loc(&lex, loc, DST_BUF(buf));
 
-	EXPECT_STR(buf, __FILE__ ":266:1: ");
+	EXPECT_STR(buf, __FILE__ ":281:1: ");
 
 	lex_free(&lex);
 
@@ -309,6 +324,7 @@ STEST(lex)
 	SSTART;
 
 	RUN(lex_init_free);
+	RUN(lex_reset);
 	RUN(lex_add_word);
 	RUN(lex_get_tok);
 	RUN(lex_get_tok_val);

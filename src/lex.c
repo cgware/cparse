@@ -144,6 +144,16 @@ void lex_free(lex_t *lex)
 	strbuf_free(&lex->words);
 }
 
+void lex_reset(lex_t *lex)
+{
+	if (lex == NULL) {
+		return;
+	}
+
+	arr_reset(&lex->toks, 0);
+	strbuf_reset(&lex->words, 0);
+}
+
 strv_t lex_get_tok_val(const lex_t *lex, tok_t tok)
 {
 	if (lex == NULL || lex->src.data == NULL) {

@@ -2,7 +2,7 @@
 #define CFG_PRS_H
 
 #include "cfg.h"
-#include "estx.h"
+#include "eprs.h"
 
 typedef struct cfg_prs_s {
 	estx_t estx;
@@ -22,11 +22,13 @@ typedef struct cfg_prs_s {
 	estx_node_t tbl;
 	estx_node_t name;
 	estx_node_t ent;
+	lex_t lex;
+	eprs_t eprs;
 } cfg_prs_t;
 
 cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc);
 void cfg_prs_free(cfg_prs_t *cfg_prs);
 
-int cfg_prs_parse(const cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, alloc_t alloc, cfg_var_t *root, dst_t dst);
+int cfg_prs_parse(cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, cfg_var_t *root, dst_t dst);
 
 #endif

@@ -30,13 +30,12 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 			      "name = (ALPHA | DIGIT | '_' | ':' | '.' | '=' | '+' | '?' | '-')+\n"
 			      "ent  = (tv NL)*\n");
 
-	lex_t lex = {0};
-	if (lex_init(&lex, 0, 512, alloc) == NULL) {
+	if (lex_init(&cfg_prs->lex, 1, 512, alloc) == NULL) {
 		log_error("cparse", "bnf", NULL, "failed to intialize lexer");
 		return NULL;
 	}
 
-	lex_tokenize(&lex, cfg_bnf, STRV(__FILE__), line);
+	lex_tokenize(&cfg_prs->lex, cfg_bnf, STRV(__FILE__), line);
 
 	ebnf_t ebnf = {0};
 	ebnf_init(&ebnf, alloc);
@@ -46,7 +45,7 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 	prs_init(&prs, 1024, ALLOC_STD);
 
 	prs_node_t prs_root;
-	prs_parse(&prs, &lex, &ebnf.stx, ebnf.file, &prs_root, DST_NONE());
+	prs_parse(&prs, &cfg_prs->lex, &ebnf.stx, ebnf.file, &prs_root, DST_NONE());
 
 	ebnf_free(&ebnf);
 
@@ -71,13 +70,20 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 	estx_find_rule(&cfg_prs->estx, STRV("ent"), &cfg_prs->ent);
 
 	prs_free(&prs);
-	lex_free(&lex);
+
+	eprs_init(&cfg_prs->eprs, 256, alloc);
 
 	return cfg_prs;
 }
 
 void cfg_prs_free(cfg_prs_t *cfg_prs)
 {
+	if (cfg_prs == NULL) {
+		return;
+	}
+
+	lex_free(&cfg_prs->lex);
+	eprs_free(&cfg_prs->eprs);
 	estx_free(&cfg_prs->estx);
 }
 
@@ -259,40 +265,30 @@ static int cfg_parse_file(const cfg_prs_t *cfg_prs, eprs_t *eprs, eprs_node_t fi
 	return cfg_parse_ent(cfg_prs, eprs, prs_cfg, *var, cfg);
 }
 
-int cfg_prs_parse(const cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, alloc_t alloc, cfg_var_t *root, dst_t dst)
+int cfg_prs_parse(cfg_prs_t *cfg_prs, strv_t str, cfg_t *cfg, cfg_var_t *root, dst_t dst)
 {
 	if (cfg_prs == NULL || cfg == NULL || str.data == NULL) {
 		return 1;
 	}
 
-	lex_t lex = {0};
-	if (lex_init(&lex, 0, 100, alloc) == NULL) {
-		log_error("cparse", "bnf", NULL, "failed to intialize lexer");
+	lex_reset(&cfg_prs->lex);
+
+	strv_t sstr = STRVN(str.data, str.len);
+	if (lex_tokenize(&cfg_prs->lex, sstr, STRV(__FILE__), __LINE__ - 1)) {
 		return 1;
 	}
 
-	strv_t sstr = STRVN(str.data, str.len);
-	lex_tokenize(&lex, sstr, STRV(__FILE__), __LINE__ - 1);
-
-	eprs_t eprs = {0};
-	eprs_init(&eprs, 100, alloc);
-
 	eprs_node_t prs_root;
-	if (eprs_parse(&eprs, &lex, &cfg_prs->estx, cfg_prs->file, &prs_root, dst)) {
-		eprs_free(&eprs);
-		lex_free(&lex);
+	if (eprs_parse(&cfg_prs->eprs, &cfg_prs->lex, &cfg_prs->estx, cfg_prs->file, &prs_root, dst)) {
 		return 1;
 	}
 
 	cfg_var_t tmp;
-	int ret = cfg_parse_file(cfg_prs, &eprs, prs_root, cfg, &tmp);
+	int ret = cfg_parse_file(cfg_prs, &cfg_prs->eprs, prs_root, cfg, &tmp);
 
 	if (root) {
 		*root = tmp;
 	}
-
-	eprs_free(&eprs);
-	lex_free(&lex);
 
 	return ret;
 }

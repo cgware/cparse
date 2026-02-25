@@ -302,7 +302,7 @@ cfg_var_data_t *cfg_it_begin(const cfg_t *cfg, cfg_var_t var, cfg_var_t *it)
 		*it = data->val.child;
 	}
 
-	return data;
+	return list_get(&cfg->vars, data->val.child);
 }
 
 cfg_var_data_t *cfg_it_next(const cfg_t *cfg, cfg_var_t *it)

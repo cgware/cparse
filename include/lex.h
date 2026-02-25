@@ -19,6 +19,8 @@ typedef struct lex_s {
 lex_t *lex_init(lex_t *lex, uint words_cap, uint toks_cap, alloc_t alloc);
 void lex_free(lex_t *lex);
 
+void lex_reset(lex_t *lex);
+
 #define lex_add_word(_lex, _str, _index) strbuf_add(&(_lex)->words, _str, _index)
 
 #define lex_get_tok(_lex, _index) (_index < (_lex)->toks.cnt ? *(tok_t *)arr_get(&(_lex)->toks, _index) : ((tok_t){.type = (1 << TOK_EOF)}))
