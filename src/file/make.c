@@ -1345,7 +1345,10 @@ static size_t make_str_print(const make_t *make, const make_str_data_t *str, dst
 		break;
 	}
 	default: {
-		dst.off += dputs(dst, strvbuf_get(&make->strs, str->val.val));
+		strv_t val = strvbuf_get(&make->strs, str->val.val);
+		if (val.len > 0) {
+			dst.off += dputs(dst, val);
+		}
 		break;
 	}
 	}
