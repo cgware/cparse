@@ -10,13 +10,13 @@ TEST(lex_init_free)
 
 	lex_t lex = {0};
 
-	EXPECT_EQ(lex_init(NULL, 0, 0, ALLOC_STD), NULL);
+	EXPECT_NULL(lex_init(NULL, 0, 0, ALLOC_STD));
 	mem_oom(1);
-	EXPECT_EQ(lex_init(&lex, 1, 0, ALLOC_STD), NULL);
-	EXPECT_EQ(lex_init(&lex, 0, 1, ALLOC_STD), NULL);
+	EXPECT_NULL(lex_init(&lex, 1, 0, ALLOC_STD));
+	EXPECT_NULL(lex_init(&lex, 0, 1, ALLOC_STD));
 	mem_oom(0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(lex_init(&lex, 0, 0, ALLOC_STD), &lex);
+	EXPECT_PTR(lex_init(&lex, 0, 0, ALLOC_STD), &lex);
 	log_set_quiet(0, 0);
 
 	lex_free(NULL);

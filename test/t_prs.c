@@ -11,20 +11,20 @@ TEST(prs_init_free)
 
 	prs_t prs = {0};
 
-	EXPECT_EQ(prs_init(NULL, 0, ALLOC_STD), NULL);
+	EXPECT_NULL(prs_init(NULL, 0, ALLOC_STD));
 	mem_oom(1);
-	EXPECT_EQ(prs_init(&prs, 1, ALLOC_STD), NULL);
+	EXPECT_NULL(prs_init(&prs, 1, ALLOC_STD));
 	mem_oom(0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(prs_init(&prs, 0, ALLOC_STD), &prs);
+	EXPECT_PTR(prs_init(&prs, 0, ALLOC_STD), &prs);
 	log_set_quiet(0, 0);
 
-	EXPECT_NE(prs.nodes.data, NULL);
+	EXPECT_NOT_NULL(prs.nodes.data);
 
 	prs_free(&prs);
 	prs_free(NULL);
 
-	EXPECT_EQ(prs.nodes.data, NULL);
+	EXPECT_NULL(prs.nodes.data);
 
 	END;
 }

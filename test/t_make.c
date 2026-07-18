@@ -11,23 +11,23 @@ TEST(make_init_free)
 
 	make_t make = {0};
 
-	EXPECT_EQ(make_init(NULL, 0, 0, 0, 0, ALLOC_STD), NULL);
+	EXPECT_NULL(make_init(NULL, 0, 0, 0, 0, ALLOC_STD));
 	mem_oom(1);
-	EXPECT_EQ(make_init(&make, 1, 0, 0, 0, ALLOC_STD), NULL);
-	EXPECT_EQ(make_init(&make, 0, 1, 0, 0, ALLOC_STD), NULL);
-	EXPECT_EQ(make_init(&make, 0, 0, 1, 0, ALLOC_STD), NULL);
-	EXPECT_EQ(make_init(&make, 0, 0, 0, 1, ALLOC_STD), NULL);
+	EXPECT_NULL(make_init(&make, 1, 0, 0, 0, ALLOC_STD));
+	EXPECT_NULL(make_init(&make, 0, 1, 0, 0, ALLOC_STD));
+	EXPECT_NULL(make_init(&make, 0, 0, 1, 0, ALLOC_STD));
+	EXPECT_NULL(make_init(&make, 0, 0, 0, 1, ALLOC_STD));
 	mem_oom(0);
-	EXPECT_EQ(make_init(&make, 1, 1, 1, 1, ALLOC_STD), &make);
+	EXPECT_PTR(make_init(&make, 1, 1, 1, 1, ALLOC_STD), &make);
 
-	EXPECT_NE(make.arrs.data, NULL);
-	EXPECT_NE(make.acts.data, NULL);
+	EXPECT_NOT_NULL(make.arrs.data);
+	EXPECT_NOT_NULL(make.acts.data);
 
 	make_free(&make);
 	make_free(NULL);
 
-	EXPECT_EQ(make.arrs.data, NULL);
-	EXPECT_EQ(make.acts.data, NULL);
+	EXPECT_NULL(make.arrs.data);
+	EXPECT_NULL(make.acts.data);
 
 	END;
 }
@@ -1343,9 +1343,9 @@ TEST(make_get_expanded)
 	make_init(&make, 0, 0, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(make_get_expanded(NULL, 0).data, NULL);
+	EXPECT_NULL(make_get_expanded(NULL, 0).data);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(make_get_expanded(&make, 0).data, NULL);
+	EXPECT_NULL(make_get_expanded(&make, 0).data);
 	log_set_quiet(0, 0);
 
 	make_free(&make);
@@ -1362,9 +1362,9 @@ TEST(make_get_resolved)
 	make_init(&make, 0, 0, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(make_get_resolved(NULL, 0, NULL).data, NULL);
+	EXPECT_NULL(make_get_resolved(NULL, 0, NULL).data);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(make_get_resolved(&make, 0, NULL).data, NULL);
+	EXPECT_NULL(make_get_resolved(&make, 0, NULL).data);
 	log_set_quiet(0, 0);
 
 	make_free(&make);
@@ -1387,7 +1387,7 @@ TEST(make_get_resolved_null_buf)
 	make_eval(&make, ext, &tmp);
 
 	str_t null = STR_NULL;
-	EXPECT_EQ(make_get_resolved(&make, ext, &null).data, NULL);
+	EXPECT_NULL(make_get_resolved(&make, ext, &null).data);
 
 	make_free(&make);
 

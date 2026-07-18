@@ -10,13 +10,13 @@ TEST(cfg_init_free)
 
 	cfg_t cfg = {0};
 
-	EXPECT_EQ(cfg_init(NULL, 0, 0, ALLOC_STD), NULL);
+	EXPECT_NULL(cfg_init(NULL, 0, 0, ALLOC_STD));
 	mem_oom(1);
-	EXPECT_EQ(cfg_init(&cfg, 1, 0, ALLOC_STD), NULL);
-	EXPECT_EQ(cfg_init(&cfg, 0, 1, ALLOC_STD), NULL);
+	EXPECT_NULL(cfg_init(&cfg, 1, 0, ALLOC_STD));
+	EXPECT_NULL(cfg_init(&cfg, 0, 1, ALLOC_STD));
 	mem_oom(0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_init(&cfg, 0, 0, ALLOC_STD), &cfg);
+	EXPECT_PTR(cfg_init(&cfg, 0, 0, ALLOC_STD), &cfg);
 	log_set_quiet(0, 0);
 
 	cfg_free(&cfg);
@@ -299,7 +299,7 @@ TEST(cfg_get_key)
 	cfg_int(&cfg, STRV("int"), CFG_MODE_UNKNOWN, 0, &root);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_get_key(&cfg, cfg.vars.cnt).data, NULL);
+	EXPECT_NULL(cfg_get_key(&cfg, cfg.vars.cnt).data);
 	log_set_quiet(0, 0);
 	strv_t key = cfg_get_key(&cfg, root);
 	EXPECT_STRN(key.data, "int", key.len);
@@ -416,14 +416,14 @@ TEST(cfg_it_begin)
 	cfg_arr(&cfg, STRV("arr"), CFG_MODE_UNKNOWN, 0, &arr);
 	cfg_int(&cfg, STRV("str"), CFG_MODE_UNKNOWN, 0, &var);
 
-	EXPECT_EQ(cfg_it_begin(NULL, cfg.vars.cnt, NULL), NULL);
+	EXPECT_NULL(cfg_it_begin(NULL, cfg.vars.cnt, NULL));
 	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_it_begin(&cfg, cfg.vars.cnt, NULL), NULL);
-	EXPECT_EQ(cfg_it_begin(&cfg, var, NULL), NULL);
+	EXPECT_NULL(cfg_it_begin(&cfg, cfg.vars.cnt, NULL));
+	EXPECT_NULL(cfg_it_begin(&cfg, var, NULL));
 	log_set_quiet(0, 0);
-	EXPECT_EQ(cfg_it_begin(&cfg, arr, NULL), NULL);
+	EXPECT_NULL(cfg_it_begin(&cfg, arr, NULL));
 	cfg_add_var(&cfg, arr, var);
-	EXPECT_NE(cfg_it_begin(&cfg, arr, &it), NULL);
+	EXPECT_NOT_NULL(cfg_it_begin(&cfg, arr, &it));
 	EXPECT_EQ(it, var);
 
 	cfg_free(&cfg);
@@ -446,19 +446,19 @@ TEST(cfg_it_next)
 
 	cfg_var_t it = cfg.vars.cnt;
 
-	EXPECT_EQ(cfg_it_next(NULL, NULL), NULL);
-	EXPECT_EQ(cfg_it_next(&cfg, NULL), NULL);
+	EXPECT_NULL(cfg_it_next(NULL, NULL));
+	EXPECT_NULL(cfg_it_next(&cfg, NULL));
 	log_set_quiet(0, 1);
-	EXPECT_EQ(cfg_it_next(&cfg, &it), NULL);
+	EXPECT_NULL(cfg_it_next(&cfg, &it));
 	log_set_quiet(0, 0);
 	cfg_add_var(&cfg, arr, var0);
 	it = var0;
-	EXPECT_EQ(cfg_it_next(&cfg, &it), NULL);
+	EXPECT_NULL(cfg_it_next(&cfg, &it));
 	cfg_add_var(&cfg, arr, var1);
 	it = var0;
-	EXPECT_NE(cfg_it_next(&cfg, &it), NULL);
+	EXPECT_NOT_NULL(cfg_it_next(&cfg, &it));
 	EXPECT_EQ(it, var1);
-	EXPECT_EQ(cfg_it_next(&cfg, &it), NULL);
+	EXPECT_NULL(cfg_it_next(&cfg, &it));
 
 	cfg_free(&cfg);
 

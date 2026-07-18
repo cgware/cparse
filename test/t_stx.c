@@ -10,22 +10,22 @@ TEST(stx_init_free)
 
 	stx_t stx = {0};
 
-	EXPECT_EQ(stx_init(NULL, 0, ALLOC_STD), NULL);
+	EXPECT_NULL(stx_init(NULL, 0, ALLOC_STD));
 	mem_oom(1);
-	EXPECT_EQ(stx_init(&stx, 1, ALLOC_STD), NULL);
+	EXPECT_NULL(stx_init(&stx, 1, ALLOC_STD));
 	mem_oom(0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(stx_init(&stx, 0, ALLOC_STD), &stx);
+	EXPECT_PTR(stx_init(&stx, 0, ALLOC_STD), &stx);
 	log_set_quiet(0, 0);
 
-	EXPECT_NE(stx.nodes.data, NULL);
-	EXPECT_NE(stx.strs.data, NULL);
+	EXPECT_NOT_NULL(stx.nodes.data);
+	EXPECT_NOT_NULL(stx.strs.data);
 
 	stx_free(&stx);
 	stx_free(NULL);
 
-	EXPECT_EQ(stx.nodes.data, NULL);
-	EXPECT_EQ(stx.strs.data, NULL);
+	EXPECT_NULL(stx.nodes.data);
+	EXPECT_NULL(stx.strs.data);
 
 	END;
 }
@@ -236,13 +236,13 @@ TEST(stx_get_node)
 
 	stx_node_t term;
 
-	EXPECT_EQ(stx_get_node(NULL, 0), NULL);
+	EXPECT_NULL(stx_get_node(NULL, 0));
 	log_set_quiet(0, 1);
-	EXPECT_EQ(stx_get_node(&stx, 0), NULL);
+	EXPECT_NULL(stx_get_node(&stx, 0));
 	log_set_quiet(0, 0);
 
 	stx_term_lit(&stx, STRV_NULL, &term);
-	EXPECT_NE(stx_get_node(&stx, 0), NULL);
+	EXPECT_NOT_NULL(stx_get_node(&stx, 0));
 
 	stx_free(&stx);
 
@@ -262,7 +262,7 @@ TEST(stx_data_lit)
 
 	const stx_node_data_t *data = stx_get_node(&stx, term);
 
-	EXPECT_EQ(stx_data_lit(NULL, NULL).data, NULL);
+	EXPECT_NULL(stx_data_lit(NULL, NULL).data);
 
 	strv_t lit = stx_data_lit(&stx, data);
 	EXPECT_STRN(lit.data, "lit", lit.len);

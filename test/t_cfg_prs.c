@@ -10,9 +10,9 @@ TEST(cfg_prs_init_free)
 
 	cfg_prs_t prs = {0};
 
-	EXPECT_EQ(cfg_prs_init(NULL, ALLOC_STD), NULL);
+	EXPECT_NULL(cfg_prs_init(NULL, ALLOC_STD));
 	mem_oom(1);
-	EXPECT_EQ(cfg_prs_init(&prs, ALLOC_STD), NULL);
+	EXPECT_NULL(cfg_prs_init(&prs, ALLOC_STD));
 	mem_oom(0);
 
 	cfg_prs_free(NULL);

@@ -10,11 +10,11 @@ TEST(ebnf_init_free)
 
 	ebnf_t ebnf = {0};
 
-	EXPECT_EQ(ebnf_init(NULL, ALLOC_STD), NULL);
+	EXPECT_NULL(ebnf_init(NULL, ALLOC_STD));
 	mem_oom(1);
-	EXPECT_EQ(ebnf_init(&ebnf, ALLOC_STD), NULL);
+	EXPECT_NULL(ebnf_init(&ebnf, ALLOC_STD));
 	mem_oom(0);
-	EXPECT_EQ(ebnf_init(&ebnf, ALLOC_STD), &ebnf);
+	EXPECT_PTR(ebnf_init(&ebnf, ALLOC_STD), &ebnf);
 
 	ebnf_free(&ebnf);
 	ebnf_free(NULL);
@@ -29,11 +29,11 @@ TEST(ebnf_get_stx)
 	ebnf_t ebnf = {0};
 	ebnf_init(&ebnf, ALLOC_STD);
 
-	EXPECT_EQ(ebnf_get_stx(NULL, ALLOC_STD, DST_NONE()), NULL);
+	EXPECT_NULL(ebnf_get_stx(NULL, ALLOC_STD, DST_NONE()));
 	mem_oom(1);
-	EXPECT_EQ(ebnf_get_stx(&ebnf, ALLOC_STD, DST_NONE()), NULL);
+	EXPECT_NULL(ebnf_get_stx(&ebnf, ALLOC_STD, DST_NONE()));
 	mem_oom(0);
-	EXPECT_NE(ebnf_get_stx(&ebnf, ALLOC_STD, DST_NONE()), NULL);
+	EXPECT_NOT_NULL(ebnf_get_stx(&ebnf, ALLOC_STD, DST_NONE()));
 
 	char buf[1024] = {0};
 	EXPECT_EQ(stx_print(&ebnf.stx, DST_BUF(buf)), 851);

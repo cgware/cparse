@@ -10,11 +10,11 @@ TEST(bnf_init_free)
 
 	bnf_t bnf = {0};
 
-	EXPECT_EQ(bnf_init(NULL, ALLOC_STD), NULL);
+	EXPECT_NULL(bnf_init(NULL, ALLOC_STD));
 	mem_oom(1);
-	EXPECT_EQ(bnf_init(&bnf, ALLOC_STD), NULL);
+	EXPECT_NULL(bnf_init(&bnf, ALLOC_STD));
 	mem_oom(0);
-	EXPECT_EQ(bnf_init(&bnf, ALLOC_STD), &bnf);
+	EXPECT_PTR(bnf_init(&bnf, ALLOC_STD), &bnf);
 
 	bnf_free(NULL);
 	bnf_free(&bnf);
@@ -29,8 +29,8 @@ TEST(bnf_get_stx)
 	bnf_t bnf = {0};
 	bnf_init(&bnf, ALLOC_STD);
 
-	EXPECT_EQ(bnf_get_stx(NULL), NULL);
-	EXPECT_NE(bnf_get_stx(&bnf), NULL);
+	EXPECT_NULL(bnf_get_stx(NULL));
+	EXPECT_NOT_NULL(bnf_get_stx(&bnf));
 
 	char buf[1024] = {0};
 	EXPECT_EQ(stx_print(&bnf.stx, DST_BUF(buf)), 715);
