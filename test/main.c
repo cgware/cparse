@@ -31,7 +31,7 @@ TEST(cparse)
 	SEND;
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	c_print_init();
 
@@ -39,7 +39,9 @@ int main()
 	log_set(&log);
 	log_add_callback(log_std_cb, DST_STD(), LOG_WARN, 1, 1);
 
-	t_init();
+	if (t_init(argc, argv)) {
+		return 0;
+	}
 
 	t_run(test_cparse, 1);
 
