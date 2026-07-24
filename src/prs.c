@@ -1,6 +1,7 @@
 #include "prs.h"
 
 #include "log.h"
+#include "mem.h"
 
 typedef enum prs_node_type_e {
 	PRS_NODE_UNKNOWN,
@@ -38,6 +39,7 @@ void prs_free(prs_t *prs)
 		return;
 	}
 
+	alloc_free(&prs->nodes.alloc, prs->parse_fail, prs->parse_fail_size);
 	tree_free(&prs->nodes);
 }
 
@@ -198,17 +200,121 @@ typedef struct prs_parse_err_s {
 static int prs_parse_rule(prs_t *prs, stx_node_t rule_id, uint *off, prs_node_t node, prs_parse_err_t *err);
 static int prs_parse_terms(prs_t *prs, stx_node_t rule, stx_node_t terms, uint *off, prs_node_t node, prs_parse_err_t *err);
 
+static int prs_cache_prepare(prs_t *prs)
+{
+	if (prs == NULL || prs->lex == NULL || prs->stx == NULL) {
+		return 1; // LCOV_EXCL_LINE
+	}
+
+	size_t stride = prs->lex->src.len + 1;
+	size_t bits   = (size_t)prs->stx->nodes.cnt * stride;
+	size_t size   = (bits + 7) / 8;
+	if (bits == 0 || size == 0) {
+		return 1;
+	}
+
+	if (size > prs->parse_fail_size) {
+		alloc_free(&prs->nodes.alloc, prs->parse_fail, prs->parse_fail_size);
+		prs->parse_fail = alloc_alloc(&prs->nodes.alloc, size);
+		if (prs->parse_fail == NULL) {
+			prs->parse_fail_size   = 0;
+			prs->parse_fail_stride = 0;
+			log_error("cparse", "prs", NULL, "failed to allocate parse failure cache");
+			return 1;
+		}
+		prs->parse_fail_size = size;
+	}
+
+	prs->parse_fail_stride = (uint)stride;
+	prs->parse_fail_bits   = bits;
+	mem_set(prs->parse_fail, 0, prs->parse_fail_size);
+	return 0;
+}
+
+static int prs_cache_failed(const prs_t *prs, stx_node_t rule, uint off)
+{
+	if (prs == NULL || prs->parse_fail == NULL || rule >= prs->stx->nodes.cnt || off >= prs->parse_fail_stride) {
+		return 0; // LCOV_EXCL_LINE
+	}
+	size_t bit = (size_t)rule * prs->parse_fail_stride + off;
+	if (bit >= prs->parse_fail_bits) {
+		return 0; // LCOV_EXCL_LINE
+	}
+	return (prs->parse_fail[bit / 8] & (byte)(1 << (bit % 8))) != 0;
+}
+
+static void prs_cache_fail(prs_t *prs, stx_node_t rule, uint off)
+{
+	if (prs == NULL || prs->parse_fail == NULL || rule >= prs->stx->nodes.cnt || off >= prs->parse_fail_stride) {
+		return; // LCOV_EXCL_LINE
+	}
+	size_t bit = (size_t)rule * prs->parse_fail_stride + off;
+	if (bit >= prs->parse_fail_bits) {
+		return; // LCOV_EXCL_LINE
+	}
+	prs->parse_fail[bit / 8] |= (byte)(1 << (bit % 8));
+}
+
+static void prs_diag_report(prs_t *prs, const char *phase, stx_node_t rule, stx_node_t term, uint off)
+{
+	if (prs == NULL || !prs->diag.enabled) {
+		return; // LCOV_EXCL_LINE
+	}
+
+	if (off > prs->diag.max_off) {
+		prs->diag.max_off = off;
+	}
+	log_debug("cparse",
+		  "prs",
+		  NULL,
+		  "prs_parse: %s rule=%u term=%u off=%u max_off=%u nodes=%u rule_calls=%u term_calls=%u term_rule=%u term_tok=%u "
+		  "term_lit=%u term_or=%u backtracks=%u memo_hits=%u memo_stores=%u",
+		  phase,
+		  rule,
+		  term,
+		  off,
+		  prs->diag.max_off,
+		  prs->nodes.cnt,
+		  prs->diag.rule_calls,
+		  prs->diag.term_calls,
+		  prs->diag.term_rule_calls,
+		  prs->diag.term_tok_calls,
+		  prs->diag.term_lit_calls,
+		  prs->diag.term_or_calls,
+		  prs->diag.backtracks,
+		  prs->diag.memo_hits,
+		  prs->diag.memo_stores);
+}
+
+static void prs_parse_diag_tick(prs_t *prs, stx_node_t rule, stx_node_t term, uint off)
+{
+	if (prs == NULL || !prs->diag.enabled) {
+		return; // LCOV_EXCL_LINE
+	}
+	if (off > prs->diag.max_off) {
+		prs->diag.max_off = off;
+	}
+	if (prs->diag.term_calls >= prs->diag.next_report) {
+		prs_diag_report(prs, "progress", rule, term, off);
+		prs->diag.next_report += 50000;
+	}
+}
+
 static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint *off, prs_node_t node, prs_parse_err_t *err)
 {
 	const stx_node_data_t *term = stx_get_node(prs->stx, term_id);
+	prs->diag.term_calls++;
+	prs_parse_diag_tick(prs, rule, term_id, *off);
 
 	switch (term->type) {
 	case STX_RULE: return 0;
 	case STX_TERM_RULE: {
+		prs->diag.term_rule_calls++;
 		uint nodes_cnt = prs->nodes.cnt;
 		uint cur       = *off;
 		prs_node_t child;
 		if (prs_node_rule(prs, term->val.rule, &child) || prs_parse_rule(prs, term->val.rule, off, child, err)) {
+			prs->diag.backtracks++;
 			prs_reset(prs, nodes_cnt);
 			*off = cur;
 			return 1;
@@ -218,6 +324,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 		return 0;
 	}
 	case STX_TERM_TOK: {
+		prs->diag.term_tok_calls++;
 		const tok_type_t tok_type = term->val.tok;
 
 		char buf[32] = {0};
@@ -247,6 +354,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 		return 1;
 	}
 	case STX_TERM_LIT: {
+		prs->diag.term_lit_calls++;
 		strv_t literal = stx_data_lit(prs->stx, term);
 
 		for (uint i = 0; i < (uint)literal.len; i++) {
@@ -294,6 +402,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 		return 0;
 	}
 	case STX_TERM_OR: {
+		prs->diag.term_or_calls++;
 		uint nodes_cnt = prs->nodes.cnt;
 		uint cur       = *off;
 		if (!prs_parse_terms(prs, rule, term->val.orv.l, off, node, err)) {
@@ -302,6 +411,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 		}
 
 		log_trace("cparse", "prs", NULL, "left: failed");
+		prs->diag.backtracks++;
 		prs_reset(prs, nodes_cnt);
 
 		if (!prs_parse_terms(prs, rule, term->val.orv.r, off, node, err)) {
@@ -310,6 +420,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 		}
 
 		log_trace("cparse", "prs", NULL, "right: failed");
+		prs->diag.backtracks++;
 		prs_reset(prs, nodes_cnt);
 		*off = cur;
 		return 1;
@@ -338,10 +449,18 @@ static int prs_parse_terms(prs_t *prs, stx_node_t rule, stx_node_t terms, uint *
 static int prs_parse_rule(prs_t *prs, stx_node_t rule, uint *off, prs_node_t node, prs_parse_err_t *err)
 {
 	log_trace("cparse", "prs", NULL, "<%d>", rule);
+	prs->diag.rule_calls++;
 
 	uint cur = *off;
+	if (prs_cache_failed(prs, rule, cur)) {
+		prs->diag.memo_hits++;
+		return 1;
+	}
+
 	if (prs_parse_terms(prs, rule, rule, off, node, err)) {
 		log_trace("cparse", "prs", NULL, "<%d>: failed", rule);
+		prs_cache_fail(prs, rule, cur);
+		prs->diag.memo_stores++;
 		*off = cur;
 		return 1;
 	}
@@ -360,13 +479,22 @@ int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_node_t rule, p
 	prs->stx = stx;
 
 	prs_reset(prs, 0);
+	if (prs_cache_prepare(prs)) {
+		return 1;
+	}
+	prs->diag = (prs_diag_t){
+		.enabled     = 1,
+		.next_report = 50000,
+	};
 
 	prs_parse_err_t err = {0};
 
 	prs_node_t tmp;
 	prs_node_rule(prs, rule, &tmp);
 	uint parsed = 0;
+	prs_diag_report(prs, "starting root rule", rule, rule, parsed);
 	if (prs_parse_rule(prs, rule, &parsed, tmp, &err) || parsed != prs->lex->src.len) {
+		prs_diag_report(prs, "failed root rule", rule, rule, parsed);
 		if (!err.failed) {
 			log_error("cparse", "prs", NULL, "wrong syntax");
 			return 1;
@@ -391,6 +519,7 @@ int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_node_t rule, p
 		dst.off += lex_tok_loc_print_src(prs->lex, loc, dst);
 		return 1;
 	}
+	prs_diag_report(prs, "completed root rule", rule, rule, parsed);
 
 	if (root) {
 		*root = tmp;

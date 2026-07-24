@@ -7,10 +7,30 @@
 
 typedef tree_node_t prs_node_t;
 
+typedef struct prs_diag_s {
+	uint enabled;
+	uint next_report;
+	uint rule_calls;
+	uint term_calls;
+	uint term_rule_calls;
+	uint term_tok_calls;
+	uint term_lit_calls;
+	uint term_or_calls;
+	uint backtracks;
+	uint max_off;
+	uint memo_hits;
+	uint memo_stores;
+} prs_diag_t;
+
 typedef struct prs_s {
 	const lex_t *lex;
 	const stx_t *stx;
 	tree_t nodes;
+	prs_diag_t diag;
+	byte *parse_fail;
+	size_t parse_fail_size;
+	uint parse_fail_stride;
+	size_t parse_fail_bits;
 } prs_t;
 
 prs_t *prs_init(prs_t *prs, uint nodes_cap, alloc_t alloc);

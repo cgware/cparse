@@ -437,20 +437,41 @@ int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_node_t r
 			return 1;
 		}
 
-		const estx_node_data_t *term = estx_get_node(eprs->estx, err.exp);
+		const estx_node_data_t *term	  = estx_get_node(eprs->estx, err.exp);
+		const estx_node_data_t *rule_data = estx_get_node(eprs->estx, err.rule);
+		strv_t rule_name		  = STRV("<unknown>");
+		if (rule_data != NULL && rule_data->type == ESTX_RULE) {
+			rule_name = strvbuf_get(&eprs->estx->strs, rule_data->val.name);
+		}
 
-		tok_loc_t loc = lex_get_tok_loc(eprs->lex, err.tok);
+		tok_loc_t loc  = lex_get_tok_loc(eprs->lex, err.tok);
+		tok_t got      = lex_get_tok(eprs->lex, err.tok);
+		strv_t got_str = lex_get_tok_val(eprs->lex, got);
 
 		dst.off += lex_tok_loc_print_loc(eprs->lex, loc, dst);
 
 		if (term->type == ESTX_TERM_TOK) {
 			char buf[32] = {0};
 			size_t len   = tok_type_print(1 << term->val.tok, DST_BUF(buf));
-			dst.off += dputf(dst, "error: expected %.*s\n", (int)len, buf);
+			dst.off += dputf(dst,
+					 "error: in rule '%.*s': expected %.*s, got '%.*s'\n",
+					 rule_name.len,
+					 rule_name.data,
+					 (int)len,
+					 buf,
+					 got_str.len,
+					 got_str.data);
 
 		} else {
 			strv_t exp_str = estx_data_lit(eprs->estx, term);
-			dst.off += dputf(dst, "error: expected \'%.*s\'\n", exp_str.len, exp_str.data);
+			dst.off += dputf(dst,
+					 "error: in rule '%.*s': expected \'%.*s\', got '%.*s'\n",
+					 rule_name.len,
+					 rule_name.data,
+					 exp_str.len,
+					 exp_str.data,
+					 got_str.len,
+					 got_str.data);
 		}
 
 		dst.off += lex_tok_loc_print_src(eprs->lex, loc, dst);

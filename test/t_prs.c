@@ -651,6 +651,60 @@ TEST(prs_parse_or_unexpected)
 	END;
 }
 
+TEST(prs_parse_empty_syntax)
+{
+	START;
+
+	lex_t lex  = {0};
+	strv_t src = STRV("a");
+	lex_init(&lex, 0, 1, ALLOC_STD);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
+
+	stx_t stx = {0};
+	stx_init(&stx, 1, ALLOC_STD);
+
+	prs_t prs = {0};
+	prs_init(&prs, 1, ALLOC_STD);
+
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, 0, NULL, DST_NONE()), 1);
+
+	prs_free(&prs);
+	stx_free(&stx);
+	lex_free(&lex);
+
+	END;
+}
+
+TEST(prs_parse_cache_alloc_failure)
+{
+	START;
+
+	lex_t lex  = {0};
+	strv_t src = STRV("a");
+	lex_init(&lex, 0, 1, ALLOC_STD);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__ - 2);
+
+	stx_t stx = {0};
+	stx_init(&stx, 1, ALLOC_STD);
+	stx_node_t rule;
+	stx_rule(&stx, STRV("rule"), &rule);
+
+	prs_t prs = {0};
+	prs_init(&prs, 1, ALLOC_STD);
+
+	log_set_quiet(0, 1);
+	mem_oom(1);
+	EXPECT_EQ(prs_parse(&prs, &lex, &stx, rule, NULL, DST_NONE()), 1);
+	mem_oom(0);
+	log_set_quiet(0, 0);
+
+	prs_free(&prs);
+	stx_free(&stx);
+	lex_free(&lex);
+
+	END;
+}
+
 TEST(prs_parse_cache)
 {
 	START;
@@ -796,6 +850,8 @@ TEST(prs_parse)
 	RUN(prs_parse_or_l);
 	RUN(prs_parse_or_r);
 	RUN(prs_parse_or_unexpected);
+	RUN(prs_parse_empty_syntax);
+	RUN(prs_parse_cache_alloc_failure);
 	RUN(prs_parse_cache);
 	RUN(prs_parse_bnf);
 

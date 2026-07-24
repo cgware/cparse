@@ -366,7 +366,7 @@ TEST(eprs_parse_tok_unexpected)
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_BUF(buf)), 1);
 
 	EXPECT_STR(buf + sizeof(__FILE__ ":000:0: ") - 1,
-		   "error: expected ALPHA\n"
+		   "error: in rule 'rule': expected ALPHA, got '1'\n"
 		   "1\n"
 		   "^\n");
 
@@ -432,7 +432,7 @@ TEST(eprs_parse_literal_unexpected_end)
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_BUF(buf)), 1);
 
 	EXPECT_STR(buf + sizeof(__FILE__ ":000:0: ") - 1,
-		   "error: expected '123'\n"
+		   "error: in rule 'rule': expected '123', got ''\n"
 		   "1\n"
 		   " ^\n");
 
@@ -468,7 +468,7 @@ TEST(eprs_parse_literal_unexpected)
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_BUF(buf)), 1);
 
 	EXPECT_STR(buf + sizeof(__FILE__ ":000:0: ") - 1,
-		   "error: expected '123'\n"
+		   "error: in rule 'rule': expected '123', got '3'\n"
 		   "13\n"
 		   " ^\n");
 
@@ -538,7 +538,7 @@ TEST(eprs_parse_alt_failed)
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_BUF(buf)), 1);
 
 	EXPECT_STR(buf + sizeof(__FILE__ ":000:0: ") - 1,
-		   "error: expected 'b'\n"
+		   "error: in rule 'rule': expected 'b', got 'c'\n"
 		   "c\n"
 		   "^\n");
 
@@ -612,7 +612,7 @@ TEST(eprs_parse_con_failed)
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_BUF(buf)), 1);
 
 	EXPECT_STR(buf + sizeof(__FILE__ ":000:0: ") - 1,
-		   "error: expected 'a'\n"
+		   "error: in rule 'rule': expected 'a', got 'c'\n"
 		   "c\n"
 		   "^\n");
 
@@ -686,7 +686,7 @@ TEST(eprs_parse_group_failed)
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_BUF(buf)), 1);
 
 	EXPECT_STR(buf + sizeof(__FILE__ ":000:0: ") - 1,
-		   "error: expected 'a'\n"
+		   "error: in rule 'rule': expected 'a', got 'c'\n"
 		   "c\n"
 		   "^\n");
 
@@ -786,7 +786,7 @@ TEST(eprs_parse_rep_failed)
 	EXPECT_EQ(eprs_parse(&eprs, &lex, &estx, rule, NULL, DST_BUF(buf)), 1);
 
 	EXPECT_STR(buf + sizeof(__FILE__ ":000:0: ") - 1,
-		   "error: expected 'a'\n"
+		   "error: in rule 'rule': expected 'a', got ''\n"
 		   "\n"
 		   "^\n");
 
