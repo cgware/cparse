@@ -319,6 +319,29 @@ TEST(lex_tok_loc_print_src)
 	END;
 }
 
+TEST(lex_tok_loc_print_src_tab)
+{
+	START;
+
+	lex_t lex  = {0};
+	strv_t src = STRV("\tline");
+	lex_init(&lex, 0, 1, ALLOC_STD);
+	lex_tokenize(&lex, src, STRV(__FILE__), __LINE__);
+
+	tok_loc_t loc = lex_get_tok_loc(&lex, 2);
+
+	char buf[2048] = {0};
+	lex_tok_loc_print_src(&lex, loc, DST_BUF(buf));
+
+	EXPECT_STR(buf,
+		   "\tline\n"
+		   "\t ^\n");
+
+	lex_free(&lex);
+
+	END;
+}
+
 STEST(lex)
 {
 	SSTART;
@@ -338,6 +361,7 @@ STEST(lex)
 	RUN(lex_print);
 	RUN(lex_tok_loc_print_loc);
 	RUN(lex_tok_loc_print_src);
+	RUN(lex_tok_loc_print_src_tab);
 
 	SEND;
 }

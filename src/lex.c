@@ -315,7 +315,15 @@ size_t lex_tok_loc_print_src(const lex_t *lex, tok_loc_t loc, dst_t dst)
 	size_t off = dst.off;
 
 	dst.off += dputs(dst, STRVN(&lex->src.data[loc.line_off], loc.line_len));
-	dst.off += dputf(dst, "\n%*s^\n", loc.col, "");
+	dst.off += dputs(dst, STRV("\n"));
+	for (uint i = 0; i < loc.col && i < loc.line_len; i++) {
+		if (lex->src.data[loc.line_off + i] == '\t') {
+			dst.off += dputs(dst, STRV("\t"));
+		} else {
+			dst.off += dputs(dst, STRV(" "));
+		}
+	}
+	dst.off += dputs(dst, STRV("^\n"));
 
 	return dst.off - off;
 }
