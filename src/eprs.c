@@ -26,7 +26,7 @@ eprs_t *eprs_init(eprs_t *eprs, uint nodes_cap, alloc_t alloc)
 	}
 
 	if (tree_init(&eprs->nodes, nodes_cap, sizeof(eprs_node_data_t), alloc) == NULL) {
-		log_error("cparse", "eprs", NULL, "failed to initialize nodes tree");
+		log_error("cparse.eprs", "failed to initialize nodes tree");
 		return NULL;
 	}
 
@@ -59,7 +59,7 @@ int eprs_node_rule(eprs_t *eprs, estx_node_t rule, eprs_node_t *node)
 
 	eprs_node_data_t *data = tree_node(&eprs->nodes, node);
 	if (data == NULL) {
-		log_error("cparse", "eprs", NULL, "failed to add rule node");
+		log_error("cparse.eprs", "failed to add rule node");
 		return 1;
 	}
 
@@ -79,7 +79,7 @@ int eprs_node_tok(eprs_t *eprs, tok_t tok, eprs_node_t *node)
 
 	eprs_node_data_t *data = tree_node(&eprs->nodes, node);
 	if (data == NULL) {
-		log_error("cparse", "eprs", NULL, "failed to add tok node");
+		log_error("cparse.eprs", "failed to add tok node");
 		return 1;
 	}
 
@@ -99,7 +99,7 @@ int eprs_node_lit(eprs_t *eprs, size_t start, uint len, eprs_node_t *node)
 
 	eprs_node_data_t *data = tree_node(&eprs->nodes, node);
 	if (data == NULL) {
-		log_error("cparse", "eprs", NULL, "failed to add literal node");
+		log_error("cparse.eprs", "failed to add literal node");
 		return 1;
 	}
 
@@ -185,7 +185,7 @@ int eprs_get_str(const eprs_t *eprs, eprs_node_t parent, tok_t *out)
 			break;
 		}
 		case EPRS_NODE_UNKNOWN:
-		default: log_error("cparse", "eprs", NULL, "unexpected node: %d", data->type); break;
+		default: log_error("cparse.eprs", "unexpected node: %d", data->type); break;
 		}
 	}
 
@@ -237,7 +237,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 			eprs_node_t token;
 			eprs_node_tok(eprs, (tok_t){.type = tok_type, .start = tok.start, .len = tok.len}, &token);
 			eprs_add_node(eprs, node, token);
-			log_trace("cparse", "eprs", NULL, "%.*s: success +%d", len, buf, tok.len);
+			log_trace("cparse.eprs", "%.*s: success +%d", len, buf, tok.len);
 			*off += tok.len;
 			return 0;
 		}
@@ -250,7 +250,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 		}
 		char act[32]   = {0};
 		size_t act_len = lex_print_tok(eprs->lex, tok, DST_BUF(act));
-		log_trace("cparse", "eprs", NULL, "failed: expected %.*s, but got %.*s", len, buf, (int)act_len, act);
+		log_trace("cparse.eprs", "failed: expected %.*s, but got %.*s", len, buf, (int)act_len, act);
 		return 1;
 	}
 	case ESTX_TERM_LIT: {
@@ -264,7 +264,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 				err->tok    = *off + i;
 				err->exp    = term_id;
 				err->failed = 1;
-				log_trace("cparse", "eprs", NULL, "\'%*s\': failed: end of toks", literal.len, literal.data);
+				log_trace("cparse.eprs", "\'%*s\': failed: end of toks", literal.len, literal.data);
 				return 1;
 			}
 
@@ -281,9 +281,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 				char buf[256] = {0};
 				size_t len    = strv_print(tok_val, DST_BUF(buf));
 
-				log_trace("cparse",
-					  "eprs",
-					  NULL,
+				log_trace("cparse.eprs",
 					  "failed: expected \'%.*s\', but got \'%.*s\'",
 					  literal.len,
 					  literal.data,
@@ -296,7 +294,7 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 		eprs_node_t lit;
 		eprs_node_lit(eprs, *off, (uint)literal.len, &lit);
 		eprs_add_node(eprs, node, lit);
-		log_trace("cparse", "eprs", NULL, "\'%*s\': success +%d", literal.len, literal.data, literal.len);
+		log_trace("cparse.eprs", "\'%*s\': success +%d", literal.len, literal.data, literal.len);
 		*off += (uint)literal.len;
 		return 0;
 	}
@@ -307,11 +305,11 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 			uint cur       = *off;
 			uint nodes_cnt = eprs->nodes.cnt;
 			if (eprs_parse_terms(eprs, rule, terms, off, node, err, term)) {
-				log_trace("cparse", "eprs", NULL, "alt: failed");
+				log_trace("cparse.eprs", "alt: failed");
 				eprs_reset(eprs, nodes_cnt);
 				*off = cur;
 			} else {
-				log_trace("cparse", "eprs", NULL, "alt: success");
+				log_trace("cparse.eprs", "alt: success");
 				return 0;
 			}
 		}
@@ -324,12 +322,12 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 		{
 			uint nodes_cnt = eprs->nodes.cnt;
 			if (eprs_parse_terms(eprs, rule, terms, off, node, err, term)) {
-				log_trace("cparse", "eprs", NULL, "con: failed");
+				log_trace("cparse.eprs", "con: failed");
 				eprs_reset(eprs, nodes_cnt);
 				*off = cur;
 				return 1;
 			} else {
-				log_trace("cparse", "eprs", NULL, "con: success");
+				log_trace("cparse.eprs", "con: success");
 			}
 		}
 		return 0;
@@ -341,17 +339,17 @@ static int eprs_parse_term(eprs_t *eprs, estx_node_t rule, estx_node_t term_id, 
 		{
 			uint nodes_cnt = eprs->nodes.cnt;
 			if (eprs_parse_terms(eprs, rule, terms, off, node, err, term)) {
-				log_trace("cparse", "eprs", NULL, "group: failed");
+				log_trace("cparse.eprs", "group: failed");
 				eprs_reset(eprs, nodes_cnt);
 				*off = cur;
 				return 1;
 			} else {
-				log_trace("cparse", "eprs", NULL, "group: success");
+				log_trace("cparse.eprs", "group: success");
 			}
 		}
 		return 0;
 	}
-	default: log_warn("cparse", "eprs", NULL, "unknown term type: %d", term->type); break;
+	default: log_warn("cparse.eprs", "unknown term type: %d", term->type); break;
 	}
 
 	return 1;
@@ -381,14 +379,14 @@ static int eprs_parse_terms(eprs_t *eprs, estx_node_t rule, estx_node_t term_id,
 	}
 
 	if (ret && rep) {
-		log_trace("cparse", "eprs", NULL, "rep: failed");
+		log_trace("cparse.eprs", "rep: failed");
 		*off = cur;
 		return ret;
 	}
 
 	while (ret == 0) {
 		if (cur == *off) {
-			log_warn("cparse", "eprs", NULL, "loop detected: %d", cur);
+			log_warn("cparse.eprs", "loop detected: %d", cur);
 			break;
 		}
 		cur = *off;
@@ -401,17 +399,17 @@ static int eprs_parse_terms(eprs_t *eprs, estx_node_t rule, estx_node_t term_id,
 
 static int eprs_parse_rule(eprs_t *prs, const estx_node_t rule, uint *off, eprs_node_t node, eprs_parse_err_t *err)
 {
-	log_trace("cparse", "eprs", NULL, "<%d>", rule);
+	log_trace("cparse.eprs", "<%d>", rule);
 
 	uint cur		     = *off;
 	const estx_node_data_t *term = estx_get_node(prs->estx, rule);
 	if (eprs_parse_terms(prs, rule, rule, off, node, err, term)) {
-		log_trace("cparse", "eprs", NULL, "<%d>: failed", rule);
+		log_trace("cparse.eprs", "<%d>: failed", rule);
 		*off = cur;
 		return 1;
 	}
 
-	log_trace("cparse", "eprs", NULL, "<%d>: success +%d", rule, *off - cur);
+	log_trace("cparse.eprs", "<%d>: success +%d", rule, *off - cur);
 	return 0;
 }
 
@@ -433,7 +431,7 @@ int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_node_t r
 	uint parsed = 0;
 	if (eprs_parse_rule(eprs, rule, &parsed, tmp, &err) || parsed != eprs->lex->toks.cnt) {
 		if (!err.failed) {
-			log_error("cparse", "eprs", NULL, "wrong syntax");
+			log_error("cparse.eprs", "wrong syntax");
 			return 1;
 		}
 
@@ -482,7 +480,7 @@ int eprs_parse(eprs_t *eprs, const lex_t *lex, const estx_t *estx, estx_node_t r
 		*root = tmp;
 	}
 
-	log_trace("cparse", "eprs", NULL, "success");
+	log_trace("cparse.eprs", "success");
 	return 0;
 }
 

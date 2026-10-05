@@ -31,7 +31,7 @@ cfg_prs_t *cfg_prs_init(cfg_prs_t *cfg_prs, alloc_t alloc)
 			      "ent  = (tv NL)*\n");
 
 	if (lex_init(&cfg_prs->lex, 1, 512, alloc) == NULL) {
-		log_error("cparse", "bnf", NULL, "failed to intialize lexer");
+		log_error("cparse.bnf", "failed to intialize lexer");
 		return NULL;
 	}
 

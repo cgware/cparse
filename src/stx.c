@@ -10,7 +10,7 @@ stx_t *stx_init(stx_t *stx, uint nodes_cap, alloc_t alloc)
 
 	if (list_init(&stx->nodes, nodes_cap, sizeof(stx_node_data_t), alloc) == NULL ||
 	    strvbuf_init(&stx->strs, nodes_cap, 8, alloc) == NULL) {
-		log_error("cparse", "stx", NULL, "failed to initialize nodes");
+		log_error("cparse.stx", "failed to initialize nodes");
 		return NULL;
 	}
 
@@ -36,14 +36,14 @@ int stx_rule(stx_t *stx, strv_t name, stx_node_t *rule)
 	size_t rule_name;
 	size_t used = stx->strs.used;
 	if (strvbuf_add(&stx->strs, name, &rule_name)) {
-		log_error("cparse", "stx", NULL, "failed to add rule name");
+		log_error("cparse.stx", "failed to add rule name");
 		return 1;
 	}
 
 	stx_node_data_t *data = list_node(&stx->nodes, rule);
 	if (data == NULL) {
 		buf_reset(&stx->strs, used);
-		log_error("cparse", "stx", NULL, "failed to add rule");
+		log_error("cparse.stx", "failed to add rule");
 		return 1;
 	}
 
@@ -63,13 +63,13 @@ int stx_term_rule(stx_t *stx, stx_node_t rule, stx_node_t *term)
 
 	stx_node_data_t *data = stx_get_node(stx, rule);
 	if (data == NULL || data->type != STX_RULE) {
-		log_error("cparse", "stx", NULL, "invalid rule: %d", rule);
+		log_error("cparse.stx", "invalid rule: %d", rule);
 		return 1;
 	}
 
 	data = list_node(&stx->nodes, term);
 	if (data == NULL) {
-		log_error("cparse", "stx", NULL, "failed to create rule term");
+		log_error("cparse.stx", "failed to create rule term");
 		return 1;
 	}
 
@@ -89,7 +89,7 @@ int stx_term_tok(stx_t *stx, tok_type_t tok, stx_node_t *term)
 
 	stx_node_data_t *data = list_node(&stx->nodes, term);
 	if (data == NULL) {
-		log_error("cparse", "stx", NULL, "failed to create tok term");
+		log_error("cparse.stx", "failed to create tok term");
 		return 1;
 	}
 
@@ -110,14 +110,14 @@ int stx_term_lit(stx_t *stx, strv_t str, stx_node_t *term)
 	size_t lit;
 	size_t used = stx->strs.used;
 	if (strvbuf_add(&stx->strs, str, &lit)) {
-		log_error("cparse", "stx", NULL, "failed to add literal string");
+		log_error("cparse.stx", "failed to add literal string");
 		return 1;
 	}
 
 	stx_node_data_t *data = list_node(&stx->nodes, term);
 	if (data == NULL) {
 		buf_reset(&stx->strs, used);
-		log_error("cparse", "stx", NULL, "failed to create literal term");
+		log_error("cparse.stx", "failed to create literal term");
 		return 1;
 	}
 
@@ -136,18 +136,18 @@ int stx_term_or(stx_t *stx, stx_node_t l, stx_node_t r, stx_node_t *term)
 	}
 
 	if (stx_get_node(stx, l) == NULL) {
-		log_error("cparse", "stx", NULL, "invalid left node: %d", l);
+		log_error("cparse.stx", "invalid left node: %d", l);
 		return 1;
 	}
 
 	if (stx_get_node(stx, r) == NULL) {
-		log_error("cparse", "stx", NULL, "invalid right node: %d", r);
+		log_error("cparse.stx", "invalid right node: %d", r);
 		return 1;
 	}
 
 	stx_node_data_t *data = list_node(&stx->nodes, term);
 	if (data == NULL) {
-		log_error("cparse", "stx", NULL, "failed to create or term");
+		log_error("cparse.stx", "failed to create or term");
 		return 1;
 	}
 
@@ -190,7 +190,7 @@ stx_node_data_t *stx_get_node(const stx_t *stx, stx_node_t node)
 
 	stx_node_data_t *data = list_get(&stx->nodes, node);
 	if (data == NULL) {
-		log_error("cparse", "stx", NULL, "invalid node: %d", node);
+		log_error("cparse.stx", "invalid node: %d", node);
 		return NULL;
 	}
 
@@ -213,7 +213,7 @@ int stx_add_term(stx_t *stx, stx_node_t node, stx_node_t term)
 	}
 
 	if (list_app(&stx->nodes, node, term)) {
-		log_error("cparse", "stx", NULL, "failed to add term %d to node %d", term, node);
+		log_error("cparse.stx", "failed to add term %d to node %d", term, node);
 		return 1;
 	}
 
@@ -272,7 +272,7 @@ int stx_rule_add_arr(stx_t *stx, stx_node_t rule, stx_node_t term)
 	stx_node_t l;
 	stx_node_data_t *copy = list_node(&stx->nodes, &l);
 	if (copy == NULL) {
-		log_error("cparse", "stx", NULL, "failed to copy term");
+		log_error("cparse.stx", "failed to copy term");
 		return 1;
 	}
 
@@ -298,7 +298,7 @@ int stx_rule_add_arr_sep(stx_t *stx, stx_node_t rule, stx_node_t term, stx_node_
 	stx_node_t l;
 	stx_node_data_t *copy = list_node(&stx->nodes, &l);
 	if (copy == NULL) {
-		log_error("cparse", "stx", NULL, "failed to copy term");
+		log_error("cparse.stx", "failed to copy term");
 		return 1;
 	}
 
@@ -347,7 +347,7 @@ static size_t stx_terms_print(const stx_t *stx, stx_node_t terms, dst_t dst)
 			dst.off += dputs(dst, STRV(" |"));
 			dst.off += stx_terms_print(stx, term->val.orv.r, dst);
 			break;
-		default: log_warn("cparse", "stx", NULL, "unknown term type: %d", term->type); break;
+		default: log_warn("cparse.stx", "unknown term type: %d", term->type); break;
 		}
 	}
 
@@ -496,7 +496,7 @@ static size_t stx_node_print_tree(const stx_t *stx, stx_node_t rule, dst_t dst)
 			}
 			break;
 		default:
-			log_warn("cparse", "stx", NULL, "unknown term type: %d", term->type);
+			log_warn("cparse.stx", "unknown term type: %d", term->type);
 			top--;
 			break;
 		}

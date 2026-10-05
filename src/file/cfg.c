@@ -9,12 +9,12 @@ cfg_t *cfg_init(cfg_t *cfg, uint strs_cap, uint vars_cap, alloc_t alloc)
 	}
 
 	if (strvbuf_init(&cfg->strs, strs_cap, strs_cap * 8, alloc) == NULL) {
-		log_error("cparse", "cfg", NULL, "failed to initialize stings");
+		log_error("cparse.cfg", "failed to initialize stings");
 		return NULL;
 	}
 
 	if (list_init(&cfg->vars, vars_cap, sizeof(cfg_var_data_t), alloc) == NULL) {
-		log_error("cparse", "cfg", NULL, "failed to initialize values");
+		log_error("cparse.cfg", "failed to initialize values");
 		return NULL;
 	}
 
@@ -40,14 +40,14 @@ static int add_var(cfg_t *cfg, strv_t key, cfg_var_t *var, cfg_var_data_t data)
 	data.key = -1;
 	if (key.data) {
 		if (strvbuf_add(&cfg->strs, key, &data.key)) {
-			log_error("cparse", "cfg", NULL, "failed to add key");
+			log_error("cparse.cfg", "failed to add key");
 			return 1;
 		}
 	}
 
 	cfg_var_data_t *ptr = list_node(&cfg->vars, var);
 	if (ptr == NULL) {
-		log_error("cparse", "cfg", NULL, "failed to add value");
+		log_error("cparse.cfg", "failed to add value");
 		return 1;
 	}
 
@@ -69,7 +69,7 @@ int cfg_lit(cfg_t *cfg, strv_t key, cfg_mode_t mode, strv_t str, cfg_var_t *var)
 
 	size_t str_id;
 	if (strvbuf_add(&cfg->strs, str, &str_id)) {
-		log_error("cparse", "cfg", NULL, "failed to add string");
+		log_error("cparse.cfg", "failed to add string");
 		return 1;
 	}
 
@@ -84,7 +84,7 @@ int cfg_str(cfg_t *cfg, strv_t key, cfg_mode_t mode, strv_t str, cfg_var_t *var)
 
 	size_t str_id;
 	if (strvbuf_add(&cfg->strs, str, &str_id)) {
-		log_error("cparse", "cfg", NULL, "failed to add string");
+		log_error("cparse.cfg", "failed to add string");
 		return 1;
 	}
 
@@ -119,7 +119,7 @@ int cfg_add_var(cfg_t *cfg, cfg_var_t parent, cfg_var_t var)
 
 	cfg_var_data_t *data = list_get(&cfg->vars, parent);
 	if (data == NULL) {
-		log_error("cparse", "cfg", NULL, "failed to get parent: %d", parent);
+		log_error("cparse.cfg", "failed to get parent: %d", parent);
 		return 1;
 	}
 
@@ -169,7 +169,7 @@ int cfg_has_var(const cfg_t *cfg, cfg_var_t parent, strv_t key, cfg_var_t *var)
 
 	cfg_var_data_t *data = list_get(&cfg->vars, parent);
 	if (data == NULL) {
-		log_error("cparse", "cfg", NULL, "failed to get parent: %d", parent);
+		log_error("cparse.cfg", "failed to get parent: %d", parent);
 		return 0;
 	}
 
@@ -205,7 +205,7 @@ strv_t cfg_get_key(const cfg_t *cfg, cfg_var_t var)
 {
 	const cfg_var_data_t *data = list_get(&cfg->vars, var);
 	if (data == NULL) {
-		log_error("cparse", "cfg", NULL, "failed to get variable: %d", var);
+		log_error("cparse.cfg", "failed to get variable: %d", var);
 		return STRV_NULL;
 	}
 
@@ -220,12 +220,12 @@ const cfg_var_data_t *cfg_get_type(const cfg_t *cfg, cfg_var_t var, cfg_var_type
 
 	const cfg_var_data_t *data = list_get(&cfg->vars, var);
 	if (data == NULL) {
-		log_error("cparse", "cfg", NULL, "failed to get variable: %d", var);
+		log_error("cparse.cfg", "failed to get variable: %d", var);
 		return NULL;
 	}
 
 	if (data->type != type) {
-		log_error("cparse", "cfg", NULL, "expected %s, got %s", val_type_to_str(type), val_type_to_str(data->type));
+		log_error("cparse.cfg", "expected %s, got %s", val_type_to_str(type), val_type_to_str(data->type));
 		return NULL;
 	}
 
@@ -282,7 +282,7 @@ cfg_var_data_t *cfg_it_begin(const cfg_t *cfg, cfg_var_t var, cfg_var_t *it)
 
 	cfg_var_data_t *data = list_get(&cfg->vars, var);
 	if (data == NULL) {
-		log_error("cparse", "cfg", NULL, "failed to get variable: %d", var);
+		log_error("cparse.cfg", "failed to get variable: %d", var);
 		return NULL;
 	}
 
@@ -291,7 +291,7 @@ cfg_var_data_t *cfg_it_begin(const cfg_t *cfg, cfg_var_t var, cfg_var_t *it)
 	case CFG_VAR_ARR:
 	case CFG_VAR_OBJ:
 	case CFG_VAR_TBL: break;
-	default: log_error("cparse", "cfg", NULL, "variable is not iteratable: %d", var); return NULL;
+	default: log_error("cparse.cfg", "variable is not iteratable: %d", var); return NULL;
 	}
 
 	if (!data->has_val) {
@@ -374,7 +374,7 @@ static size_t cfg_print_var(const cfg_t *cfg, const cfg_var_data_t *data, int fi
 			dst.off += dputf(dst, "[%.*s]\n", key.len, key.data);
 			break;
 		}
-		default: log_error("cparse", "cfg", NULL, "unknown type: %d", data->type); break;
+		default: log_error("cparse.cfg", "unknown type: %d", data->type); break;
 		}
 	}
 
@@ -420,7 +420,7 @@ static size_t cfg_print_var(const cfg_t *cfg, const cfg_var_data_t *data, int fi
 		}
 		break;
 	}
-	default: log_error("cparse", "cfg", NULL, "unknown type: %d", data->type); break;
+	default: log_error("cparse.cfg", "unknown type: %d", data->type); break;
 	}
 
 	return dst.off - off;
@@ -458,7 +458,7 @@ size_t cfg_print(const cfg_t *cfg, cfg_var_t var, dst_t dst)
 
 	const cfg_var_data_t *data = list_get(&cfg->vars, var);
 	if (data == NULL) {
-		log_error("cparse", "cfg", NULL, "failed to print variable: %d", var);
+		log_error("cparse.cfg", "failed to print variable: %d", var);
 		return 0;
 	}
 

@@ -10,7 +10,7 @@ estx_t *estx_init(estx_t *estx, uint nodes_cap, alloc_t alloc)
 
 	if (list_init(&estx->nodes, nodes_cap, sizeof(estx_node_data_t), alloc) == NULL ||
 	    strvbuf_init(&estx->strs, nodes_cap, 8, alloc) == NULL) {
-		log_error("cparse", "estx", NULL, "failed to initialize nodes");
+		log_error("cparse.estx", "failed to initialize nodes");
 		return NULL;
 	}
 
@@ -36,14 +36,14 @@ int estx_rule(estx_t *estx, strv_t name, estx_node_t *rule)
 	size_t rule_name;
 	size_t used = estx->strs.used;
 	if (strvbuf_add(&estx->strs, name, &rule_name)) {
-		log_error("cparse", "estx", NULL, "failed to add rule name");
+		log_error("cparse.estx", "failed to add rule name");
 		return 1;
 	}
 
 	estx_node_data_t *data = list_node(&estx->nodes, rule);
 	if (data == NULL) {
 		strvbuf_reset(&estx->strs, used);
-		log_error("cparse", "stx", NULL, "failed to add rule");
+		log_error("cparse.stx", "failed to add rule");
 		return 1;
 	}
 
@@ -53,7 +53,7 @@ int estx_rule(estx_t *estx, strv_t name, estx_node_t *rule)
 	};
 
 	if (rule) {
-		log_trace("cparse", "estx", NULL, "created rule('%.*s'): %d", name.len, name.data, *rule);
+		log_trace("cparse.estx", "created rule('%.*s'): %d", name.len, name.data, *rule);
 	}
 
 	return 0;
@@ -67,13 +67,13 @@ int estx_term_rule(estx_t *estx, estx_node_t rule, estx_node_occ_t occ, estx_nod
 
 	estx_node_data_t *data = estx_get_node(estx, rule);
 	if (data == NULL || data->type != ESTX_RULE) {
-		log_error("cparse", "estx", NULL, "invalid rule: %d", rule);
+		log_error("cparse.estx", "invalid rule: %d", rule);
 		return 1;
 	}
 
 	data = list_node(&estx->nodes, term);
 	if (data == NULL) {
-		log_error("cparse", "estx", NULL, "failed to create rule term");
+		log_error("cparse.estx", "failed to create rule term");
 		return 1;
 	}
 
@@ -84,7 +84,7 @@ int estx_term_rule(estx_t *estx, estx_node_t rule, estx_node_occ_t occ, estx_nod
 	};
 
 	if (term) {
-		log_trace("cparse", "estx", NULL, "created rule(%d) term: %d", rule, *term);
+		log_trace("cparse.estx", "created rule(%d) term: %d", rule, *term);
 	}
 
 	return 0;
@@ -98,7 +98,7 @@ int estx_term_tok(estx_t *estx, tok_type_t tok, estx_node_occ_t occ, estx_node_t
 
 	estx_node_data_t *data = list_node(&estx->nodes, term);
 	if (data == NULL) {
-		log_error("cparse", "estx", NULL, "failed to create tok term");
+		log_error("cparse.estx", "failed to create tok term");
 		return 1;
 	}
 
@@ -109,7 +109,7 @@ int estx_term_tok(estx_t *estx, tok_type_t tok, estx_node_occ_t occ, estx_node_t
 	};
 
 	if (term) {
-		log_trace("cparse", "estx", NULL, "created tok(%d) term: %d", tok, *term);
+		log_trace("cparse.estx", "created tok(%d) term: %d", tok, *term);
 	}
 
 	return 0;
@@ -124,14 +124,14 @@ int estx_term_lit(estx_t *estx, strv_t str, estx_node_occ_t occ, estx_node_t *te
 	size_t lit;
 	size_t used = estx->strs.used;
 	if (strvbuf_add(&estx->strs, str, &lit)) {
-		log_error("cparse", "estx", NULL, "failed to add literal string");
+		log_error("cparse.estx", "failed to add literal string");
 		return 1;
 	}
 
 	estx_node_data_t *data = list_node(&estx->nodes, term);
 	if (data == NULL) {
 		strvbuf_reset(&estx->strs, used);
-		log_error("cparse", "estx", NULL, "failed to create literal term");
+		log_error("cparse.estx", "failed to create literal term");
 		return 1;
 	}
 
@@ -142,7 +142,7 @@ int estx_term_lit(estx_t *estx, strv_t str, estx_node_occ_t occ, estx_node_t *te
 	};
 
 	if (term) {
-		log_trace("cparse", "estx", NULL, "created lit('%.*s') term: %d", str.len, str.data, *term);
+		log_trace("cparse.estx", "created lit('%.*s') term: %d", str.len, str.data, *term);
 	}
 
 	return 0;
@@ -156,7 +156,7 @@ int estx_term_alt(estx_t *estx, estx_node_t terms, estx_node_t *term)
 
 	estx_node_data_t *data = list_node(&estx->nodes, term);
 	if (data == NULL) {
-		log_error("cparse", "estx", NULL, "failed to create alt term");
+		log_error("cparse.estx", "failed to create alt term");
 		return 1;
 	}
 
@@ -166,7 +166,7 @@ int estx_term_alt(estx_t *estx, estx_node_t terms, estx_node_t *term)
 	};
 
 	if (term) {
-		log_trace("cparse", "estx", NULL, "created alt(%d) literal term: %d", terms, *term);
+		log_trace("cparse.estx", "created alt(%d) literal term: %d", terms, *term);
 	}
 
 	return 0;
@@ -180,7 +180,7 @@ int estx_term_con(estx_t *estx, estx_node_t terms, estx_node_t *term)
 
 	estx_node_data_t *data = list_node(&estx->nodes, term);
 	if (data == NULL) {
-		log_error("cparse", "estx", NULL, "failed to create con term");
+		log_error("cparse.estx", "failed to create con term");
 		return 1;
 	}
 
@@ -190,7 +190,7 @@ int estx_term_con(estx_t *estx, estx_node_t terms, estx_node_t *term)
 	};
 
 	if (term) {
-		log_trace("cparse", "estx", NULL, "created con(%d) term: %d", terms, *term);
+		log_trace("cparse.estx", "created con(%d) term: %d", terms, *term);
 	}
 
 	return 0;
@@ -204,7 +204,7 @@ int estx_term_group(estx_t *estx, estx_node_t terms, estx_node_occ_t occ, estx_n
 
 	estx_node_data_t *data = list_node(&estx->nodes, term);
 	if (data == NULL) {
-		log_error("cparse", "estx", NULL, "failed to create group term");
+		log_error("cparse.estx", "failed to create group term");
 		return 1;
 	}
 
@@ -215,7 +215,7 @@ int estx_term_group(estx_t *estx, estx_node_t terms, estx_node_occ_t occ, estx_n
 	};
 
 	if (term) {
-		log_trace("cparse", "estx", NULL, "created group(%d) term: %d", terms, *term);
+		log_trace("cparse.estx", "created group(%d) term: %d", terms, *term);
 	}
 
 	return 0;
@@ -252,7 +252,7 @@ estx_node_data_t *estx_get_node(const estx_t *estx, estx_node_t node)
 
 	estx_node_data_t *data = list_get(&estx->nodes, node);
 	if (data == NULL) {
-		log_error("cparse", "estx", NULL, "invalid node: %d", node);
+		log_error("cparse.estx", "invalid node: %d", node);
 		return NULL;
 	}
 
@@ -275,11 +275,11 @@ int estx_add_term(estx_t *estx, estx_node_t node, estx_node_t term)
 	}
 
 	if (list_app(&estx->nodes, node, term)) {
-		log_error("cparse", "estx", NULL, "failed to add term %d to node %d", term, node);
+		log_error("cparse.estx", "failed to add term %d to node %d", term, node);
 		return 1;
 	}
 
-	log_trace("cparse", "estx", NULL, "added %d to %d", term, node);
+	log_trace("cparse.estx", "added %d to %d", term, node);
 
 	return 0;
 }
@@ -373,7 +373,7 @@ static size_t estx_term_print(const estx_t *estx, const estx_node_data_t *term, 
 		dst.off += estx_term_occ_print(term->occ, dst);
 		break;
 	}
-	default: log_warn("cparse", "estx", NULL, "unknown term type: %d", term->type); break;
+	default: log_warn("cparse.estx", "unknown term type: %d", term->type); break;
 	}
 
 	return dst.off - off;
@@ -516,7 +516,7 @@ static size_t estx_node_print_tree(const estx_t *estx, estx_node_t rule, dst_t d
 			}
 			break;
 		default:
-			log_warn("cparse", "estx", NULL, "unknown term type: %d", term->type);
+			log_warn("cparse.estx", "unknown term type: %d", term->type);
 			top--;
 			break;
 		}

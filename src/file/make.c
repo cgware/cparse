@@ -8,12 +8,12 @@ static inline void *make_act_get_type(const make_t *make, make_act_t act, make_a
 {
 	make_act_data_t *data = list_get(&make->acts, act);
 	if (data == NULL) {
-		log_error("cutils", "make", NULL, "failed to get action: %d", act);
+		log_error("cparse.make", "failed to get action: %d", act);
 		return NULL;
 	}
 
 	if (data->type != type) {
-		log_error("cutils", "make", NULL, "failed to get action: %d: expected type: %d, got: %d", act, type, data->type);
+		log_error("cparse.make", "failed to get action: %d: expected type: %d, got: %d", act, type, data->type);
 		return NULL;
 	}
 
@@ -24,19 +24,12 @@ static inline void *make_act_get_type2(const make_t *make, make_act_t act, make_
 {
 	make_act_data_t *data = list_get(&make->acts, act);
 	if (data == NULL) {
-		log_error("cutils", "make", NULL, "failed to get action: %d", act);
+		log_error("cparse.make", "failed to get action: %d", act);
 		return NULL;
 	}
 
 	if (data->type != type1 && data->type != type2) {
-		log_error("cutils",
-			  "make",
-			  NULL,
-			  "failed to get action: %d: expected type: %d or %d, got: %d",
-			  act,
-			  type1,
-			  type2,
-			  data->type);
+		log_error("cparse.make", "failed to get action: %d: expected type: %d or %d, got: %d", act, type1, type2, data->type);
 		return NULL;
 	}
 
@@ -420,7 +413,7 @@ int make_add_act(make_t *make, make_act_t act, make_act_t next)
 
 	make_act_data_t *data = list_get(&make->acts, next);
 	if (data == NULL) {
-		log_error("cutils", "make", NULL, "failed to add action: %d", next);
+		log_error("cparse.make", "failed to add action: %d", next);
 		return 1;
 	}
 
@@ -444,12 +437,12 @@ int make_var_add_val(make_t *make, make_act_t var, make_create_str_t val)
 
 	make_var_data_t *data = make_act_get_type(make, var, MAKE_ACT_VAR);
 	if (data == NULL) {
-		log_error("cutils", "make", NULL, "failed to add value to the variable: %d", var);
+		log_error("cparse.make", "failed to add value to the variable: %d", var);
 		return 1;
 	}
 
 	if (data->ext) {
-		log_error("cutils", "make", NULL, "variable is external: %d", var);
+		log_error("cparse.make", "variable is external: %d", var);
 		return 1;
 	}
 
@@ -506,12 +499,12 @@ int make_rule_add_act(make_t *make, make_act_t rule, make_act_t act)
 
 	make_rule_data_t *data = make_act_get_type(make, rule, MAKE_ACT_RULE);
 	if (data == NULL) {
-		log_error("cutils", "make", NULL, "failed to add action to the rule: %d", rule);
+		log_error("cparse.make", "failed to add action to the rule: %d", rule);
 		return 1;
 	}
 
 	if (list_get(&make->acts, act) == NULL) {
-		log_error("cutils", "make", NULL, "failed to add action: %d", act);
+		log_error("cparse.make", "failed to add action: %d", act);
 		return 1;
 	}
 
@@ -533,12 +526,12 @@ static int make_if_add_act(make_t *make, make_act_t mif, int true_acts, make_act
 
 	make_if_data_t *data = make_act_get_type2(make, mif, MAKE_ACT_IFEQ, MAKE_ACT_IFNEQ);
 	if (data == NULL) {
-		log_error("cutils", "make", NULL, "failed to add %s action to if: %d", true_acts ? "true" : "false", mif);
+		log_error("cparse.make", "failed to add %s action to if: %d", true_acts ? "true" : "false", mif);
 		return 1;
 	}
 
 	if (list_get(&make->acts, act) == NULL) {
-		log_error("cutils", "make", NULL, "failed to add action: %d", act);
+		log_error("cparse.make", "failed to add action: %d", act);
 		return 1;
 	}
 
@@ -577,13 +570,13 @@ int make_def_add_act(make_t *make, make_act_t def, make_act_t act)
 
 	make_def_data_t *def_data = make_act_get_type(make, def, MAKE_ACT_DEF);
 	if (def_data == NULL) {
-		log_error("cutils", "make", NULL, "failed to add action to def: %d", def);
+		log_error("cparse.make", "failed to add action to def: %d", def);
 		return 1;
 	}
 
 	make_act_data_t *act_data = list_get(&make->acts, act);
 	if (act_data == NULL) {
-		log_error("cutils", "make", NULL, "failed to add action: %d", act);
+		log_error("cparse.make", "failed to add action: %d", act);
 		return 1;
 	}
 
@@ -635,12 +628,12 @@ int make_inc_add_act(make_t *make, make_act_t inc, make_act_t act)
 
 	make_inc_data_t *data = make_act_get_type(make, inc, MAKE_ACT_INCLUDE);
 	if (data == NULL) {
-		log_error("cutils", "make", NULL, "failed to add action to include: %d", inc);
+		log_error("cparse.make", "failed to add action to include: %d", inc);
 		return 1;
 	}
 
 	if (list_get(&make->acts, act) == NULL) {
-		log_error("cutils", "make", NULL, "failed to add action: %d", act);
+		log_error("cparse.make", "failed to add action: %d", act);
 		return 1;
 	}
 
@@ -662,12 +655,12 @@ int make_ext_set_val(make_t *make, make_act_t var, make_create_str_t val)
 
 	make_act_data_t *data = list_get(&make->acts, var);
 	if (data == NULL) {
-		log_error("cutils", "make", NULL, "failed to set external value: %d", var);
+		log_error("cparse.make", "failed to set external value: %d", var);
 		return 1;
 	}
 
 	if (!data->val.var.ext) {
-		log_error("cutils", "make", NULL, "variable is not external: %d", var);
+		log_error("cparse.make", "variable is not external: %d", var);
 		return 1;
 	}
 
@@ -843,13 +836,13 @@ static int make_replace(str_t *str, size_t min_len, replace_fn replace, const vo
 		strv_t name = STRVN(&str->data[s + 2], e - (s + 2));
 		strv_t val  = STRV("");
 		if (replace(priv, name, &val)) {
-			log_warn("build", "var", NULL, "failed to get value of: '%.*s'", name.len, name.data);
+			log_warn("build.var", "failed to get value of: '%.*s'", name.len, name.data);
 			ret = 1;
 		}
 
 		if (str_subreplace(str, s, e + 1, val)) {
 			// LCOV_EXCL_START
-			log_warn("build", "var", NULL, "failed to replace '%.*s' with: '%.*s'", name.len, name.data, val.len, val.data);
+			log_warn("build.var", "failed to replace '%.*s' with: '%.*s'", name.len, name.data, val.len, val.data);
 			ret = 1;
 			continue;
 			// LCOV_EXCL_STOP
@@ -884,7 +877,7 @@ static int make_str_expand(const make_t *make, const make_str_data_t *str, str_t
 	case MAKE_STR_VAR: {
 		make_var_data_t *data = make_act_get_type(make, str->val.var, MAKE_ACT_VAR);
 		if (data == NULL) {
-			log_warn("cparse", "make", NULL, "variable not found");
+			log_warn("cparse.make", "variable not found");
 			return 1;
 		}
 		str_cat(buf, data->def ? STRV("$$(") : STRV("$("));
@@ -946,7 +939,7 @@ static void update_strs(make_t *make, make_var_data_t *var, size_t off, int diff
 static int vars_app(make_t *make, make_var_data_t *var, size_t off, strv_t strv)
 {
 	if (strvbuf_app(&make->strs, off, strv)) {
-		log_error("cutils", "make", NULL, "failed to append variable");
+		log_error("cparse.make", "failed to append variable");
 		return 1;
 	}
 
@@ -960,7 +953,7 @@ static int vars_set(make_t *make, make_var_data_t *var, size_t off, strv_t strv)
 	int diff = (int)strv.len - (int)strvbuf_get(&make->strs, off).len;
 
 	if (strvbuf_set(&make->strs, off, strv)) {
-		log_error("cutils", "make", NULL, "failed to set variable");
+		log_error("cparse.make", "failed to set variable");
 		return 1;
 	}
 
@@ -979,11 +972,11 @@ static int make_var_app(make_t *make, make_var_data_t *var, int app, str_t *buf)
 
 	if (app) {
 		if (vars_app(make, var, var->expanded, STRVS(*buf))) {
-			log_error("cparse", "make", NULL, "failed to append variable"), ret = 1; // LCOV_EXCL_LINE
+			log_error("cparse.make", "failed to append variable"), ret = 1; // LCOV_EXCL_LINE
 		}
 	} else {
 		if (vars_set(make, var, var->expanded, STRVS(*buf))) {
-			log_error("cparse", "make", NULL, "failed to set variable"), ret = 1; // LCOV_EXCL_LINE
+			log_error("cparse.make", "failed to set variable"), ret = 1; // LCOV_EXCL_LINE
 		}
 	}
 
@@ -1002,11 +995,11 @@ static int make_var_app(make_t *make, make_var_data_t *var, int app, str_t *buf)
 
 	if (app) {
 		if (vars_app(make, var, var->resolved, STRVS(*buf))) {
-			log_error("cparse", "make", NULL, "failed to append variable"), ret = 1; // LCOV_EXCL_LINE
+			log_error("cparse.make", "failed to append variable"), ret = 1; // LCOV_EXCL_LINE
 		}
 	} else {
 		if (vars_set(make, var, var->resolved, STRVS(*buf))) {
-			log_error("cparse", "make", NULL, "failed to set variable"), ret = 1; // LCOV_EXCL_LINE
+			log_error("cparse.make", "failed to set variable"), ret = 1; // LCOV_EXCL_LINE
 		}
 	}
 
@@ -1076,7 +1069,7 @@ static int make_vars_eval_act(make_t *make, make_act_t root, list_node_t args, i
 	list_foreach(&make->acts, i, act)
 	{
 		if (i == root && !first) {
-			log_error("cparse", "make", NULL, "loop detected: %d", i);
+			log_error("cparse.make", "loop detected: %d", i);
 			ret = 1;
 			break;
 		}
@@ -1244,7 +1237,7 @@ strv_t make_get_expanded(const make_t *make, make_act_t act)
 
 	const make_var_data_t *var = make_act_get_type(make, act, MAKE_ACT_VAR);
 	if (var == NULL) {
-		log_error("cparse", "make", NULL, "failed to get expanded variable: %d", act);
+		log_error("cparse.make", "failed to get expanded variable: %d", act);
 		return STRV_NULL;
 	}
 
@@ -1260,7 +1253,7 @@ strv_t make_get_resolved(const make_t *make, make_act_t act, str_t *buf)
 
 	make_var_data_t *var = make_act_get_type(make, act, MAKE_ACT_VAR);
 	if (var == NULL) {
-		log_error("cparse", "make", NULL, "failed to get resolved variable: %d", act);
+		log_error("cparse.make", "failed to get resolved variable: %d", act);
 		return STRV_NULL;
 	}
 
@@ -1336,7 +1329,7 @@ static size_t make_str_print(const make_t *make, const make_str_data_t *str, dst
 	case MAKE_STR_VAR: {
 		make_var_data_t *data = make_act_get_type(make, str->val.var, MAKE_ACT_VAR);
 		if (data == NULL) {
-			log_warn("cparse", "make", NULL, "variable not found");
+			log_warn("cparse.make", "variable not found");
 			return 0;
 		}
 		dst.off += dputs(dst, data->def ? STRV("$$(") : STRV("$("));
@@ -1377,7 +1370,7 @@ static size_t make_acts_print(const make_t *make, make_act_t acts, dst_t dst, in
 	list_foreach(&make->acts, i, act)
 	{
 		if (i == acts && !first) {
-			log_error("cparse", "make", NULL, "loop detected: %d", i);
+			log_error("cparse.make", "loop detected: %d", i);
 			break;
 		}
 
@@ -1590,7 +1583,7 @@ size_t make_dbg(const make_t *make, dst_t dst)
 				list_foreach(&make->arrs, j, value)
 				{
 					if (j == act->val.var.values && !first) {
-						log_error("cparse", "make", NULL, "loop detected: %d", j);
+						log_error("cparse.make", "loop detected: %d", j);
 						break;
 					}
 					dst.off += dputs(dst, STRV("        "));
@@ -1616,7 +1609,7 @@ size_t make_dbg(const make_t *make, dst_t dst)
 				list_foreach(&make->targets, j, depend)
 				{
 					if (j == act->val.rule.depends && !first) {
-						log_error("cparse", "make", NULL, "loop detected: %d", j);
+						log_error("cparse.make", "loop detected: %d", j);
 						break;
 					}
 					dst.off += dputs(dst, STRV("        "));
@@ -1696,7 +1689,7 @@ size_t make_dbg(const make_t *make, dst_t dst)
 			list_foreach(&make->arrs, j, arg)
 			{
 				if (j == act->val.eval_def.args && !first) {
-					log_error("cparse", "make", NULL, "loop detected: %d", j);
+					log_error("cparse.make", "loop detected: %d", j);
 					break;
 				}
 				dst.off += dputs(dst, STRV("        "));

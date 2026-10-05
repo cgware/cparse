@@ -26,7 +26,7 @@ prs_t *prs_init(prs_t *prs, uint nodes_cap, alloc_t alloc)
 	}
 
 	if (tree_init(&prs->nodes, nodes_cap, sizeof(prs_node_data_t), alloc) == NULL) {
-		log_error("cparse", "prs", NULL, "failed to initialize nodes tree");
+		log_error("cparse.prs", "failed to initialize nodes tree");
 		return NULL;
 	}
 
@@ -59,13 +59,13 @@ int prs_node_rule(prs_t *prs, stx_node_t rule, prs_node_t *node)
 	}
 
 	if (stx_get_node(prs->stx, rule) == NULL) {
-		log_error("cparse", "prs", NULL, "invalid rule: %d", rule);
+		log_error("cparse.prs", "invalid rule: %d", rule);
 		return 1;
 	}
 
 	prs_node_data_t *data = tree_node(&prs->nodes, node);
 	if (data == NULL) {
-		log_error("cparse", "prs", NULL, "failed to add rule node");
+		log_error("cparse.prs", "failed to add rule node");
 		return 1;
 	}
 
@@ -85,7 +85,7 @@ int prs_node_tok(prs_t *prs, tok_t tok, prs_node_t *node)
 
 	prs_node_data_t *data = tree_node(&prs->nodes, node);
 	if (data == NULL) {
-		log_error("cparse", "prs", NULL, "failed to add tok node");
+		log_error("cparse.prs", "failed to add tok node");
 		return 1;
 	}
 
@@ -105,7 +105,7 @@ int prs_node_lit(prs_t *prs, size_t start, uint len, prs_node_t *node)
 
 	prs_node_data_t *data = tree_node(&prs->nodes, node);
 	if (data == NULL) {
-		log_error("cparse", "prs", NULL, "failed to add tok node");
+		log_error("cparse.prs", "failed to add tok node");
 		return 1;
 	}
 
@@ -183,7 +183,7 @@ int prs_get_str(const prs_t *prs, prs_node_t parent, tok_t *out)
 			out->len += data->val.literal.len;
 			break;
 		}
-		default: log_error("cparse", "prs", NULL, "unexpected node: %d", data->type); break;
+		default: log_error("cparse.prs", "unexpected node: %d", data->type); break;
 		}
 	}
 
@@ -219,7 +219,7 @@ static int prs_cache_prepare(prs_t *prs)
 		if (prs->parse_fail == NULL) {
 			prs->parse_fail_size   = 0;
 			prs->parse_fail_stride = 0;
-			log_error("cparse", "prs", NULL, "failed to allocate parse failure cache");
+			log_error("cparse.prs", "failed to allocate parse failure cache");
 			return 1;
 		}
 		prs->parse_fail_size = size;
@@ -264,9 +264,7 @@ static void prs_diag_report(prs_t *prs, const char *phase, stx_node_t rule, stx_
 	if (off > prs->diag.max_off) {
 		prs->diag.max_off = off;
 	}
-	log_debug("cparse",
-		  "prs",
-		  NULL,
+	log_debug("cparse.prs",
 		  "prs_parse: %s rule=%u term=%u off=%u max_off=%u nodes=%u rule_calls=%u term_calls=%u term_rule=%u term_tok=%u "
 		  "term_lit=%u term_or=%u backtracks=%u memo_hits=%u memo_stores=%u",
 		  phase,
@@ -337,7 +335,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 			prs_node_t token;
 			prs_node_tok(prs, (tok_t){.type = tok_type, .start = tok.start, .len = tok.len}, &token);
 			prs_add_node(prs, node, token);
-			log_trace("cparse", "prs", NULL, "%.*s: success +%d", (int)len, buf, tok.len);
+			log_trace("cparse.prs", "%.*s: success +%d", (int)len, buf, tok.len);
 			*off += tok.len;
 			return 0;
 		}
@@ -350,7 +348,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 		}
 		char act[32]   = {0};
 		size_t act_len = lex_print_tok(prs->lex, tok, DST_BUF(act));
-		log_trace("cparse", "prs", NULL, "failed: expected %.*s, but got %.*s", (int)len, buf, act_len, act);
+		log_trace("cparse.prs", "failed: expected %.*s, but got %.*s", (int)len, buf, act_len, act);
 		return 1;
 	}
 	case STX_TERM_LIT: {
@@ -365,7 +363,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 				err->tok    = *off + i;
 				err->exp    = term_id;
 				err->failed = 1;
-				log_trace("cparse", "prs", NULL, "\'%*s\': failed: end of toks", literal.len, literal.data);
+				log_trace("cparse.prs", "\'%*s\': failed: end of toks", literal.len, literal.data);
 				return 1;
 			}
 
@@ -382,9 +380,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 				char buf[256] = {0};
 				size_t len    = strv_print(tok_val, DST_BUF(buf));
 
-				log_trace("cparse",
-					  "prs",
-					  NULL,
+				log_trace("cparse.prs",
 					  "failed: expected \'%*s\', but got \'%.*s\'",
 					  literal.len,
 					  literal.data,
@@ -397,7 +393,7 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 		prs_node_t lit;
 		prs_node_lit(prs, *off, (uint)literal.len, &lit);
 		prs_add_node(prs, node, lit);
-		log_trace("cparse", "prs", NULL, "\'%*s\': success +%d", literal.len, literal.data, literal.len);
+		log_trace("cparse.prs", "\'%*s\': success +%d", literal.len, literal.data, literal.len);
 		*off += (uint)literal.len;
 		return 0;
 	}
@@ -406,26 +402,26 @@ static int prs_parse_term(prs_t *prs, stx_node_t rule, stx_node_t term_id, uint 
 		uint nodes_cnt = prs->nodes.cnt;
 		uint cur       = *off;
 		if (!prs_parse_terms(prs, rule, term->val.orv.l, off, node, err)) {
-			log_trace("cparse", "prs", NULL, "left: success");
+			log_trace("cparse.prs", "left: success");
 			return 0;
 		}
 
-		log_trace("cparse", "prs", NULL, "left: failed");
+		log_trace("cparse.prs", "left: failed");
 		prs->diag.backtracks++;
 		prs_reset(prs, nodes_cnt);
 
 		if (!prs_parse_terms(prs, rule, term->val.orv.r, off, node, err)) {
-			log_trace("cparse", "prs", NULL, "right: success");
+			log_trace("cparse.prs", "right: success");
 			return 0;
 		}
 
-		log_trace("cparse", "prs", NULL, "right: failed");
+		log_trace("cparse.prs", "right: failed");
 		prs->diag.backtracks++;
 		prs_reset(prs, nodes_cnt);
 		*off = cur;
 		return 1;
 	}
-	default: log_warn("cparse", "prs", NULL, "unknown term type: %d", term->type); break;
+	default: log_warn("cparse.prs", "unknown term type: %d", term->type); break;
 	}
 
 	return 1;
@@ -448,7 +444,7 @@ static int prs_parse_terms(prs_t *prs, stx_node_t rule, stx_node_t terms, uint *
 
 static int prs_parse_rule(prs_t *prs, stx_node_t rule, uint *off, prs_node_t node, prs_parse_err_t *err)
 {
-	log_trace("cparse", "prs", NULL, "<%d>", rule);
+	log_trace("cparse.prs", "<%d>", rule);
 	prs->diag.rule_calls++;
 
 	uint cur = *off;
@@ -458,14 +454,14 @@ static int prs_parse_rule(prs_t *prs, stx_node_t rule, uint *off, prs_node_t nod
 	}
 
 	if (prs_parse_terms(prs, rule, rule, off, node, err)) {
-		log_trace("cparse", "prs", NULL, "<%d>: failed", rule);
+		log_trace("cparse.prs", "<%d>: failed", rule);
 		prs_cache_fail(prs, rule, cur);
 		prs->diag.memo_stores++;
 		*off = cur;
 		return 1;
 	}
 
-	log_trace("cparse", "prs", NULL, "<%d>: success +%d", rule, *off - cur);
+	log_trace("cparse.prs", "<%d>: success +%d", rule, *off - cur);
 	return 0;
 }
 
@@ -496,7 +492,7 @@ int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_node_t rule, p
 	if (prs_parse_rule(prs, rule, &parsed, tmp, &err) || parsed != prs->lex->src.len) {
 		prs_diag_report(prs, "failed root rule", rule, rule, parsed);
 		if (!err.failed) {
-			log_error("cparse", "prs", NULL, "wrong syntax");
+			log_error("cparse.prs", "wrong syntax");
 			return 1;
 		}
 
@@ -525,7 +521,7 @@ int prs_parse(prs_t *prs, const lex_t *lex, const stx_t *stx, stx_node_t rule, p
 		*root = tmp;
 	}
 
-	log_trace("cparse", "prs", NULL, "success");
+	log_trace("cparse.prs", "success");
 	return 0;
 }
 
